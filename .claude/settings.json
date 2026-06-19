@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Bash(git push origin main)",
+      "Bash(git push origin HEAD:main)",
+      "Bash(git push --force origin main)",
+      "Bash(git push -f origin main)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-git-flow.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking git-flow guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-destructive-db.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking destructive DB guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-commit-message.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking commit message format…"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-branch.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch gate…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-roadmap-gate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking roadmap gate…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-generated-files.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking generated file guard…"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-branch.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking branch gate…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-roadmap-gate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking roadmap gate…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-generated-files.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking generated file guard…"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-test-files.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking test file guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-docs-generate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking if docs:generate needed…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-soft-delete.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking soft-delete rule…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-audit-log.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking audit log rule…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-expose-hash.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking sensitive field exposure…"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-test-files.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking test file guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-docs-generate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking if docs:generate needed…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-docker-rebuild.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking if Docker rebuild needed…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-soft-delete.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking soft-delete rule…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-audit-log.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking audit log rule…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-expose-hash.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking sensitive field exposure…"
+          }
+        ]
+      }
+    ]
+  }
+}

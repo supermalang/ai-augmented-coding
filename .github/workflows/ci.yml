@@ -1,0 +1,58 @@
+# CI — [PROJECT NAME]
+#
+# Runs on every PR to main/develop.
+# Steps: generate ORM types → lint → tests + coverage → build.
+# [CONFIGURE] adapt the env vars and commands for your stack.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: lint + test + build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # [CONFIGURE] if you use Prisma, this generates types before lint/tests.
+      # DATABASE_URL is a placeholder — prisma generate only parses the schema,
+      # it does not connect to the database.
+      - name: Generate ORM types
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      # Runs tests with coverage. Fails if thresholds in vitest.config.ts are not met.
+      - name: Tests + coverage
+        run: npm run test:coverage
+
+      # [CONFIGURE] adapt env vars required by your build step.
+      - name: Build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          NEXTAUTH_SECRET: ci-build-placeholder
+          NEXTAUTH_URL: http://localhost:3000
+        run: npm run build
