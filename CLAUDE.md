@@ -124,6 +124,17 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 
 ---
 
+## Engineering principles
+
+These apply to every agent that writes code (`/coder`, `/refactor`, `/debugger`) — how to work, not what the rules are. Adapted from Andrej Karpathy's observations on LLM coding pitfalls.
+
+1. **Think before coding** — surface hidden assumptions and ambiguities *before* writing code. If the task is underspecified, ask or check the roadmap/acceptance criteria; don't guess and build the wrong thing.
+2. **Simplicity first** — write the minimal code that satisfies the acceptance criteria. No speculative abstractions, no features that aren't in the task. The smallest correct change wins.
+3. **Surgical changes** — touch only what the task requires. Don't refactor adjacent code, rename unrelated symbols, or reformat files you didn't need to change. Structural cleanup is `/refactor`'s job, behind green tests.
+4. **Goal-driven execution** — define what "done" looks like as verifiable criteria (the task's acceptance criteria and tests), then work until they're objectively met. Don't declare done by vibe — prove it with passing tests.
+
+---
+
 ## Contribution workflow
 
 ### Branches
@@ -168,6 +179,7 @@ Skills are slash commands in `.claude/skills/`.
 | `refactor` | Behaviour-preserving structural cleanup, guarded by green tests |
 | `debugger` | Reproduce, root-cause, and minimally fix a bug |
 | `docs` | Update README, API docs, schema cheatsheet, and CHANGELOG from the diff |
+| `webapp-testing` | Drive the running app in a browser — live screenshots, DOM, console logs (throwaway, not E2E) |
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
 | `prisma` | Migrations, seed, Studio |

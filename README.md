@@ -146,7 +146,7 @@ Audits all planned tasks for DoR before the sprint begins.
   context.md          ← fill this in per project (read by all agents)
   settings.json       ← hook configuration
   hooks/              ← shell gates (12 hooks)
-  skills/             ← 18 agent skills
+  skills/             ← 19 agent skills
     discovery/        ← requirements/PRD/HCD kickoff
     ship-task/        ← autonomous orchestrator
     planner/          ← roadmap task creation
@@ -161,6 +161,7 @@ Audits all planned tasks for DoR before the sprint begins.
     refactor/         ← behaviour-preserving cleanup
     debugger/         ← reproduce + root-cause + fix
     docs/             ← README/API/CHANGELOG updates
+    webapp-testing/   ← live browser verification (throwaway)
     pr-reviewer/      ← DoD + PR opening (+ audit mode)
     sprint-start/     ← sprint DoR audit
     commit/           ← conventional commits

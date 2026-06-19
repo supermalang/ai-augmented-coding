@@ -31,7 +31,7 @@ Handles the "something is broken" path the linear build pipeline doesn't cover. 
 Get a **deterministic** failing case before changing anything.
 
 1. Reproduce from the report — exact steps, inputs, environment.
-2. Write a **minimal failing test** that captures the bug (this is the RED proof it exists).
+2. Write a **minimal failing test** that captures the bug (this is the RED proof it exists). For a UI bug, use `/webapp-testing` to reproduce it in the live browser and capture the failing state + console/network errors first.
 3. Run it — confirm it fails for the reason described, not an unrelated one.
 
 If you cannot reproduce, stop and report what you tried and what information is missing. Do not "fix" a bug you cannot observe.

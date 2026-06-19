@@ -42,7 +42,7 @@ Read the task block in `docs/ROADMAP.md`. Extract:
 
 For each UAT item in the roadmap, verify it is satisfied. Start the app if needed using the dev command from `.claude/context.md`.
 
-Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode).
+Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode). Use `/webapp-testing` to drive the live app, reproduce each scenario, and capture screenshots of the result.
 
 For each UAT item:
 

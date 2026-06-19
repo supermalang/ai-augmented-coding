@@ -40,6 +40,8 @@ Do not start coding before reading all four sources.
 
 Before writing any code, list the files to create or modify and the implementation order. Share the plan with the user if the task is complex (> 3 files).
 
+Follow the **Engineering principles** in `CLAUDE.md`: think before coding, simplicity first, surgical changes (touch only what the task needs — structural cleanup is `/refactor`'s job), and goal-driven execution (work until the acceptance criteria and tests objectively pass).
+
 ### 3 — Backend (if applicable)
 
 Follow the standard API pattern defined in `.claude/context.md`. The pattern must include:
