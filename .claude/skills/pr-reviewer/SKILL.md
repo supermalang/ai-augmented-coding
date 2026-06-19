@@ -43,10 +43,12 @@ Read the DoD at the top of `docs/ROADMAP.md`. Check each item for the active tas
 | Unit tests written and passing | ✅ / ❌ |
 | E2E tests written and passing | ✅ / ❌ |
 | Visual review of screenshots done | ✅ / ❌ |
-| UAT validated | ✅ / ❌ |
+| Acceptance criteria verified by QA agent | ✅ / ❌ |
 | QA review signed | ✅ / ❌ |
-| Security review done | ✅ / ❌ |
+| Security audit done | ✅ / ❌ |
 | Roadmap up to date | to verify → step 4 |
+
+> **UAT is not on this list by design.** The QA agent *verifies the acceptance criteria*; it does **not** stand in for **U**ser **A**cceptance. Human UAT happens at the PR (step 6) — the human ticks it before merging. Opening the PR is allowed with every item above green; **merging** requires the human UAT sign-off.
 
 If any item is ❌ → stop and hand off to the relevant agent.
 
@@ -173,21 +175,34 @@ gh pr create \
 
 - <bullet points of main changes>
 
-## Checklist
+## Automated checks (done by the pipeline)
 
 - [x] DoR satisfied before development
 - [x] Implementation complete
 - [x] Unit tests passing
 - [x] E2E tests passing
 - [x] UX review done
-- [x] UAT validated
-- [x] Security review done
+- [x] Acceptance criteria verified by QA agent
+- [x] Security audit + dependency scan done
 - [x] Roadmap updated
 
-🤖 Agents: Planner · Schema · Coder · Test Writer · UX · QA · Security · PR Reviewer
+## ✋ Human UAT — required before merge
+
+Verify the feature does what you actually need, not just what the criteria said. **Do not merge until every box is ticked by a human.**
+
+- [ ] Walked through each acceptance criterion in the running app / preview
+  <!-- paste the task's acceptance criteria here as individual checkboxes -->
+- [ ] Reviewed the E2E screenshots — the UI matches intent (not just "renders")
+- [ ] Edge cases and error states behave acceptably
+- [ ] No regression in adjacent features
+- [ ] **I accept this for merge** — signed: __________
+
+🤖 Agents: Planner · Schema · Coder · Test Writer · UX · QA · Security · Dep · PR Reviewer
 EOF
 )"
 ```
+
+When generating the PR body, expand the first UAT checkbox into one unchecked box **per acceptance criterion** from the task block, so the human verifies each explicitly. Leave the entire **Human UAT** section unchecked — it is the reviewer's job, not the agent's.
 
 [PROJECT CONVENTION — see .claude/context.md for commit message language, Co-Authored-By trailer requirements, and PR title format]
 
@@ -202,7 +217,8 @@ rm .current-task
 ```
 ✅ PR opened: #<number>
 🔗 <PR URL>
-📋 DoD : all conditions satisfied
+📋 Automated checks : all green
+✋ Human UAT : pending — see the UAT checklist in the PR; merge only after you sign it off
 🧹 .current-task removed
-➡️  Awaiting human review on <integration-branch>
+➡️  Over to you: run UAT against the PR, tick the boxes, then merge
 ```

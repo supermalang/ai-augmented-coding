@@ -114,7 +114,7 @@ The pipeline will:
 9. Stop if any review returns blockers
 10. Open a PR
 
-Human touchpoints: DoR failure → fix the roadmap. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. PR URL → merge when ready.
+Human touchpoints: DoR failure → fix the roadmap. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. **PR opened → run human UAT against the PR, tick the UAT checklist, then merge.** The pipeline is autonomous up to the PR; final user acceptance is always yours.
 
 ### Plan a new task
 

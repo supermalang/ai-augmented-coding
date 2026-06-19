@@ -442,8 +442,8 @@ await agent(
   { phase: 'Ship' }
 )
 
-log('🎉 Task ' + TASK_ID + ' complete — PR opened')
-return { status: 'done', taskId: TASK_ID }
+log('🎉 Task ' + TASK_ID + ' — automated pipeline complete, PR opened. Human UAT + merge are yours.')
+return { status: 'done', taskId: TASK_ID, awaiting: 'human UAT + merge on the PR' }
 ```
 
 ---
@@ -457,7 +457,7 @@ The pipeline returns control to you only when:
 | DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/ship-task <ID>` |
 | Tests still failing after auto-fix | `/debugger` already tried twice and couldn't make them pass — review the failures, fix manually, then re-run |
 | Review blockers | A review (UX/perf/QA/security/dep/perf-measure) found a must-fix issue — resolve it, then re-run |
-| PR URL returned | Review the PR and merge when ready |
+| PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
 
 All other steps — branch creation, schema migration, implementation, doc updates, the debugger self-repair loop, and all six parallel reviews — run without prompting.
 
