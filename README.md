@@ -10,6 +10,32 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 
 ---
 
+## Getting started
+
+**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed, and a git repository.
+
+The fastest path from zero to your first agent-built PR:
+
+1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-5-minutes) below).
+2. **Configure two files** — fill in `.claude/context.md` (commands, stack, absolute rules, isolation key) and the `[CONFIGURE]` blocks in `CLAUDE.md`. **This is the engine — nothing works until these are filled in;** every agent reads them on each run.
+3. **Non-JS stack?** — override `.claude/hooks/stack-profile.sh` for your stack (one file; Laravel/Django/FastAPI examples included). On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
+4. **Seed the roadmap** — add one task to `docs/ROADMAP.md`, or let `/planner` write it.
+5. **Build it** — in Claude Code:
+
+   ```
+   /discovery        # optional — scope a fuzzy idea into a brief (PRD + threat model)
+   /planner          # turn it into a roadmap task with acceptance criteria
+   /ship-task <ID>   # autonomous: tests → code → reviews → PR
+   ```
+
+   `/ship-task` only hands control back on three things: a task that isn't ready (DoR), tests `/debugger` couldn't fix after 2 tries, or a review blocker. Otherwise it runs all the way to an open PR.
+
+6. **Review the PR** — the pipeline opens it; you merge.
+
+> **Tip:** the first time, point it at a tiny task (one field or one endpoint) to watch the whole loop run before trusting it with anything big.
+
+---
+
 ## Setup (5 minutes)
 
 ### 1. Copy the template into your project
@@ -48,14 +74,9 @@ Update the sections marked `[CONFIGURE]`:
 - Architecture overview
 - Absolute rules (same as `context.md` — keep in sync)
 
-### 4. Adapt the hooks
+### 4. Adapt the hooks (only if not React/Next/Prisma)
 
-Review `.claude/hooks/` and adapt these three to your project's conventions:
-- `guard-soft-delete.sh` — change the grep pattern to match your ORM's delete method
-- `guard-audit-log.sh` — change the table/model name to your audit log
-- `guard-expose-hash.sh` — change the field names to your sensitive fields
-
-All other hooks work as-is.
+All stack-specific hook patterns live in **one file** — `.claude/hooks/stack-profile.sh`. Override its variables (ORM delete call, destructive DB command, audit table, sensitive fields, gated paths, migrations directory…) instead of editing the hook scripts, which are generic. It ships with Laravel/Django/FastAPI examples. On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
 
 ### 5. Adapt the CI workflow
 
@@ -84,16 +105,16 @@ Edit `docs/ROADMAP.md`:
 The pipeline will:
 1. Validate DoR (stops here if any field is missing)
 2. Create a feature branch and set `.current-task`
-3. Run migrations if needed
+3. Run migrations if needed (`/schema-agent`)
 4. Write tests (RED — must fail)
-5. Implement (until tests turn green)
-6. Update docs if the API, schema, or UI changed
+5. Implement until tests pass (`/coder`); if GREEN fails, `/debugger` auto-fixes and retries (up to 2×)
+6. Update docs if the API, schema, or UI changed (`/docs`)
 7. Commit the implementation
-8. Run UX, perf, QA, and security reviews in parallel
+8. Run reviews in parallel: UX, perf (static + measured), QA, security, and dependency/SCA
 9. Stop if any review returns blockers
 10. Open a PR
 
-Human touchpoints: DoR failure → fix the roadmap. Test failure → fix the code. PR URL → merge when ready.
+Human touchpoints: DoR failure → fix the roadmap. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. PR URL → merge when ready.
 
 ### Plan a new task
 
@@ -129,13 +150,17 @@ Audits all planned tasks for DoR before the sprint begins.
 | 3 | Test Writer (RED) | Always — writes tests, confirms they fail |
 | 4 | Coder | Always — implements to make tests pass |
 | 5 | Test Writer (GREEN) | Always — confirms all tests pass |
-| 6 | Commit | Always — lint + commit before reviews |
-| 7 | UX Review | Task touches UI |
-| 8 | Perf Review | Task touches ORM queries or API routes |
-| 9 | QA Tester | Always |
-| 10 | Security Review | Always |
-| — | Blocker gate | Stops pipeline if any review returns blockers |
-| 11 | PR Reviewer | Always — marks roadmap done, opens PR |
+| 5b | Debugger (self-repair) | If GREEN fails — auto root-causes + fixes, retries (up to 2×) |
+| 6 | Docs | Task touches API, schema, or UI |
+| 7 | Commit | Always — lint + commit before reviews |
+| 8 | UX Review | Task touches UI |
+| 9 | Perf Review (static) | Task touches ORM queries or API routes |
+| 9b | Perf Measure | Perf-sensitive task — bundle/Web Vitals/EXPLAIN vs budget |
+| 10 | QA Tester | Always |
+| 11 | Security Audit | Always |
+| 11b | Dep Audit | Always — SCA scan for vulnerable dependencies |
+| — | Blocker gate | Stops pipeline if any review (8–11b, parallel) returns blockers |
+| 12 | PR Reviewer | Always — marks roadmap done, opens PR |
 
 ---
 
