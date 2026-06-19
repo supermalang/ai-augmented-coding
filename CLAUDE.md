@@ -103,10 +103,14 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
 | 7 | `/perf-review` | Task touches ORM queries or async fetching |
+| 7b | `/perf-measure` | Perf-sensitive task — confirm `/perf-review` findings with real numbers (bundle, Web Vitals, EXPLAIN) |
 | 8 | `/qa-tester` | Always |
 | 9 | `/security-audit` | Always |
+| 9b | `/dep-audit` | Always before shipping — SCA scan for vulnerable dependencies (OWASP A06) |
 | 10 | `/docs` | Task changes API, schema, setup, commands, or user-facing behaviour |
 | 11 | `/pr-reviewer` | Always — DoD check, roadmap update, opens PR |
+
+A design can be imported up front with `/design-import` (Google Stitch MCP) before `/planner`, and `/diagram` can be used at any point to add Mermaid ERDs, architecture, sequence, or workflow diagrams to the docs.
 
 **Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a product brief to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
 
@@ -166,9 +170,11 @@ Skills are slash commands in `.claude/skills/`.
 | `coder` | Implement a task — frontend + backend |
 | `test-writer` | Write Vitest unit tests + E2E specs (RED and GREEN modes) |
 | `ux-review` | Review edited UI — visual harmony, conventions, accessibility |
-| `perf-review` | Audit ORM queries — N+1, pagination, over-fetching |
+| `perf-review` | Audit ORM queries — N+1, pagination, over-fetching (static) |
+| `perf-measure` | Measure performance — bundle budget, Web Vitals, query EXPLAIN |
 | `qa-tester` | UAT checklist + screenshot review |
 | `security-audit` | OWASP Top 10 + project absolute rules |
+| `dep-audit` | Dependency/SCA scan — vulnerable & outdated packages (OWASP A06) |
 | `pr-reviewer` | PR gate (DoD, roadmap, opens PR) + read-only audit mode |
 
 **Reference skills:**
@@ -179,6 +185,8 @@ Skills are slash commands in `.claude/skills/`.
 | `refactor` | Behaviour-preserving structural cleanup, guarded by green tests |
 | `debugger` | Reproduce, root-cause, and minimally fix a bug |
 | `docs` | Update README, API docs, schema cheatsheet, and CHANGELOG from the diff |
+| `diagram` | Add Mermaid diagrams to docs — ERD, architecture, sequence, workflow, pipeline |
+| `design-import` | Design-to-code via Google Stitch MCP — pulls tokens/layout, writes a design spec for `/coder` |
 | `webapp-testing` | Drive the running app in a browser — live screenshots, DOM, console logs (throwaway, not E2E) |
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
@@ -211,5 +219,6 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Edit / Write | `guard-soft-delete.sh` | Direct ORM delete detected |
 | Edit / Write | `guard-audit-log.sh` | Mutation on audit log table |
 | Edit / Write | `guard-expose-hash.sh` | Sensitive field exposed in API response |
+| Edit / Write | `guard-secret-scan.sh` | Hardcoded secret detected (key, token, credential) |
 | Edit / Write | `remind-docs-generate.sh` | Schema or API changed — regenerate docs |
 | Write | `remind-docker-rebuild.sh` | New migration written — Docker image needs rebuild |

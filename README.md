@@ -145,10 +145,11 @@ Audits all planned tasks for DoR before the sprint begins.
 .claude/
   context.md          ← fill this in per project (read by all agents)
   settings.json       ← hook configuration
-  hooks/              ← shell gates (12 hooks)
+  hooks/              ← shell gates (13 hooks)
     stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  skills/             ← 19 agent skills
-    discovery/        ← requirements/PRD/HCD kickoff
+  skills/             ← 23 agent skills
+    discovery/        ← requirements/PRD/HCD kickoff + threat model
+    design-import/    ← design-to-code via Google Stitch MCP
     ship-task/        ← autonomous orchestrator
     planner/          ← roadmap task creation
     start-task/       ← DoR validation + branch
@@ -156,12 +157,15 @@ Audits all planned tasks for DoR before the sprint begins.
     test-writer/      ← TDD (RED + GREEN modes)
     schema-agent/     ← migrations
     ux-review/        ← UI review
-    perf-review/      ← query performance
+    perf-review/      ← query performance (static)
+    perf-measure/     ← measured perf (bundle, Web Vitals, EXPLAIN)
     qa-tester/        ← UAT + screenshots
     security-audit/   ← OWASP + absolute rules
+    dep-audit/        ← dependency/SCA vulnerability scan
     refactor/         ← behaviour-preserving cleanup
     debugger/         ← reproduce + root-cause + fix
     docs/             ← README/API/CHANGELOG updates
+    diagram/          ← Mermaid diagrams in docs
     webapp-testing/   ← live browser verification (throwaway)
     pr-reviewer/      ← DoD + PR opening (+ audit mode)
     sprint-start/     ← sprint DoR audit

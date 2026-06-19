@@ -7,6 +7,8 @@ description: Performance audit of the active task's code changes. Checks N+1 que
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 
+> Static counterpart to `/perf-measure`. This skill **reads code** for anti-patterns (N+1, over-fetching, missing pagination). For real numbers — bundle size, Core Web Vitals, query `EXPLAIN` against a budget — run `/perf-measure`. Use both on perf-sensitive work: review first, then measure.
+
 ## Permissions
 
 ✅ CAN read    : all project files
@@ -159,5 +161,5 @@ If a missing index is found → do not edit the schema. Instead report:
 🟠 High     : Y → fixed
 🟡 Moderate : Z → pending
 ⚠️  Schema   : N index additions recommended → delegate to /schema-agent
-➡️  Next step: /pr-reviewer
+➡️  Next step: /perf-measure (confirm with real numbers) → /pr-reviewer
 ```

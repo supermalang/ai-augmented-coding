@@ -70,6 +70,8 @@ Read the schema cheatsheet document and update:
 - The key fields for the modified model
 - Any JSON/untyped field structures if affected
 
+If the data model changed shape (new model or relation), use `/diagram erd` to refresh the Mermaid ERD in the cheatsheet so the visual stays in sync with the schema.
+
 ### 7 — Report
 
 ```

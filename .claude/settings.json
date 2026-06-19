@@ -113,6 +113,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-expose-hash.sh\"",
             "timeout": 5,
             "statusMessage": "Checking sensitive field exposure…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-secret-scan.sh\"",
+            "timeout": 5,
+            "statusMessage": "Scanning for hardcoded secrets…"
           }
         ]
       },
@@ -154,6 +160,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-expose-hash.sh\"",
             "timeout": 5,
             "statusMessage": "Checking sensitive field exposure…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-secret-scan.sh\"",
+            "timeout": 5,
+            "statusMessage": "Scanning for hardcoded secrets…"
           }
         ]
       }

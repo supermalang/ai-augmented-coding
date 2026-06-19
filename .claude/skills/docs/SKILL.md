@@ -47,6 +47,7 @@ If nothing user-facing or interface-facing changed, say so and stop — don't ma
 - Document new or changed routes: method, path, auth requirement, request/response shape, error codes.
 - Update the schema cheatsheet for new models/fields. Keep it consistent with the actual schema file — read it; don't guess.
 - Run any doc-generation command the project defines (`.claude/context.md`) and verify the output.
+- When a change is easier shown than told — a new flow, an architecture change, a request sequence — use `/diagram` to add or refresh a Mermaid diagram (architecture, sequence, or ERD) in the doc.
 
 ### 3 — Update the README
 

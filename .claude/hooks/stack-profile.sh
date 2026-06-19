@@ -46,6 +46,11 @@ export STACK_DOCS_GENERATE_CMD='npm run docs:generate'
 export STACK_MIGRATIONS_REGEX='^prisma/migrations/'
 export STACK_DOCKER_REBUILD_CMD='docker compose up -d --build app'
 
+# Hardcoded-secret patterns (guard-secret-scan). The hook ships a stack-agnostic
+# default (private keys, AWS/GCP keys, GitHub/Slack tokens, credential assignments).
+# Override only to add project-specific token formats — alternation, grep -E syntax:
+#   export STACK_SECRET_PATTERNS='-----BEGIN [A-Z ]*PRIVATE KEY-----|mycorp_tok_[0-9a-f]{32}'
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ADAPTING TO ANOTHER STACK
 # ─────────────────────────────────────────────────────────────────────────────

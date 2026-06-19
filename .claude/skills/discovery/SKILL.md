@@ -79,6 +79,18 @@ Repeat until the **Definition of Clear** (below) is satisfied. Cover, across the
 
 Stop asking as soon as the picture is clear. Don't pad the interview — quality of understanding, not number of questions, is the goal. If the user says "you decide" or "use your judgement," record a stated assumption and move on rather than pressing.
 
+### 3b — Threat model (shift security left)
+
+Before the brief is final, do a lightweight threat pass — security is far cheaper to design in than to review out later. For the proposed solution, identify:
+
+- **Assets & data sensitivity** — what data does this touch (PII, credentials, financial, tenant-scoped)? What's the blast radius if it leaks?
+- **Trust boundaries** — where does untrusted input enter (user input, uploads, third-party webhooks, inter-service calls)?
+- **Abuse cases** — how could a malicious or careless actor misuse this? (privilege escalation, IDOR across tenants, mass export, injection, abuse of an expensive operation)
+- **AuthN/AuthZ needs** — who may do what; does any action need re-verification or an audit-log entry?
+- **Relevant absolute rules** — which project rules in `.claude/context.md` (isolation key, soft delete, audit log, no secret exposure) apply here?
+
+Capture the findings in the brief's threat-model section (below). These become explicit acceptance criteria and feed `/security-audit` later, instead of being discovered at review time.
+
 ### 4 — Definition of Clear (gate before writing the brief)
 
 Do not write the brief until every item holds:
@@ -95,7 +107,7 @@ If any item is unmet → return to step 3 and ask. State which items are still o
 
 ### 5 — Synthesise the product brief
 
-Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative) using this structure:
+Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative) using this structure. For a multi-step user journey or workflow, use `/diagram flow` to embed a Mermaid flowchart in the brief — a picture of the flow surfaces gaps prose hides.
 
 ```markdown
 # Product Brief — <Title>
@@ -136,6 +148,13 @@ Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative
 - Accessibility:
 - Security / compliance:
 - Other (offline, i18n, platforms):
+
+## 8b. Security & threat model (initial)
+- Assets / data sensitivity:
+- Trust boundaries (untrusted input enters where):
+- Abuse cases & mitigations:
+- AuthN/AuthZ + audit needs:
+- Applicable absolute rules:
 
 ## 9. Assumptions
 - <Bet we're making>
