@@ -7,6 +7,10 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
@@ -18,10 +22,9 @@ else
   rel_path="$file_path"
 fi
 
-case "$rel_path" in
-  prisma/schema.prisma | src/app/api/*)
-    printf '⚠️  CONTRIBUTING reminder: "%s" a été modifié — pense à lancer `npm run docs:generate` pour régénérer api-reference.generated.md et modele-donnees.generated.md avant d'\''ouvrir une PR.\n' "$rel_path"
-    ;;
-esac
+# Doc-source paths and regenerate command come from the stack profile.
+if printf '%s' "$rel_path" | grep -Eq "${STACK_DOCS_SOURCE_REGEX:-^(prisma/schema\.prisma$|src/app/api/)}"; then
+  printf '⚠️  CONTRIBUTING reminder: "%s" was changed — run `%s` to regenerate the generated docs before opening a PR.\n' "$rel_path" "${STACK_DOCS_GENERATE_CMD:-npm run docs:generate}"
+fi
 
 exit 0

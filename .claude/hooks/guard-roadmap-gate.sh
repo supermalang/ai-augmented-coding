@@ -5,11 +5,15 @@
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 # Strip the project root prefix to normalise the path
 RELATIVE=$(echo "$FILE_PATH" | sed "s|^${CLAUDE_PROJECT_DIR:-$(pwd)}/||")
 
-# Only gate implementation files
-if ! echo "$RELATIVE" | grep -qE '^(src/|tests/|prisma/schema\.prisma)'; then
+# Only gate implementation files — gated paths come from the stack profile.
+if ! echo "$RELATIVE" | grep -qE "${STACK_GATED_PATHS_REGEX:-^(src/|tests/|prisma/schema\.prisma)}"; then
   exit 0
 fi
 

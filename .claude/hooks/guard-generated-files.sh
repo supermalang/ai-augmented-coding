@@ -11,11 +11,15 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
 case "$file_path" in
-  *.generated.md)
+  ${STACK_GENERATED_FILES_GLOB:-*.generated.md})
     jq -n --arg f "$file_path" '{
       hookSpecificOutput: {
         hookEventName: "PreToolUse",

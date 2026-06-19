@@ -190,7 +190,7 @@ Skills are slash commands in `.claude/skills/`.
 
 ## Automatic hooks
 
-Configured in `.claude/settings.json`.
+Configured in `.claude/settings.json`. All stack-specific patterns the hooks match against (ORM delete call, destructive DB command, gated paths, audit table, sensitive fields, migrations directory, doc/rebuild commands) live in **`.claude/hooks/stack-profile.sh`** — retarget a stack by editing that one file, never the hook scripts. The defaults target React/Next.js · Prisma · TypeScript.
 
 ### PreToolUse (hard block)
 

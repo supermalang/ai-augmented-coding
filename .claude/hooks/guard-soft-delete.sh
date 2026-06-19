@@ -15,21 +15,23 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
 # Skip test and spec files
-case "$file_path" in
-  *.test.ts | *.spec.ts) exit 0 ;;
-esac
+if printf '%s' "$file_path" | grep -Eq "${STACK_TEST_FILE_REGEX:-\.(test|spec)\.(ts|tsx|js|jsx)$}"; then
+  exit 0
+fi
 
 # Get written content — 'new_string' for Edit, 'content' for Write
 content=$(printf '%s' "$input" | jq -r '.tool_input.new_string // .tool_input.content // ""')
 
-# EXAMPLE: adapt this pattern to your ORM's delete method.
-# The pattern below matches Prisma's `prisma.<model>.delete(` — replace it
-# with your own ORM's hard-delete call (e.g. `Model.destroy(`, `.remove(`, etc.).
-if printf '%s' "$content" | grep -Eq 'prisma\.[a-zA-Z]+\.delete\('; then
+# Hard-delete pattern comes from the stack profile (Prisma default below).
+if printf '%s' "$content" | grep -Eq "${STACK_SOFT_DELETE_PATTERN:-prisma\.[a-zA-Z]+\.delete\(}"; then
   printf '⚠️  SOFT DELETE RULE: hard delete detected in "%s". Use soft delete instead (e.g. set deletedAt = new Date() / isDeleted = true). Hard deletes break audit trails and are forbidden in projects that enforce data retention.\n' "$file_path"
 fi
 

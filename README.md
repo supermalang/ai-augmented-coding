@@ -146,6 +146,7 @@ Audits all planned tasks for DoR before the sprint begins.
   context.md          ← fill this in per project (read by all agents)
   settings.json       ← hook configuration
   hooks/              ← shell gates (12 hooks)
+    stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
   skills/             ← 19 agent skills
     discovery/        ← requirements/PRD/HCD kickoff
     ship-task/        ← autonomous orchestrator
@@ -183,10 +184,21 @@ CLAUDE.md             ← project instructions for Claude Code
 |------|---------------|
 | `.claude/context.md` | Everything — this is the per-project configuration |
 | `CLAUDE.md` | `[CONFIGURE]` sections — stack, commands, architecture |
-| `.claude/hooks/guard-soft-delete.sh` | ORM delete method pattern |
-| `.claude/hooks/guard-audit-log.sh` | Audit table/model name |
-| `.claude/hooks/guard-expose-hash.sh` | Sensitive field names |
+| `.claude/hooks/stack-profile.sh` | All hook patterns (ORM delete, audit table, sensitive fields, gated paths, migrations…) — one file |
 | `.github/workflows/ci.yml` | ORM generate command, env vars, build command |
 | `docs/ROADMAP.md` | Domain names in the global status table |
 
 Everything else works as-is.
+
+---
+
+## Adapting to another stack
+
+The pipeline ships configured for **React / Next.js · Prisma · TypeScript · Vitest**, but the orchestration is language-agnostic — the skills, gates, TDD loop, and reviews don't care what stack you use. Only two layers carry stack-specifics:
+
+1. **`.claude/context.md`** — your commands, ORM, validation library, and UI conventions. Every agent reads it. This is the biggest lever.
+2. **`.claude/hooks/stack-profile.sh`** — every stack-bound pattern the guard hooks match against (hard-delete call, destructive DB command, gated paths, audit table, sensitive fields, migrations directory, doc/rebuild commands). The hook scripts themselves are generic; they just read these variables.
+
+So retargeting a stack means editing **two files**, not rewriting shell scripts. `stack-profile.sh` ships with worked override examples for **Laravel (Eloquent/PHPUnit)**, **Django**, and **FastAPI (SQLAlchemy/Alembic)** — copy the block for your stack, adjust, done. Any variable you leave unset keeps the Prisma/Next default.
+
+You'll also swap the JS-specific reference skills (`schema-agent` for your migration tool, the `prisma`/`lint`/`test` helpers) and `.github/workflows/ci.yml`. The ~15 orchestration and review skills carry over unchanged.
