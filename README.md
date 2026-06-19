@@ -172,7 +172,8 @@ Audits all planned tasks for DoR before the sprint begins.
   settings.json       ← hook configuration
   hooks/              ← shell gates (13 hooks)
     stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  skills/             ← 23 agent skills
+  agents/             ← 15 agent definitions (tool scope + model per role; ship-task dispatches via these)
+  skills/             ← 23 agent skills (behaviour; agents reference these)
     discovery/        ← requirements/PRD/HCD kickoff + threat model
     design-import/    ← design-to-code via Google Stitch MCP
     ship-task/        ← autonomous orchestrator

@@ -198,6 +198,22 @@ Skills are slash commands in `.claude/skills/`.
 
 ---
 
+## Agents (runtime enforcement layer)
+
+Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope* — which tools each role may use and which model it runs on. Each agent file is thin: frontmatter (`tools:` + `model:`) plus a one-line body pointing at its `SKILL.md`, so the skill stays the single source of truth and the two can't drift.
+
+`/ship-task` dispatches every step through these agents via the workflow's `agentType` option. The point is **least privilege as a hard boundary**, not just documentation:
+
+- **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
+- **`commit`** has no Edit/Write — it only stages and commits.
+- **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
+- **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** can write docs only.
+- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers; Haiku for `commit`/`diagram`).
+
+Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
+
+---
+
 ## Automatic hooks
 
 Configured in `.claude/settings.json`. All stack-specific patterns the hooks match against (ORM delete call, destructive DB command, gated paths, audit table, sensitive fields, migrations directory, doc/rebuild commands) live in **`.claude/hooks/stack-profile.sh`** — retarget a stack by editing that one file, never the hook scripts. The defaults target React/Next.js · Prisma · TypeScript.

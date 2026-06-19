@@ -13,6 +13,8 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ✅ CAN write   : UI source files (visual fixes only: style classes, text, icons, HTML structure) · component files
 ✅ CAN run     : E2E tests in headed mode (for reference screenshots)
 ❌ CANNOT      : write to API routes, library code, tests, schema, or docs
+
+> **Autonomous (agent) mode is report-only.** When `/ship-task` dispatches the `ux-review` agent, it runs with **no Edit/Write tools** — it reports findings (`blockers`/`warnings`) and a builder (`/coder`) applies fixes. The "CAN write visual fixes" permission above applies only to **manual** invocation, where a human is present.
 ❌ CANNOT      : modify business logic, API calls, or state management
 ❌ CANNOT      : add new features — only fix existing visual and accessibility issues
 ❌ CANNOT      : change the observable behaviour of a page (appearance only)

@@ -18,6 +18,8 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ❌ CANNOT      : add business features under the guise of a "perf fix"
 ❌ CANNOT      : push to remote or open PRs
 
+> **Autonomous (agent) mode is report-only.** When `/ship-task` dispatches the `perf-review` agent, it runs with **no Edit/Write tools** — it reports findings (`blockers`/`warnings`) and a builder (`/coder` or `/debugger`) applies fixes. The "CAN write performance fixes" permission above applies only to **manual** invocation, where a human is present.
+
 ## Role
 
 Targeted performance audit of the active task's changes. Focus on database query efficiency and async patterns — not micro-optimisations. A slow query in production is a security risk (DoS, resource exhaustion) as much as a performance issue.
