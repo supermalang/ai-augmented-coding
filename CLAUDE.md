@@ -88,13 +88,14 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 
 ### When assigned a task
 
-**Recommended — fully autonomous:** `/run-task <ID>` chains all agents automatically with skip logic, and only pauses on DoR failure, test failure, or when the PR URL is ready for your review.
+**Recommended — fully autonomous:** `/ship-task <ID>` chains all agents automatically with skip logic, and only pauses on DoR failure, test failure, or when the PR URL is ready for your review.
 
 **Manual — step by step:** invoke each skill in order.
 
 | Step | Skill | Run when |
 |---|---|---|
-| 0 | `/planner` | Task does not exist in roadmap yet |
+| −1 | `/discovery` | Requirements are unclear — interviews the user, writes a product brief, then feeds `/planner` |
+| 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists) |
 | 1 | `/start-task <ID>` | Always — validates DoR, sets `.current-task`, creates branch |
 | 2 | `/schema-agent` | Schema impact = `Migration` |
 | 3 | `/test-writer` (RED) | Always — writes tests from criteria, confirms they fail |
@@ -103,8 +104,11 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 | 6 | `/ux-review` | Task touches UI |
 | 7 | `/perf-review` | Task touches ORM queries or async fetching |
 | 8 | `/qa-tester` | Always |
-| 9 | `/security-review` | Always |
-| 10 | `/pr-reviewer` | Always — DoD check, roadmap update, opens PR |
+| 9 | `/security-audit` | Always |
+| 10 | `/docs` | Task changes API, schema, setup, commands, or user-facing behaviour |
+| 11 | `/pr-reviewer` | Always — DoD check, roadmap update, opens PR |
+
+**Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a product brief to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
 
 ---
 
@@ -142,7 +146,8 @@ Skills are slash commands in `.claude/skills/`.
 
 | Skill | Role |
 |---|---|
-| `run-task` | Autonomous orchestrator — chains all pipeline agents with skip logic |
+| `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a product brief that feeds `/planner` |
+| `ship-task` | Autonomous orchestrator — chains all pipeline agents with skip logic, ships to a PR |
 | `sprint-start` | Sprint kickoff — verify all planned tasks satisfy DoR |
 | `planner` | Write a new task in the roadmap using the full template |
 | `start-task` | Validate DoR, write `.current-task`, create feature branch |
@@ -152,17 +157,19 @@ Skills are slash commands in `.claude/skills/`.
 | `ux-review` | Review edited UI — visual harmony, conventions, accessibility |
 | `perf-review` | Audit ORM queries — N+1, pagination, over-fetching |
 | `qa-tester` | UAT checklist + screenshot review |
-| `security-review` | OWASP Top 10 + project absolute rules |
-| `pr-reviewer` | Final DoD check, roadmap update, opens PR |
+| `security-audit` | OWASP Top 10 + project absolute rules |
+| `pr-reviewer` | PR gate (DoD, roadmap, opens PR) + read-only audit mode |
 
 **Reference skills:**
 
 | Skill | When to use |
 |---|---|
 | `commit` | Conventional Commits-compliant commit |
+| `refactor` | Behaviour-preserving structural cleanup, guarded by green tests |
+| `debugger` | Reproduce, root-cause, and minimally fix a bug |
+| `docs` | Update README, API docs, schema cheatsheet, and CHANGELOG from the diff |
 | `domain-rules` | Verify the project's absolute rules |
-| `parity-gaps` | Check roadmap progress, mark tasks done |
-| `pr-review` | Read-only PR audit checklist |
+| `roadmap-status` | Check roadmap progress, mark tasks done |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |

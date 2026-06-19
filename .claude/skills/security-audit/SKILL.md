@@ -1,9 +1,9 @@
 ---
-name: security-review
+name: security-audit
 description: Security audit of the active task's code changes. Checks OWASP Top 10 and project-specific absolute rules. Run after /qa-tester, before /pr-reviewer.
 ---
 
-# /security-review — Web Security Agent
+# /security-audit — Web Security Agent
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 

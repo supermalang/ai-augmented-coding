@@ -2,7 +2,7 @@
 
 A reusable Claude Code multi-agent development pipeline. Drop it into any project to get:
 
-- **Autonomous task execution** — `/run-task <ID>` chains all agents from planning to PR with no human input between steps
+- **Autonomous task execution** — `/ship-task <ID>` chains all agents from planning to PR with no human input between steps
 - **TDD by default** — tests are written from acceptance criteria *before* the coder touches a file
 - **Structured review gates** — security, UX, performance, and QA reviews run in parallel; any blocker stops the pipeline before the PR opens
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
@@ -78,7 +78,7 @@ Edit `docs/ROADMAP.md`:
 ### Start a task autonomously
 
 ```
-/run-task 1.1
+/ship-task 1.1
 ```
 
 The pipeline will:
@@ -87,10 +87,11 @@ The pipeline will:
 3. Run migrations if needed
 4. Write tests (RED — must fail)
 5. Implement (until tests turn green)
-6. Commit the implementation
-7. Run UX, perf, QA, and security reviews in parallel
-8. Stop if any review returns blockers
-9. Open a PR
+6. Update docs if the API, schema, or UI changed
+7. Commit the implementation
+8. Run UX, perf, QA, and security reviews in parallel
+9. Stop if any review returns blockers
+10. Open a PR
 
 Human touchpoints: DoR failure → fix the roadmap. Test failure → fix the code. PR URL → merge when ready.
 
@@ -105,7 +106,7 @@ Or just describe what you want — if no matching task exists in the roadmap, `/
 ### Check roadmap progress
 
 ```
-/parity-gaps
+/roadmap-status
 ```
 
 ### Start a sprint
@@ -145,8 +146,9 @@ Audits all planned tasks for DoR before the sprint begins.
   context.md          ← fill this in per project (read by all agents)
   settings.json       ← hook configuration
   hooks/              ← shell gates (12 hooks)
-  skills/             ← 15 agent skills
-    run-task/         ← autonomous orchestrator
+  skills/             ← 18 agent skills
+    discovery/        ← requirements/PRD/HCD kickoff
+    ship-task/        ← autonomous orchestrator
     planner/          ← roadmap task creation
     start-task/       ← DoR validation + branch
     coder/            ← implementation
@@ -155,12 +157,14 @@ Audits all planned tasks for DoR before the sprint begins.
     ux-review/        ← UI review
     perf-review/      ← query performance
     qa-tester/        ← UAT + screenshots
-    security-review/  ← OWASP + absolute rules
-    pr-reviewer/      ← DoD + PR opening
+    security-audit/   ← OWASP + absolute rules
+    refactor/         ← behaviour-preserving cleanup
+    debugger/         ← reproduce + root-cause + fix
+    docs/             ← README/API/CHANGELOG updates
+    pr-reviewer/      ← DoD + PR opening (+ audit mode)
     sprint-start/     ← sprint DoR audit
     commit/           ← conventional commits
-    pr-review/        ← read-only PR checklist
-    parity-gaps/      ← roadmap progress
+    roadmap-status/   ← roadmap progress
 .github/
   workflows/
     ci.yml            ← lint + test:coverage + build on every PR

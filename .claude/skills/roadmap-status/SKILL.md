@@ -1,9 +1,9 @@
 ---
-name: parity-gaps
+name: roadmap-status
 description: Navigate and execute tasks from the project roadmap (docs/ROADMAP.md). Use when the user asks what's next, picks up a task, wants to mark progress, or asks if a feature is done.
 ---
 
-# /parity-gaps — Roadmap Progress Tracker
+# /roadmap-status — Roadmap Progress Tracker
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 
@@ -130,4 +130,4 @@ Rules:
 - New pages: `next-page` skill (if present).
 - E2E test writing: `playwright` skill (if present).
 - Absolute rules: `domain-rules` skill (if present).
-- Pre-push gate: `pr-review` skill.
+- Pre-push gate: `pr-reviewer` skill (audit mode for a read-only check).

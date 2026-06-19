@@ -1,6 +1,6 @@
 ---
 name: pr-reviewer
-description: Final gate before opening a PR. Verifies DoD completion, runs lint and tests, checks branch hygiene, updates the roadmap completion fields, and opens the PR to the integration branch. Run after /security-review.
+description: PR gate and code audit. In gate mode (default) verifies DoD, runs lint/tests, updates the roadmap, and opens the PR. In audit mode (read-only) runs the convention checklist — absolute rules, auth, UI conventions, validation — and reports findings without writing. Use to ship a finished task, or to sanity-check a branch before pushing.
 ---
 
 # /pr-reviewer — PR Reviewer Agent
@@ -10,20 +10,28 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ## Permissions
 
 ✅ CAN read    : all project files · full git diff
-✅ CAN write   : `docs/ROADMAP.md` (delivery fields only: commit, PR, date, `[x]`, sprint status table)
-✅ CAN run     : lint · tests · `git push` · `gh pr create` · `rm .current-task`
+✅ CAN write   : `docs/ROADMAP.md` (delivery fields only: commit, PR, date, `[x]`, sprint status table) — **gate mode only**
+✅ CAN run     : lint · tests · `git push` · `gh pr create` · `rm .current-task` — **gate mode only**
 ❌ CANNOT      : write to source files, tests, or schema files
 ❌ CANNOT      : fix bugs or add code (escalate to `/coder`)
 ❌ CANNOT      : open a PR if any DoD item is ❌
 ❌ CANNOT      : force-push or merge directly
+❌ CANNOT      : write, push, or open a PR in **audit mode** — report only
 
 ## Role
 
-Last check before pushing the branch and opening the PR. Verifies the Definition of Done is fully satisfied, the code is clean, and the roadmap is up to date.
+The final gate before a task ships. Verifies the Definition of Done is fully satisfied, audits the diff against project conventions, ensures the roadmap is up to date, and opens the PR.
+
+## Modes
+
+- **Gate mode (default)** — the full pipeline gate: DoD check → lint/tests → diff & convention audit (Step 3) → roadmap update → push → open PR. This is what `/ship-task` calls as its final step.
+- **Audit mode (read-only)** — when the user just wants to "review my branch", "audit this PR", or "sanity-check before pushing": run **Step 3 — Diff review & convention audit only**, emit the report in the [Audit report format](#audit-report-format), and stop. Write nothing, push nothing, open no PR. Triggered when invoked without a finished task to ship, or explicitly with `/pr-reviewer audit`.
 
 ---
 
 ## Step-by-step
+
+> Audit mode runs **Step 3 only**, then reports and stops. Gate mode runs all steps.
 
 ### 1 — Verify the Definition of Done
 
@@ -46,20 +54,85 @@ If any item is ❌ → stop and hand off to the relevant agent.
 
 Use the commands defined in `.claude/context.md`. Both must pass without errors. If errors exist → fix before continuing.
 
-### 3 — Diff review
+### 3 — Diff review & convention audit
 
 ```bash
+git status
+git diff <integration-branch>...HEAD --stat
+git log <integration-branch>..HEAD --oneline
 git diff <integration-branch>...HEAD
 ```
 
 [PROJECT CONVENTION — see .claude/context.md for the integration branch name]
 
-Review the full diff. Check:
+Work through every section below. Cite [file:line](file#Lline) for each finding. (This is the entire job in **audit mode**.)
+
+#### 3a — Hygiene
 - [ ] No leftover `console.log` / `debugger` / `TODO`
 - [ ] No files unrelated to the task (accidental changes)
 - [ ] No credentials, tokens, or secrets in the code
 - [ ] Imports are clean (no unused imports)
 - [ ] Every modified file is justified by the task
+
+#### 3b — Absolute rules — blockers if violated
+
+[PROJECT RULE — see .claude/context.md for the complete list of absolute rules with their exact names and descriptions]
+
+The following are examples a project might define — replace with the actual rules from `.claude/context.md`:
+
+- [ ] **Soft delete** — no hard-delete ORM calls anywhere in the diff. Deletions must set `deletedAt = new Date()`.
+- [ ] **Audit log insert-only** — no UPDATE/DELETE on the audit log table. Only the audit helper inserts.
+- [ ] **Tenant/scope filter** — every database query has the scoping field in its filter. No unscoped `findMany` (except explicit admin routes).
+- [ ] **No sensitive field exposure** — password hashes or equivalent fields must not appear in any API response body.
+- [ ] **Input validation** — every new API route parses the body/params with the validation library before touching the database.
+
+#### 3c — Auth and session
+- [ ] Every API route checks the session/token and returns 401 if missing or invalid.
+- [ ] The tenant/scope ID comes from the verified session — never from the request body.
+- [ ] No secrets (database URL, auth secret, API keys) in source files.
+- [ ] Each route follows the standard shape in `.claude/context.md`: auth check → input validation → scoped query → audit log on mutations.
+
+#### 3d — UI conventions
+
+[PROJECT CONVENTION — see .claude/context.md for UI language, badge classes, icon library, and icon size standards]
+
+- [ ] All user-visible text is in the required language — no violations in the diff.
+- [ ] Status badges use the exact classes defined in `.claude/context.md` — no invented variants.
+- [ ] Icons come from the approved icon library only, at the standard sizes.
+
+#### 3e — Schema / migrations
+- [ ] Schema change ships with a new migration file in the same PR.
+- [ ] No edits to an already-applied migration file.
+- [ ] ORM client was regenerated after schema changes.
+- [ ] Generated documentation files were NOT hand-edited, and docs were regenerated if the schema or any API route changed.
+
+#### 3f — Offline compliance (if applicable)
+
+[PROJECT CONVENTION — see .claude/context.md for offline/queue architecture if present]
+
+- [ ] New write paths that could fail on a flaky network use the offline queue rather than erroring.
+- [ ] Queue entries are never trusted for the tenant scope ID — the server always writes from the session.
+
+#### 3g — Tests
+- [ ] New business logic has a colocated test file.
+- [ ] The test suite passes.
+
+<a id="audit-report-format"></a>
+**Audit report format** (audit mode stops here and emits this):
+
+```
+Blockers (must fix before merge):
+  - <one-liner> — file:line
+
+Should fix:
+  - <one-liner> — file:line
+
+Nits:
+  - <one-liner> — file:line
+
+Looked good:
+  - <specific thing checked and approved>
+```
 
 ### 4 — Update the roadmap
 

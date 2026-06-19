@@ -1,6 +1,6 @@
 ---
 name: perf-review
-description: Performance audit of the active task's code changes. Checks N+1 queries, unbounded database queries, missing pagination, large payloads, and unparallelised async work. Run after /coder, alongside /security-review.
+description: Performance audit of the active task's code changes. Checks N+1 queries, unbounded database queries, missing pagination, large payloads, and unparallelised async work. Run after /coder, alongside /security-audit.
 ---
 
 # /perf-review — Performance Review Agent

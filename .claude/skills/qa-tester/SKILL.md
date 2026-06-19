@@ -104,5 +104,5 @@ If everything is green, update the task block in `docs/ROADMAP.md`:
 🖥️  UAT               : Y/Y scenarios passing
 📸 Screenshots        : conformant
 🔏 DoD                : all conditions satisfied
-➡️  Next step         : /security-review → /pr-reviewer
+➡️  Next step         : /security-audit → /pr-reviewer
 ```
