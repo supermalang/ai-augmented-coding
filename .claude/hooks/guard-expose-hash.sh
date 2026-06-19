@@ -14,20 +14,23 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
-case "$file_path" in
-  *.test.ts | *.spec.ts) exit 0 ;;
-esac
+if printf '%s' "$file_path" | grep -Eq "${STACK_TEST_FILE_REGEX:-\.(test|spec)\.(ts|tsx|js|jsx)$}"; then
+  exit 0
+fi
 
 content=$(printf '%s' "$input" | jq -r '.tool_input.new_string // .tool_input.content // ""')
 
-# EXAMPLE: adapt to your project's sensitive field names (password hash, tokens, secrets).
-# The pattern below catches a field being selected as `true` in a Prisma select block,
-# or included in a response/return object. Extend the alternation with your own fields:
-#   passwordHash|hashedPassword|apiSecret|refreshToken|privateKey
-if printf '%s' "$content" | grep -Eq '(passwordHash|hashedPassword|apiSecret|refreshToken|privateKey)\s*:\s*true|(passwordHash|hashedPassword|apiSecret|refreshToken|privateKey)[^:=]*(,|\})'; then
+# Sensitive field names come from the stack profile. The surrounding regex catches a
+# field selected as `true` (ORM select block) or included in a returned object.
+FIELDS="${STACK_SENSITIVE_FIELDS:-passwordHash|hashedPassword|apiSecret|refreshToken|privateKey}"
+if printf '%s' "$content" | grep -Eq "($FIELDS)\s*:\s*true|($FIELDS)[^:=]*(,|\})"; then
   printf '⚠️  SENSITIVE FIELD EXPOSURE: a sensitive field (password hash, token, or secret) was detected in "%s". Never include these fields in API responses — exclude them explicitly with `select` or delete them from the result object before returning.\n' "$file_path"
 fi
 

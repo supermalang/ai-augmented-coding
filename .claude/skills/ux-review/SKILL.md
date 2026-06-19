@@ -42,7 +42,7 @@ git diff --name-only HEAD | grep -E '\.(tsx|css|vue|svelte)$'
 
 With argument: use the provided path.
 
-Read each identified file in full before starting the review.
+Read each identified file in full before starting the review. For a more reliable review, use `/webapp-testing` to capture live screenshots of the edited pages and review what actually renders — not just the `.tsx` source.
 
 ### 2 — Review across 7 dimensions
 
@@ -151,4 +151,4 @@ After the report, offer to apply fixes automatically. Apply **Critical** and **M
 📸 Screenshot recommended: yes | no
 ```
 
-If the task has an **E2E tests** section with screenshots, remind to run the E2E suite in headed mode to capture reference screenshots after fixes.
+If the task has an **E2E tests** section with screenshots, remind to run the E2E suite in headed mode to capture reference screenshots after fixes. For ad-hoc reference shots of the live page, use `/webapp-testing`.

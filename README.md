@@ -2,11 +2,37 @@
 
 A reusable Claude Code multi-agent development pipeline. Drop it into any project to get:
 
-- **Autonomous task execution** — `/run-task <ID>` chains all agents from planning to PR with no human input between steps
+- **Autonomous task execution** — `/ship-task <ID>` chains all agents from planning to PR with no human input between steps
 - **TDD by default** — tests are written from acceptance criteria *before* the coder touches a file
 - **Structured review gates** — security, UX, performance, and QA reviews run in parallel; any blocker stops the pipeline before the PR opens
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
 - **Coverage enforcement** — Vitest thresholds fail CI if coverage drops
+
+---
+
+## Getting started
+
+**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed, and a git repository.
+
+The fastest path from zero to your first agent-built PR:
+
+1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-5-minutes) below).
+2. **Configure two files** — fill in `.claude/context.md` (commands, stack, absolute rules, isolation key) and the `[CONFIGURE]` blocks in `CLAUDE.md`. **This is the engine — nothing works until these are filled in;** every agent reads them on each run.
+3. **Non-JS stack?** — override `.claude/hooks/stack-profile.sh` for your stack (one file; Laravel/Django/FastAPI examples included). On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
+4. **Seed the roadmap** — add one task to `docs/ROADMAP.md`, or let `/planner` write it.
+5. **Build it** — in Claude Code:
+
+   ```
+   /discovery        # optional — scope a fuzzy idea into a brief (PRD + threat model)
+   /planner          # turn it into a roadmap task with acceptance criteria
+   /ship-task <ID>   # autonomous: tests → code → reviews → PR
+   ```
+
+   `/ship-task` only hands control back on three things: a task that isn't ready (DoR), tests `/debugger` couldn't fix after 2 tries, or a review blocker. Otherwise it runs all the way to an open PR.
+
+6. **Review the PR** — the pipeline opens it; you merge.
+
+> **Tip:** the first time, point it at a tiny task (one field or one endpoint) to watch the whole loop run before trusting it with anything big.
 
 ---
 
@@ -48,14 +74,9 @@ Update the sections marked `[CONFIGURE]`:
 - Architecture overview
 - Absolute rules (same as `context.md` — keep in sync)
 
-### 4. Adapt the hooks
+### 4. Adapt the hooks (only if not React/Next/Prisma)
 
-Review `.claude/hooks/` and adapt these three to your project's conventions:
-- `guard-soft-delete.sh` — change the grep pattern to match your ORM's delete method
-- `guard-audit-log.sh` — change the table/model name to your audit log
-- `guard-expose-hash.sh` — change the field names to your sensitive fields
-
-All other hooks work as-is.
+All stack-specific hook patterns live in **one file** — `.claude/hooks/stack-profile.sh`. Override its variables (ORM delete call, destructive DB command, audit table, sensitive fields, gated paths, migrations directory…) instead of editing the hook scripts, which are generic. It ships with Laravel/Django/FastAPI examples. On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
 
 ### 5. Adapt the CI workflow
 
@@ -78,21 +99,22 @@ Edit `docs/ROADMAP.md`:
 ### Start a task autonomously
 
 ```
-/run-task 1.1
+/ship-task 1.1
 ```
 
 The pipeline will:
 1. Validate DoR (stops here if any field is missing)
 2. Create a feature branch and set `.current-task`
-3. Run migrations if needed
+3. Run migrations if needed (`/schema-agent`)
 4. Write tests (RED — must fail)
-5. Implement (until tests turn green)
-6. Commit the implementation
-7. Run UX, perf, QA, and security reviews in parallel
-8. Stop if any review returns blockers
-9. Open a PR
+5. Implement until tests pass (`/coder`); if GREEN fails, `/debugger` auto-fixes and retries (up to 2×)
+6. Update docs if the API, schema, or UI changed (`/docs`)
+7. Commit the implementation
+8. Run reviews in parallel: UX, perf (static + measured), QA, security, and dependency/SCA
+9. Stop if any review returns blockers
+10. Open a PR
 
-Human touchpoints: DoR failure → fix the roadmap. Test failure → fix the code. PR URL → merge when ready.
+Human touchpoints: DoR failure → fix the roadmap. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. **PR opened → run human UAT against the PR, tick the UAT checklist, then merge.** The pipeline is autonomous up to the PR; final user acceptance is always yours.
 
 ### Plan a new task
 
@@ -105,7 +127,7 @@ Or just describe what you want — if no matching task exists in the roadmap, `/
 ### Check roadmap progress
 
 ```
-/parity-gaps
+/roadmap-status
 ```
 
 ### Start a sprint
@@ -128,13 +150,17 @@ Audits all planned tasks for DoR before the sprint begins.
 | 3 | Test Writer (RED) | Always — writes tests, confirms they fail |
 | 4 | Coder | Always — implements to make tests pass |
 | 5 | Test Writer (GREEN) | Always — confirms all tests pass |
-| 6 | Commit | Always — lint + commit before reviews |
-| 7 | UX Review | Task touches UI |
-| 8 | Perf Review | Task touches ORM queries or API routes |
-| 9 | QA Tester | Always |
-| 10 | Security Review | Always |
-| — | Blocker gate | Stops pipeline if any review returns blockers |
-| 11 | PR Reviewer | Always — marks roadmap done, opens PR |
+| 5b | Debugger (self-repair) | If GREEN fails — auto root-causes + fixes, retries (up to 2×) |
+| 6 | Docs | Task touches API, schema, or UI |
+| 7 | Commit | Always — lint + commit before reviews |
+| 8 | UX Review | Task touches UI |
+| 9 | Perf Review (static) | Task touches ORM queries or API routes |
+| 9b | Perf Measure | Perf-sensitive task — bundle/Web Vitals/EXPLAIN vs budget |
+| 10 | QA Tester | Always |
+| 11 | Security Audit | Always |
+| 11b | Dep Audit | Always — SCA scan for vulnerable dependencies |
+| — | Blocker gate | Stops pipeline if any review (8–11b, parallel) returns blockers |
+| 12 | PR Reviewer | Always — marks roadmap done, opens PR |
 
 ---
 
@@ -144,23 +170,32 @@ Audits all planned tasks for DoR before the sprint begins.
 .claude/
   context.md          ← fill this in per project (read by all agents)
   settings.json       ← hook configuration
-  hooks/              ← shell gates (12 hooks)
-  skills/             ← 15 agent skills
-    run-task/         ← autonomous orchestrator
+  hooks/              ← shell gates (13 hooks)
+    stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
+  skills/             ← 23 agent skills
+    discovery/        ← requirements/PRD/HCD kickoff + threat model
+    design-import/    ← design-to-code via Google Stitch MCP
+    ship-task/        ← autonomous orchestrator
     planner/          ← roadmap task creation
     start-task/       ← DoR validation + branch
     coder/            ← implementation
     test-writer/      ← TDD (RED + GREEN modes)
     schema-agent/     ← migrations
     ux-review/        ← UI review
-    perf-review/      ← query performance
+    perf-review/      ← query performance (static)
+    perf-measure/     ← measured perf (bundle, Web Vitals, EXPLAIN)
     qa-tester/        ← UAT + screenshots
-    security-review/  ← OWASP + absolute rules
-    pr-reviewer/      ← DoD + PR opening
+    security-audit/   ← OWASP + absolute rules
+    dep-audit/        ← dependency/SCA vulnerability scan
+    refactor/         ← behaviour-preserving cleanup
+    debugger/         ← reproduce + root-cause + fix
+    docs/             ← README/API/CHANGELOG updates
+    diagram/          ← Mermaid diagrams in docs
+    webapp-testing/   ← live browser verification (throwaway)
+    pr-reviewer/      ← DoD + PR opening (+ audit mode)
     sprint-start/     ← sprint DoR audit
     commit/           ← conventional commits
-    pr-review/        ← read-only PR checklist
-    parity-gaps/      ← roadmap progress
+    roadmap-status/   ← roadmap progress
 .github/
   workflows/
     ci.yml            ← lint + test:coverage + build on every PR
@@ -178,10 +213,21 @@ CLAUDE.md             ← project instructions for Claude Code
 |------|---------------|
 | `.claude/context.md` | Everything — this is the per-project configuration |
 | `CLAUDE.md` | `[CONFIGURE]` sections — stack, commands, architecture |
-| `.claude/hooks/guard-soft-delete.sh` | ORM delete method pattern |
-| `.claude/hooks/guard-audit-log.sh` | Audit table/model name |
-| `.claude/hooks/guard-expose-hash.sh` | Sensitive field names |
+| `.claude/hooks/stack-profile.sh` | All hook patterns (ORM delete, audit table, sensitive fields, gated paths, migrations…) — one file |
 | `.github/workflows/ci.yml` | ORM generate command, env vars, build command |
 | `docs/ROADMAP.md` | Domain names in the global status table |
 
 Everything else works as-is.
+
+---
+
+## Adapting to another stack
+
+The pipeline ships configured for **React / Next.js · Prisma · TypeScript · Vitest**, but the orchestration is language-agnostic — the skills, gates, TDD loop, and reviews don't care what stack you use. Only two layers carry stack-specifics:
+
+1. **`.claude/context.md`** — your commands, ORM, validation library, and UI conventions. Every agent reads it. This is the biggest lever.
+2. **`.claude/hooks/stack-profile.sh`** — every stack-bound pattern the guard hooks match against (hard-delete call, destructive DB command, gated paths, audit table, sensitive fields, migrations directory, doc/rebuild commands). The hook scripts themselves are generic; they just read these variables.
+
+So retargeting a stack means editing **two files**, not rewriting shell scripts. `stack-profile.sh` ships with worked override examples for **Laravel (Eloquent/PHPUnit)**, **Django**, and **FastAPI (SQLAlchemy/Alembic)** — copy the block for your stack, adjust, done. Any variable you leave unset keeps the Prisma/Next default.
+
+You'll also swap the JS-specific reference skills (`schema-agent` for your migration tool, the `prisma`/`lint`/`test` helpers) and `.github/workflows/ci.yml`. The ~15 orchestration and review skills carry over unchanged.

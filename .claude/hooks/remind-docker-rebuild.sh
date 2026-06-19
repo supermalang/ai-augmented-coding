@@ -10,6 +10,10 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
@@ -20,10 +24,9 @@ else
   rel_path="$file_path"
 fi
 
-case "$rel_path" in
-  prisma/migrations/*)
-    printf '⚠️  New migration file: "%s" — the Prisma client is frozen in the Docker image. In production, rebuild the app container after applying the migration: `docker compose up -d --build app` — otherwise Server Components crash with "column does not exist".\n' "$rel_path"
-    ;;
-esac
+# Migrations path and rebuild command come from the stack profile.
+if printf '%s' "$rel_path" | grep -Eq "${STACK_MIGRATIONS_REGEX:-^prisma/migrations/}"; then
+  printf '⚠️  New migration file: "%s" — if the ORM client is frozen in the Docker image, rebuild the app container after applying the migration: `%s` — otherwise the running app crashes with a "column does not exist" error.\n' "$rel_path" "${STACK_DOCKER_REBUILD_CMD:-docker compose up -d --build app}"
+fi
 
 exit 0

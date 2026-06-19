@@ -19,22 +19,26 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
 
-case "$file_path" in
-  *.test.ts | *.spec.ts) exit 0 ;;
-esac
+if printf '%s' "$file_path" | grep -Eq "${STACK_TEST_FILE_REGEX:-\.(test|spec)\.(ts|tsx|js|jsx)$}"; then
+  exit 0
+fi
 
 content=$(printf '%s' "$input" | jq -r '.tool_input.new_string // .tool_input.content // ""')
 
-# EXAMPLE: replace `auditLog` with your ORM model name for the audit log table.
-if printf '%s' "$content" | grep -Eq 'prisma\.auditLog\.(update|delete|updateMany|deleteMany)\('; then
+# Audit-log ORM mutation — pattern comes from the stack profile.
+if printf '%s' "$content" | grep -Eq "${STACK_AUDIT_LOG_ORM_PATTERN:-prisma\.auditLog\.(update|delete|updateMany|deleteMany)\(}"; then
   printf '⚠️  AUDIT LOG RULE: mutation of the audit log model detected in "%s". The audit log table is INSERT-ONLY — update and delete are forbidden. Write a new corrective entry instead.\n' "$file_path"
 fi
 
-# EXAMPLE: replace `audit_logs` with your audit table name.
-if printf '%s' "$content" | grep -Eiq '(UPDATE|DELETE)[[:space:]]+.*audit_logs'; then
+# Audit-log raw SQL mutation — pattern comes from the stack profile.
+if printf '%s' "$content" | grep -Eiq "${STACK_AUDIT_LOG_SQL_PATTERN:-(UPDATE|DELETE)[[:space:]]+.*audit_logs}"; then
   printf '⚠️  AUDIT LOG RULE: raw SQL UPDATE/DELETE on the audit_logs table detected in "%s". Table is insert-only — mutation forbidden.\n' "$file_path"
 fi
 

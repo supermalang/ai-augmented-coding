@@ -33,12 +33,15 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 2. Read the task block in `docs/ROADMAP.md` — retain **every** acceptance criterion
 3. Read the schema cheatsheet or equivalent context document (see `.claude/context.md` for the path)
 4. Read existing files at the paths listed under **Impact → Components** to understand patterns in place
+5. If a design spec exists for this UI (`docs/design/<slug>.md`, produced by `/design-import`), read it and implement to its mapped tokens/components — under the project's conventions, not the raw generated markup.
 
-Do not start coding before reading all four sources.
+Do not start coding before reading all the sources above.
 
 ### 2 — Implementation plan
 
 Before writing any code, list the files to create or modify and the implementation order. Share the plan with the user if the task is complex (> 3 files).
+
+Follow the **Engineering principles** in `CLAUDE.md`: think before coding, simplicity first, surgical changes (touch only what the task needs — structural cleanup is `/refactor`'s job), and goal-driven execution (work until the acceptance criteria and tests objectively pass).
 
 ### 3 — Backend (if applicable)
 

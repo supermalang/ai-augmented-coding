@@ -7,6 +7,15 @@ description: Declare the active roadmap task before coding starts. Validates DoR
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 
+## Permissions
+
+✅ CAN read    : `docs/ROADMAP.md` · all project files (for context)
+✅ CAN write   : `.current-task` only
+✅ CAN run     : `git` branch commands (`git switch -c`, `git switch`, `git branch`)
+❌ CANNOT      : write to source, test, schema, or documentation files
+❌ CANNOT      : create or modify task definitions in `docs/ROADMAP.md` (that's `/planner`)
+❌ CANNOT      : mark a task `[x]`, run migrations, or open PRs
+
 ## When to use
 
 Before writing any code, test, or migration for a planned task. Any hook that guards source directories will block Edit/Write operations as long as `.current-task` is not set.

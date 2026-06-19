@@ -1,17 +1,17 @@
 ---
-name: run-task
-description: Autonomous end-to-end pipeline for a roadmap task. Validates DoR, creates branch, runs schema/coder/test-writer/reviews/PR agents in the correct order with automatic skip logic. Human touchpoints only on DoR failure, test failure, and final PR URL. Usage: /run-task <TASK-ID> (e.g. /run-task 10.3).
+name: ship-task
+description: Autonomous end-to-end pipeline that ships a roadmap task to a PR. Validates DoR, creates branch, runs schema/coder/test-writer/docs/reviews/PR agents in the correct order with automatic skip logic. Human touchpoints only on DoR failure, test failure, and final PR URL. Usage: /ship-task <TASK-ID> (e.g. /ship-task 10.3).
 ---
 
-# run-task — Autonomous Task Pipeline
+# ship-task — Autonomous Task Pipeline
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 
 ## Permissions
 
 ✅ CAN read    : all project files
-✅ CAN run     : Workflow tool — invoking `/run-task` is explicit multi-agent opt-in
-✅ CAN delegate: all pipeline agent skills (schema-agent, coder, test-writer, ux-review, perf-review, qa-tester, security-review, pr-reviewer)
+✅ CAN run     : Workflow tool — invoking `/ship-task` is explicit multi-agent opt-in
+✅ CAN delegate: all pipeline agent skills (schema-agent, coder, test-writer, debugger, docs, ux-review, perf-review, perf-measure, qa-tester, security-audit, dep-audit, pr-reviewer)
 ❌ CANNOT      : implement code directly — delegates to `/coder`
 ❌ CANNOT      : merge PRs — returns PR URL for human review
 ❌ CANNOT      : mark task [x] without all DoD criteria met
@@ -21,7 +21,7 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ## How to use
 
 ```
-/run-task 10.3
+/ship-task 10.3
 ```
 
 The task ID must match an entry in `docs/ROADMAP.md`. If the task does not exist, stop and tell the user to run `/planner` first.
@@ -37,30 +37,37 @@ The task ID must match an entry in `docs/ROADMAP.md`. If the task does not exist
 | 2 | Schema | `impactSchema = "Migration"` only |
 | 3 | Test Writer (RED) | Always — writes tests from criteria, confirms they **fail** |
 | 4 | Coder | Always — implements until RED tests turn green |
-| 5 | Test Writer (GREEN) | Always — re-runs same tests; **stops if still failing** |
-| 6 | Commit | Always — lint + commit implementation + tests; recovery checkpoint |
-| 7 | UX Review | Task touches UI components or pages [PROJECT CONVENTION — see .claude/context.md] |
-| 8 | Perf Review | Task touches database queries or async data fetching |
-| 9 | QA Tester | Always — parallel with security review |
-| 10 | Security Review | Always — parallel with QA tester |
+| 5 | Test Writer (GREEN) | Always — re-runs same tests |
+| 5b | Debugger (self-repair) | If GREEN fails — auto root-causes and fixes, re-runs; up to 2 attempts before handing to a human |
+| 6 | Docs | Task touches API, schema, or UI — updates README/API/CHANGELOG before the commit |
+| 7 | Commit | Always — lint + commit implementation + tests + docs; recovery checkpoint |
+| 8 | UX Review | Task touches UI components or pages [PROJECT CONVENTION — see .claude/context.md] |
+| 9 | Perf Review (static) | Task touches database queries or async data fetching |
+| 9b | Perf Measure | Perf-sensitive task (UI or DB) — bundle/Web Vitals/EXPLAIN vs budget |
+| 10 | QA Tester | Always — parallel with the other reviews |
+| 11 | Security Audit | Always — parallel |
+| 11b | Dep Audit | Always — SCA scan for vulnerable dependencies (parallel) |
 | — | Blocker gate | Always — **stops if any review returns blockers** |
-| 11 | PR Reviewer | Always — verifies DoD, marks roadmap [x], opens PR |
+| 12 | PR Reviewer | Always — verifies DoD, marks roadmap [x], opens PR |
+
+All of steps 8–11b run **in parallel**; the blocker gate waits for them all.
 
 ---
 
 ## Invoking the Workflow
 
-When this skill is invoked with `/run-task <TASK-ID>`, call the Workflow tool immediately with `args` set to the task ID string (e.g. `"10.3"`) and the script below. Do not ask for confirmation — the user invoking `/run-task` is an explicit opt-in for multi-agent orchestration.
+When this skill is invoked with `/ship-task <TASK-ID>`, call the Workflow tool immediately with `args` set to the task ID string (e.g. `"10.3"`) and the script below. Do not ask for confirmation — the user invoking `/ship-task` is an explicit opt-in for multi-agent orchestration.
 
 ```js
 export const meta = {
-  name: 'run-task',
-  description: 'Autonomous end-to-end pipeline for a roadmap task',
+  name: 'ship-task',
+  description: 'Autonomous end-to-end pipeline that ships a roadmap task to a PR',
   phases: [
     { title: 'Validate' },
     { title: 'Setup' },
     { title: 'Schema' },
     { title: 'Implement' },
+    { title: 'Document' },
     { title: 'Commit' },
     { title: 'Review' },
     { title: 'Ship' },
@@ -68,7 +75,7 @@ export const meta = {
 }
 
 const TASK_ID = args
-if (!TASK_ID) return { status: 'error', reason: 'No task ID provided. Usage: /run-task <ID>' }
+if (!TASK_ID) return { status: 'error', reason: 'No task ID provided. Usage: /ship-task <ID>' }
 
 const TASK_INFO_SCHEMA = {
   type: 'object',
@@ -113,6 +120,16 @@ const TEST_GREEN_SCHEMA = {
   properties: {
     testsPassed: { type: 'boolean' },
     failures:    { type: 'array', items: { type: 'string' } },
+  },
+}
+
+const DOCS_RESULT_SCHEMA = {
+  type: 'object',
+  required: ['docFiles', 'updated'],
+  properties: {
+    docFiles: { type: 'array', items: { type: 'string' }, description: 'doc files created or modified' },
+    updated:  { type: 'boolean', description: 'true if any documentation was changed' },
+    summary:  { type: 'string' },
   },
 }
 
@@ -223,33 +240,79 @@ const coderResult = await agent(
 
 if (!coderResult) return { status: 'error', reason: 'Coder agent failed for task ' + TASK_ID }
 
-// ── Phase 5: Tests — GREEN ────────────────────────────────────────────────
+// ── Phase 5: Tests — GREEN (with /debugger self-repair loop) ──────────────
+async function runGreen() {
+  return await agent(
+    'Read .claude/skills/test-writer/SKILL.md and follow it exactly.\n' +
+    'MODE: GREEN — the implementation is now complete. Run the existing tests without modifying them.\n' +
+    'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+    'Test files to run: ' + JSON.stringify(redResult.testFiles) + '\n\n' +
+    'Instructions:\n' +
+    '1. Do NOT modify any test file\n' +
+    '2. Run the full unit test suite\n' +
+    '3. All tests SHOULD pass now\n' +
+    'Report: testsPassed (bool), failures (array of failing test names or messages).',
+    { schema: TEST_GREEN_SCHEMA, phase: 'Implement', label: 'test-writer (GREEN)' }
+  )
+}
+
 log('Running test-writer (GREEN phase)…')
-const greenResult = await agent(
-  'Read .claude/skills/test-writer/SKILL.md and follow it exactly.\n' +
-  'MODE: GREEN — the implementation is now complete. Run the existing tests without modifying them.\n' +
-  'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
-  'Test files to run: ' + JSON.stringify(redResult.testFiles) + '\n\n' +
-  'Instructions:\n' +
-  '1. Do NOT modify any test file\n' +
-  '2. Run the full unit test suite\n' +
-  '3. All tests SHOULD pass now\n' +
-  '4. If any fail, escalate to coder — report the exact failure messages\n' +
-  'Report: testsPassed (bool), failures (array of failing test names or messages).',
-  { schema: TEST_GREEN_SCHEMA, phase: 'Implement', label: 'test-writer (GREEN)' }
-)
+let greenResult = await runGreen()
+
+// Self-repair: if tests fail, dispatch /debugger to root-cause and fix, then re-run.
+// Bounded — after MAX_FIX_ATTEMPTS the pipeline hands back to a human.
+const MAX_FIX_ATTEMPTS = 2
+let fixAttempts = 0
+while ((!greenResult || !greenResult.testsPassed) && fixAttempts < MAX_FIX_ATTEMPTS) {
+  fixAttempts++
+  const failures = greenResult ? greenResult.failures : ['test-writer agent failed']
+  log('🔧 GREEN failing — dispatching /debugger (auto-fix ' + fixAttempts + '/' + MAX_FIX_ATTEMPTS + ')…')
+  await agent(
+    'Read .claude/skills/debugger/SKILL.md and follow it exactly.\n' +
+    'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+    'The implementation is complete but these tests still fail:\n' + JSON.stringify(failures) + '\n\n' +
+    'Reproduce, find the ROOT CAUSE, and apply the minimal fix to the IMPLEMENTATION so the failing tests pass. ' +
+    'Do NOT modify the test files — they are the contract. Do NOT add features.',
+    { phase: 'Implement', label: 'debugger (fix #' + fixAttempts + ')' }
+  )
+  greenResult = await runGreen()
+}
 
 if (!greenResult || !greenResult.testsPassed) {
   const failures = greenResult ? greenResult.failures : ['agent failed']
-  log('🚫 Tests failing after implementation: ' + failures.join(', '))
-  return { status: 'blocked', reason: 'Tests not passing after implementation — fix the code then re-run', taskId: TASK_ID, failures: failures }
+  log('🚫 Tests still failing after ' + MAX_FIX_ATTEMPTS + ' auto-fix attempt(s) — needs human review')
+  return { status: 'blocked', reason: 'Tests not passing after implementation + ' + MAX_FIX_ATTEMPTS + ' debugger attempts', taskId: TASK_ID, failures: failures }
 }
-log('✅ GREEN phase: all tests passing')
+log('✅ GREEN phase: all tests passing' + (fixAttempts > 0 ? ' (after ' + fixAttempts + ' auto-fix)' : ''))
+
+// ── Phase: Documentation (conditional) ───────────────────────────────────
+// Update docs when the change touches an interface or user-facing surface.
+let docFiles = []
+if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI) {
+  phase('Document')
+  log('Running docs agent…')
+  const docsResult = await agent(
+    'Read .claude/skills/docs/SKILL.md and follow it exactly.\n' +
+    'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+    'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n\n' +
+    'Update README, API reference, schema cheatsheet, and CHANGELOG to reflect these changes. ' +
+    'Do NOT touch application logic, tests, schema definitions, or docs/ROADMAP.md.\n' +
+    'If nothing user-facing or interface-facing changed, make no edits and return updated=false.\n' +
+    'Report: docFiles (array of doc paths changed), updated (bool), and a one-sentence summary.',
+    { schema: DOCS_RESULT_SCHEMA, phase: 'Document', label: 'docs' }
+  )
+  if (docsResult && docsResult.updated) {
+    docFiles = docsResult.docFiles
+    log('📘 Docs updated: ' + docFiles.join(', '))
+  } else {
+    log('📘 No documentation changes needed')
+  }
+}
 
 // ── Commit: checkpoint before reviews ────────────────────────────────────
 phase('Commit')
 log('Committing implementation + tests…')
-const allFiles = coderResult.filesChanged.concat(redResult.testFiles)
+const allFiles = coderResult.filesChanged.concat(redResult.testFiles).concat(docFiles)
 await agent(
   'Create a conventional commit for task ' + TASK_ID + '.\n' +
   'Files to stage: ' + JSON.stringify(allFiles) + '\n\n' +
@@ -307,14 +370,45 @@ reviewTasks.push(function() {
 
 reviewTasks.push(function() {
   return agent(
-    'Read .claude/skills/security-review/SKILL.md and follow it exactly.\n' +
+    'Read .claude/skills/security-audit/SKILL.md and follow it exactly.\n' +
     'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
     'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
     'Run the full OWASP Top 10 + project absolute rules security audit.\n' +
-    'Return label="security-review", blockers (array of must-fix violations), warnings (array of nice-to-fix issues).',
-    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'security-review' }
+    'Return label="security-audit", blockers (array of must-fix violations), warnings (array of nice-to-fix issues).',
+    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'security-audit' }
   )
 })
+
+// Dependency/SCA scan — always (OWASP A06; code review cannot catch vulnerable libraries).
+reviewTasks.push(function() {
+  return agent(
+    'Read .claude/skills/dep-audit/SKILL.md and follow it exactly.\n' +
+    'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+    'Run the dependency/SCA audit using the audit command from .claude/context.md. ' +
+    'Treat Critical/High vulnerabilities that have a non-major fix available as blockers; ' +
+    'major-bump-only fixes and outdated (non-security) packages are warnings. ' +
+    'Do NOT apply major version bumps. If no audit command is configured, return no blockers and one warning saying so.\n' +
+    'Return label="dep-audit", blockers (array), warnings (array).',
+    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'dep-audit' }
+  )
+})
+
+// Measured performance — only when the task is perf-sensitive (UI bundle/Web Vitals, or DB queries).
+if (needsPerf || needsUX) {
+  reviewTasks.push(function() {
+    return agent(
+      'Read .claude/skills/perf-measure/SKILL.md and follow it exactly.\n' +
+      'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+      'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
+      'Measure against the budgets in .claude/context.md: bundle size, Core Web Vitals on affected routes, ' +
+      'and query EXPLAIN on hot paths. Treat a budget breach as a blocker; near-budget as a warning. ' +
+      'If the app cannot be built or run in this environment, return no blockers and one warning explaining why ' +
+      '(so a transient/headless limitation never falsely blocks the PR).\n' +
+      'Return label="perf-measure", blockers (array), warnings (array).',
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-measure' }
+    )
+  })
+}
 
 const reviewResults = await parallel(reviewTasks)
 const succeeded = reviewResults.filter(Boolean)
@@ -348,8 +442,8 @@ await agent(
   { phase: 'Ship' }
 )
 
-log('🎉 Task ' + TASK_ID + ' complete — PR opened')
-return { status: 'done', taskId: TASK_ID }
+log('🎉 Task ' + TASK_ID + ' — automated pipeline complete, PR opened. Human UAT + merge are yours.')
+return { status: 'done', taskId: TASK_ID, awaiting: 'human UAT + merge on the PR' }
 ```
 
 ---
@@ -360,17 +454,18 @@ The pipeline returns control to you only when:
 
 | Situation | What to do |
 |-----------|------------|
-| DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/run-task <ID>` |
-| Tests failing | The coder's implementation has a bug — review the failures, fix the code, then re-run |
-| PR URL returned | Review the PR and merge when ready |
+| DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/ship-task <ID>` |
+| Tests still failing after auto-fix | `/debugger` already tried twice and couldn't make them pass — review the failures, fix manually, then re-run |
+| Review blockers | A review (UX/perf/QA/security/dep/perf-measure) found a must-fix issue — resolve it, then re-run |
+| PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
 
-All other steps — branch creation, schema migration, implementation, all reviews — run without prompting.
+All other steps — branch creation, schema migration, implementation, doc updates, the debugger self-repair loop, and all six parallel reviews — run without prompting.
 
 ---
 
 ## Cross-references
 
 - Task not in roadmap yet: `/planner`
-- Check roadmap progress: `/parity-gaps`
-- Audit a branch manually: `/pr-review`
+- Check roadmap progress: `/roadmap-status`
+- Audit a branch manually: `/pr-reviewer` (audit mode)
 - Run the pipeline step-by-step: see project CLAUDE.md pipeline table

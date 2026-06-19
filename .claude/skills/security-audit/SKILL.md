@@ -1,9 +1,9 @@
 ---
-name: security-review
+name: security-audit
 description: Security audit of the active task's code changes. Checks OWASP Top 10 and project-specific absolute rules. Run after /qa-tester, before /pr-reviewer.
 ---
 
-# /security-review — Web Security Agent
+# /security-audit — Web Security Agent
 
 Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
 
@@ -64,6 +64,7 @@ Read each modified file. Classify by risk:
 
 #### A06 — Vulnerable and Outdated Components
 - [ ] No upgrade of critical dependencies without a compatibility check against the versions pinned in `.claude/context.md`
+- [ ] Run `/dep-audit` for the SCA scan (known CVEs in dependencies) — code review cannot catch vulnerable libraries
 
 #### A07 — Identification and Authentication Failures
 - [ ] Any privileged operation that requires re-verification (e.g. PIN, password confirm) is re-verified **server-side** — never client-side only [PROJECT RULE — see .claude/context.md]

@@ -12,6 +12,10 @@
 
 set -uo pipefail
 
+# Stack-specific patterns live in stack-profile.sh (override there, not here).
+PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
+[ -f "$PROFILE" ] && . "$PROFILE"
+
 input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
 
@@ -26,8 +30,8 @@ deny() {
   exit 0
 }
 
-# db:reset / prisma migrate reset — drops the entire database
-if printf '%s' "$cmd" | grep -Eq 'npm run db:reset|prisma migrate reset'; then
+# Destructive DB reset command — pattern comes from the stack profile.
+if printf '%s' "$cmd" | grep -Eq "${STACK_DESTRUCTIVE_DB_PATTERN:-npm run db:reset|prisma migrate reset}"; then
   deny "Commande destructive bloquée : '$cmd' détruit toute la base de données (drop + re-migrate + re-seed). Lance cette commande manuellement si c'est intentionnel. (Destructive: drops and recreates the entire database — run manually if intentional.)"
 fi
 

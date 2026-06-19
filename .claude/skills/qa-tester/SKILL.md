@@ -42,7 +42,7 @@ Read the task block in `docs/ROADMAP.md`. Extract:
 
 For each UAT item in the roadmap, verify it is satisfied. Start the app if needed using the dev command from `.claude/context.md`.
 
-Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode).
+Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode). Use `/webapp-testing` to drive the live app, reproduce each scenario, and capture screenshots of the result.
 
 For each UAT item:
 
@@ -61,6 +61,8 @@ For each screenshot in the E2E test output directory:
 - [ ] Status badges have the correct colour and label
 - [ ] Success/error messages appear in the right place
 - [ ] Page is readable at the capture resolution (desktop by default)
+
+**Visual baseline blessing.** This sign-off is the gate for visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). Only once you confirm the page is visually correct here — and `/ux-review` has passed — may a `toHaveScreenshot` baseline be captured/updated and committed. Inspect each generated PNG before committing it. Never bless a baseline for a page you would not sign off, and never regenerate a baseline just to make a failing visual test pass.
 
 ### 4 — Verify acceptance criteria
 
@@ -82,10 +84,12 @@ Review each DoD item (section at the top of the roadmap):
 - [ ] Unit tests written and passing
 - [ ] E2E tests written and passing
 - [ ] Visual review of screenshots done
-- [ ] UAT validated (this step)
+- [ ] Acceptance criteria verified against the running app (this step)
 - [ ] QA review signed (this step)
 - [ ] PR ready to open
 - [ ] Roadmap up to date
+
+> This step is **automated acceptance verification** — you confirm the written acceptance criteria hold in the browser. It is **not** user acceptance. True UAT (a human accepting the feature) happens at the PR; see `/pr-reviewer` → *Human UAT*. Do not claim "UAT passed" — claim "acceptance criteria verified, awaiting human UAT."
 
 ### 6 — Sign the QA field in the roadmap
 
@@ -93,16 +97,16 @@ If everything is green, update the task block in `docs/ROADMAP.md`:
 
 ```markdown
 **QA**
-- [x] QA review signed — all UAT passing, screenshots conformant
+- [x] Acceptance criteria verified, screenshots conformant — awaiting human UAT at PR
 ```
 
 ### 7 — Final report
 
 ```
 ✅ QA complete — task <ID>
-📋 Acceptance criteria : X/X satisfied
-🖥️  UAT               : Y/Y scenarios passing
-📸 Screenshots        : conformant
-🔏 DoD                : all conditions satisfied
-➡️  Next step         : /security-review → /pr-reviewer
+📋 Acceptance criteria : X/X verified in-browser
+🖥️  UAT scenarios       : Y/Y behave as specified
+📸 Screenshots         : conformant
+✋ Human UAT            : deferred to the PR (human sign-off before merge)
+➡️  Next step          : /security-audit → /pr-reviewer
 ```
