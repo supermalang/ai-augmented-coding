@@ -196,7 +196,7 @@ if (taskInfo.impactSchema === 'Migration') {
     'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n\n' +
     'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
     'Complete the full schema-agent workflow: design the migration, apply it, update the schema cheatsheet.',
-    { phase: 'Schema' }
+    { phase: 'Schema', agentType: 'schema-agent' }
   )
 }
 
@@ -215,7 +215,7 @@ const redResult = await agent(
   '4. Tests SHOULD fail — the implementation does not exist yet\n' +
   'Report: testFiles (array of paths written), testCount (number), failCount (number), ' +
   'redConfirmed (true if failCount > 0), and a warning string if all tests pass vacuously.',
-  { schema: TEST_RED_SCHEMA, phase: 'Implement', label: 'test-writer (RED)' }
+  { schema: TEST_RED_SCHEMA, phase: 'Implement', label: 'test-writer (RED)', agentType: 'test-writer' }
 )
 
 if (!redResult) return { status: 'error', reason: 'Test-writer (RED) agent failed for task ' + TASK_ID }
@@ -235,7 +235,7 @@ const coderResult = await agent(
   'whether you touched UI source files (touchesUI bool), ' +
   'whether you touched database queries (touchesPrisma bool), ' +
   'and a one-sentence summary of what was implemented.',
-  { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder' }
+  { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
 )
 
 if (!coderResult) return { status: 'error', reason: 'Coder agent failed for task ' + TASK_ID }
@@ -252,7 +252,7 @@ async function runGreen() {
     '2. Run the full unit test suite\n' +
     '3. All tests SHOULD pass now\n' +
     'Report: testsPassed (bool), failures (array of failing test names or messages).',
-    { schema: TEST_GREEN_SCHEMA, phase: 'Implement', label: 'test-writer (GREEN)' }
+    { schema: TEST_GREEN_SCHEMA, phase: 'Implement', label: 'test-writer (GREEN)', agentType: 'test-writer' }
   )
 }
 
@@ -273,7 +273,7 @@ while ((!greenResult || !greenResult.testsPassed) && fixAttempts < MAX_FIX_ATTEM
     'The implementation is complete but these tests still fail:\n' + JSON.stringify(failures) + '\n\n' +
     'Reproduce, find the ROOT CAUSE, and apply the minimal fix to the IMPLEMENTATION so the failing tests pass. ' +
     'Do NOT modify the test files — they are the contract. Do NOT add features.',
-    { phase: 'Implement', label: 'debugger (fix #' + fixAttempts + ')' }
+    { phase: 'Implement', label: 'debugger (fix #' + fixAttempts + ')', agentType: 'debugger' }
   )
   greenResult = await runGreen()
 }
@@ -299,7 +299,7 @@ if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI ||
     'Do NOT touch application logic, tests, schema definitions, or docs/ROADMAP.md.\n' +
     'If nothing user-facing or interface-facing changed, make no edits and return updated=false.\n' +
     'Report: docFiles (array of doc paths changed), updated (bool), and a one-sentence summary.',
-    { schema: DOCS_RESULT_SCHEMA, phase: 'Document', label: 'docs' }
+    { schema: DOCS_RESULT_SCHEMA, phase: 'Document', label: 'docs', agentType: 'docs' }
   )
   if (docsResult && docsResult.updated) {
     docFiles = docsResult.docFiles
@@ -321,7 +321,7 @@ await agent(
   '2. Run: git add ' + allFiles.map(function(f) { return '"' + f + '"' }).join(' ') + '\n' +
   '3. Commit using the Conventional Commits format defined in .claude/context.md.\n' +
   'Confirm the commit SHA.',
-  { phase: 'Commit' }
+  { phase: 'Commit', agentType: 'commit' }
 )
 log('✅ Implementation committed — reviews can now run safely')
 
@@ -339,7 +339,7 @@ if (needsUX) {
       'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
       'Run the full 7-dimension UX review.\n' +
       'Return label="ux-review", blockers (array of must-fix issues), warnings (array of nice-to-fix issues).',
-      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'ux-review' }
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'ux-review', agentType: 'ux-review' }
     )
   })
 }
@@ -352,7 +352,7 @@ if (needsPerf) {
       'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
       'Run the full performance review: N+1 queries, unbounded queries, missing pagination, over-fetching, async patterns.\n' +
       'Return label="perf-review", blockers (array of must-fix issues), warnings (array of nice-to-fix issues).',
-      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-review' }
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-review', agentType: 'perf-review' }
     )
   })
 }
@@ -364,7 +364,7 @@ reviewTasks.push(function() {
     'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
     'Run the full UAT checklist and visual screenshot review.\n' +
     'Return label="qa-tester", blockers (array of must-fix issues), warnings (array of nice-to-fix issues).',
-    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'qa-tester' }
+    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'qa-tester', agentType: 'qa-tester' }
   )
 })
 
@@ -375,7 +375,7 @@ reviewTasks.push(function() {
     'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
     'Run the full OWASP Top 10 + project absolute rules security audit.\n' +
     'Return label="security-audit", blockers (array of must-fix violations), warnings (array of nice-to-fix issues).',
-    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'security-audit' }
+    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'security-audit', agentType: 'security-audit' }
   )
 })
 
@@ -389,7 +389,7 @@ reviewTasks.push(function() {
     'major-bump-only fixes and outdated (non-security) packages are warnings. ' +
     'Do NOT apply major version bumps. If no audit command is configured, return no blockers and one warning saying so.\n' +
     'Return label="dep-audit", blockers (array), warnings (array).',
-    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'dep-audit' }
+    { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'dep-audit', agentType: 'dep-audit' }
   )
 })
 
@@ -405,7 +405,7 @@ if (needsPerf || needsUX) {
       'If the app cannot be built or run in this environment, return no blockers and one warning explaining why ' +
       '(so a transient/headless limitation never falsely blocks the PR).\n' +
       'Return label="perf-measure", blockers (array), warnings (array).',
-      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-measure' }
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-measure', agentType: 'perf-measure' }
     )
   })
 }
@@ -439,7 +439,7 @@ await agent(
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Verify all DoD criteria are met. Mark the task [x] in docs/ROADMAP.md (update sprint table and global status). ' +
   'Run lint and tests. Open a PR to the integration branch with a clear summary. Return the PR URL.',
-  { phase: 'Ship' }
+  { phase: 'Ship', agentType: 'pr-reviewer' }
 )
 
 log('🎉 Task ' + TASK_ID + ' — automated pipeline complete, PR opened. Human UAT + merge are yours.')

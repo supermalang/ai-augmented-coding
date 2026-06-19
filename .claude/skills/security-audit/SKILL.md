@@ -17,6 +17,8 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ❌ CANNOT      : modify tests (escalate to `/test-writer`)
 ❌ CANNOT      : push to remote or open PRs
 
+> **Autonomous (agent) mode is report-only.** When `/ship-task` dispatches the `security-audit` agent, it runs with **no Edit/Write tools** — it reports findings (`blockers`/`warnings`) and a builder (`/coder` or `/debugger`) applies fixes. The "CAN write security fixes" permission above applies only to **manual** invocation, where a human is present.
+
 ## Role
 
 Targeted security audit of the active task's changes. Not a full codebase review — only the files modified or created by the current task.
