@@ -5,6 +5,7 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 - **Autonomous task execution** — `/ship-task <ID>` chains all agents from planning to PR with no human input between steps
 - **TDD by default** — tests are written from acceptance criteria *before* the coder touches a file
 - **Structured review gates** — security, UX, performance, and QA reviews run in parallel; any blocker stops the pipeline before the PR opens
+- **Least-privilege agents** — every pipeline role runs as a tool-scoped agent (auditors can't edit code, only the PR agent can push) and is right-sized to a model
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
 - **Coverage enforcement** — Vitest thresholds fail CI if coverage drops
 
