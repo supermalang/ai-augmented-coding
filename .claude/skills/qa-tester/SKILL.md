@@ -62,6 +62,8 @@ For each screenshot in the E2E test output directory:
 - [ ] Success/error messages appear in the right place
 - [ ] Page is readable at the capture resolution (desktop by default)
 
+**Visual baseline blessing.** This sign-off is the gate for visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). Only once you confirm the page is visually correct here — and `/ux-review` has passed — may a `toHaveScreenshot` baseline be captured/updated and committed. Inspect each generated PNG before committing it. Never bless a baseline for a page you would not sign off, and never regenerate a baseline just to make a failing visual test pass.
+
 ### 4 — Verify acceptance criteria
 
 Re-check each acceptance criterion from the roadmap:

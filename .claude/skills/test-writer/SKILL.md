@@ -114,11 +114,8 @@ Rules:
 - Use visible text or accessible role selectors — never invent `data-testid` attributes
 - Authenticate via `storageState` — do not recreate sessions manually
 - Clean up test data in `afterEach` if records were created
-- Capture screenshots on key assertions:
-  ```ts
-  await expect(page).toHaveScreenshot('feature-nominal.png')
-  ```
 - Use the E2E test command from `.claude/context.md`
+- **Functional assertions only here.** The RED/GREEN contract is text / role / HTTP-status assertions. Do **not** put `toHaveScreenshot()` visual baselines in these specs — visual snapshots are a separate, post-sign-off layer with strict baseline rules. See **Visual snapshot baselines** below.
 
 ### 4 — RED mode: confirm failure
 
@@ -167,6 +164,31 @@ If any fail — escalate to `/coder` with the exact failure output. Do NOT modif
 ✅ GREEN phase complete
 🧪 Unit tests : X cases — all passing
 🎭 E2E        : Y scenarios — all passing
-📸 Screenshots: Z captures generated
 ➡️  Next step : /ux-review (if UI) → /perf-review (if DB queries) → /qa-tester
 ```
+
+---
+
+## Visual snapshot baselines (governance)
+
+`toHaveScreenshot()` is only as correct as its baseline PNG. A pixel-diff test passes whenever the page matches the baseline — so **a wrong baseline silently blesses a wrong UI**. Worse, in RED-first TDD the implementation doesn't exist yet, so any baseline captured during RED is a picture of a broken page, and GREEN would then diff the *correct* UI against that *wrong* baseline. These rules prevent that.
+
+### The rules
+
+1. **Functional and visual layers are separate.** Functional E2E (text / role / HTTP-status) is the RED/GREEN contract and lives in `*.spec.ts`. Visual snapshots live in a **separate** `*.visual.spec.ts`, run by their own command, and are a **post-sign-off regression layer** — never part of the RED/GREEN gate.
+
+2. **Never capture a baseline from an unverified render.** Not during RED (no implementation), and not from any page that has not yet passed `/ux-review` **and** `/qa-tester`. Until a baseline is blessed, the visual spec is not run in the pipeline.
+
+3. **Bless a baseline only after visual sign-off.** The sequence is: GREEN passes → `/ux-review` and `/qa-tester` confirm the page renders correctly → *then* generate the baseline (the project's `--update-snapshots` equivalent from `.claude/context.md`), **open each generated PNG and confirm it is correct**, and commit it. This is the only point a baseline enters the repo.
+
+4. **Never `--update-snapshots` to silence a failing test.** A failing visual test means either a real regression (fix the code) or an intentional change (update the baseline *deliberately*). Blindly regenerating bakes in whatever rendered — the exact footgun. Updating an existing baseline requires the same visual sign-off as creating one.
+
+5. **Baselines are reviewed artifacts.** Committed baseline PNGs show up as a binary diff in the PR. A baseline add/change must be called out in the PR description and eyeballed by the human reviewer — it is a change to the definition of "correct," not just a test file.
+
+### Who does what
+
+- `/test-writer` writes the functional specs (RED/GREEN) and the *visual* spec, but does **not** bless baselines during RED or GREEN.
+- `/ux-review` + `/qa-tester` confirm the UI is visually correct.
+- Baseline capture/update happens **after** that sign-off (by `/qa-tester` or the human), and the PNG is reviewed before commit.
+
+> If the project has no wireframe/mockup for the task, "correct" is defined by the acceptance criteria and conventions — the reviewer's sign-off in step 3 *is* the definition of the baseline. Capturing a baseline from an unreviewed page just makes "whatever rendered" the standard.
