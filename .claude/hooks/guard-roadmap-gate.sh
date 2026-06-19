@@ -6,14 +6,14 @@ INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 
 # Strip the project root prefix to normalise the path
-RELATIVE=$(echo "$FILE_PATH" | sed "s|^${CLAUDE_PROJECT_DIR:-/workspaces/ldbwebstudio}/||")
+RELATIVE=$(echo "$FILE_PATH" | sed "s|^${CLAUDE_PROJECT_DIR:-$(pwd)}/||")
 
 # Only gate implementation files
 if ! echo "$RELATIVE" | grep -qE '^(src/|tests/|prisma/schema\.prisma)'; then
   exit 0
 fi
 
-CURRENT_TASK_FILE="${CLAUDE_PROJECT_DIR:-/workspaces/ldbwebstudio}/.current-task"
+CURRENT_TASK_FILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.current-task"
 
 if [ ! -f "$CURRENT_TASK_FILE" ]; then
   echo '{"continue": false, "stopReason": "🚫 ROADMAP GATE: No active task declared. Run /start-task <TASK-ID> before editing src/, tests/, or schema files. The task must exist in docs/ROADMAP.md and satisfy the Definition of Ready."}'
@@ -27,7 +27,7 @@ if [ -z "$TASK_ID" ]; then
   exit 0
 fi
 
-ROADMAP="${CLAUDE_PROJECT_DIR:-/workspaces/ldbwebstudio}/docs/ROADMAP.md"
+ROADMAP="${CLAUDE_PROJECT_DIR:-$(pwd)}/docs/ROADMAP.md"
 
 if ! grep -qF "$TASK_ID" "$ROADMAP"; then
   echo "{\"continue\": false, \"stopReason\": \"🚫 ROADMAP GATE: Task '${TASK_ID}' (from .current-task) not found in docs/ROADMAP.md. Add it using the template first, then re-run /start-task ${TASK_ID}.\"}"

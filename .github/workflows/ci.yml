@@ -52,7 +52,6 @@ jobs:
       # [CONFIGURE] adapt env vars required by your build step.
       - name: Build
         env:
+          # [CONFIGURE] add the env vars your build step requires
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-          NEXTAUTH_SECRET: ci-build-placeholder
-          NEXTAUTH_URL: http://localhost:3000
         run: npm run build

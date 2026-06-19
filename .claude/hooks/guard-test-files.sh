@@ -9,7 +9,7 @@ if ! echo "$FILE_PATH" | grep -qE '\.(test|spec)\.(ts|tsx|js|jsx)$'; then
   exit 0
 fi
 
-RELATIVE=$(echo "$FILE_PATH" | sed "s|^${CLAUDE_PROJECT_DIR:-/workspaces/ldbwebstudio}/||")
+RELATIVE=$(echo "$FILE_PATH" | sed "s|^${CLAUDE_PROJECT_DIR:-$(pwd)}/||")
 
 echo "⚠️  TEST FILE WRITTEN: ${RELATIVE}"
 echo ""
