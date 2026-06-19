@@ -194,6 +194,8 @@ Skills are slash commands in `.claude/skills/`.
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |
 
+> `domain-rules`, `prisma`, `lint`, and `test` are conventional helper commands, **not** shipped as `.claude/skills/` files in this template. Add them per project if you want them as dedicated skills, or just run the underlying commands directly.
+
 ---
 
 ## Automatic hooks
