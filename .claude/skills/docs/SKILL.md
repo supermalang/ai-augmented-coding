@@ -35,10 +35,13 @@ Classify the changes and map each to the docs it affects:
 | Change | Docs to update |
 |---|---|
 | New/changed API route | API reference · `CHANGELOG` |
-| Schema / model change | Schema cheatsheet (path in `.claude/context.md`) · `CHANGELOG` |
+| Schema / model change | Schema cheatsheet (path in `.claude/context.md`) · `docs/ARCHITECTURE.md` (data model) *if present* · `CHANGELOG` |
+| New component, layer, or architectural decision | `docs/ARCHITECTURE.md` (system shape / decisions) *if present* |
 | New setup step, dependency, or command | `README` |
 | New feature / user-facing behaviour | `README` (if surfaced) · `CHANGELOG` |
 | Config / env var added | `README` · `.env.example` notes |
+
+`docs/ARCHITECTURE.md` is a Tier-2 knowledge doc — update it only if it exists; never create it just to log a routine change.
 
 If nothing user-facing or interface-facing changed, say so and stop — don't manufacture doc churn.
 

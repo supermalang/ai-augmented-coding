@@ -2,6 +2,12 @@
 
 > Fill in this file when you adopt the template. Every pipeline agent reads it at the start
 > of each task. Keep it concise — agents read it on every run.
+>
+> This is the **Tier-1 operational** doc: short facts every agent needs each run. Deep
+> architectural detail (system shape, decisions, trust boundaries, hot paths, the standard API
+> route pattern) belongs in the optional Tier-2 doc [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md),
+> not here — keep the every-run file lean. Product vision lives in `PRODUCT.md`, design language
+> in `DESIGN.md`. A fact belongs in exactly one place; don't duplicate across tiers.
 
 ---
 

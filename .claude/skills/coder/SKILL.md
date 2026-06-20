@@ -31,7 +31,7 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 
 1. Read `.current-task` for the active TASK-ID
 2. Read the task block in `docs/ROADMAP.md` — retain **every** acceptance criterion
-3. Read the schema cheatsheet or equivalent context document (see `.claude/context.md` for the path)
+3. Read the schema cheatsheet or equivalent context document (see `.claude/context.md` for the path). If [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) exists, read the relevant parts — system shape, the standard API route pattern, and any decisions touching this task — and implement consistently with them.
 4. Read existing files at the paths listed under **Impact → Components** to understand patterns in place
 5. If a design spec exists for this UI (`docs/design/<slug>.md`, produced by `/design-import`), read it and implement to its mapped tokens/components — under the project's conventions, not the raw generated markup.
 

@@ -4,6 +4,8 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 > **Setup:** fill in the sections marked `[CONFIGURE]` before using the pipeline.
 > All agents also read `.claude/context.md` — fill that in first.
+> Vision, design, and deep architecture live in optional Tier-2 docs that fill in as you build —
+> see [Project knowledge — two tiers](#project-knowledge--two-tiers).
 
 ---
 
@@ -35,33 +37,43 @@ npm run test:coverage # Vitest + coverage thresholds
 
 ## Architecture
 
-**[CONFIGURE]** — describe your domain model, key relationships, and route structure.
+The deep technical reference — system shape, components, data model, auth flow, the standard API
+route pattern, trust boundaries, and hot paths — lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+It is read **when a task needs it** (by `/coder`, `/schema-agent`, `/perf-review`,
+`/security-audit`), not on every run. Keep it current via `/docs`.
 
-### Key constraint: data isolation
-
-**[CONFIGURE]** — document your isolation key (e.g. `tenantId`, `orgId`, `siteId`) and the rule:
-every Prisma/ORM query must scope data to the active context. Document where this value comes from (e.g. JWT session).
-
-### Auth flow
-
-**[CONFIGURE]** — describe your auth provider, session shape, and how to access it server-side.
-
-### Standard API route pattern
-
-```ts
-// [CONFIGURE] — paste your standard API route boilerplate here so all agents follow it
-const session = await getSession()
-if (!session?.user?.id) return Response.json({ error: 'Unauthorized' }, { status: 401 })
-// validate with Zod
-// query with isolation key
-// audit log on mutations
-```
+This split is deliberate (see [Project knowledge — two tiers](#project-knowledge--two-tiers) below):
+short operational facts every agent needs each run stay in `.claude/context.md`; deep architectural
+explanation lives in `docs/ARCHITECTURE.md`.
 
 ---
 
-## Schema reference
+## Project knowledge — two tiers
 
-**[CONFIGURE]** — link to your schema cheatsheet or summarise key models here.
+The pipeline separates *how the agent works* from *what it knows*, and within knowledge separates
+the every-run essentials from the read-when-relevant depth.
+
+**Tier 1 — operational (required, read every run).** Keep these lean.
+
+| File | Holds |
+|---|---|
+| `CLAUDE.md` (this file) | Instructions to the agent — rules, workflow, which skill when |
+| [`.claude/context.md`](.claude/context.md) | Concise operational facts — stack, commands, absolute rules, isolation key, UI conventions |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The work — tasks, DoR/DoD, sprints |
+
+**Tier 2 — knowledge (optional, read when relevant).** Standing entrypoints that index the
+per-feature docs the pipeline generates. Each is optional — agents fall back to `.claude/context.md`
+if it's absent.
+
+| File | Holds | Indexes | Read by |
+|---|---|---|---|
+| [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md` | `/discovery`, `/planner` |
+| [`DESIGN.md`](DESIGN.md) | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
+
+Rule against drift: a fact lives in exactly **one** tier. Exact tokens/classes → `context.md`,
+not `DESIGN.md`. Short isolation-key rule → `context.md`; its rationale and edge cases →
+`ARCHITECTURE.md`.
 
 ---
 
