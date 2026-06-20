@@ -31,6 +31,7 @@ Before implementing any task whose **Schema impact** is `Migration`. Also useful
 2. Read the task block in `docs/ROADMAP.md` — extract the **Impact**, **Acceptance criteria**, and **Code tasks** fields.
 3. Read the schema cheatsheet (path defined in `.claude/context.md`) to understand the current data model.
 4. Read the schema file to see existing models.
+5. If [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) exists, read its data-model section and isolation/trust-boundary notes — keep the migration consistent with the documented model and decisions.
 
 ### 2 — Design the changes
 

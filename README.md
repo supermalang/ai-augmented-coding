@@ -8,6 +8,7 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 - **Least-privilege agents** — every pipeline role runs as a tool-scoped agent (auditors can't edit code, only the PR agent can push) and is right-sized to a model
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
 - **Coverage enforcement** — Vitest thresholds fail CI if coverage drops
+- **Layered project knowledge** — a two-tier doc model keeps the every-run context lean while vision (`PRODUCT.md`), design (`DESIGN.md`), and architecture (`docs/ARCHITECTURE.md`) grow on demand as the pipeline builds
 
 ---
 
@@ -18,13 +19,14 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 The fastest path from zero to your first agent-built PR:
 
 1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-5-minutes) below).
-2. **Configure two files** — fill in `.claude/context.md` (commands, stack, absolute rules, isolation key) and the `[CONFIGURE]` blocks in `CLAUDE.md`. **This is the engine — nothing works until these are filled in;** every agent reads them on each run.
+2. **Configure two files** — fill in `.claude/context.md` (commands, stack, absolute rules, isolation key) and the `[CONFIGURE]` blocks in `CLAUDE.md`. **This is the engine — nothing works until these are filled in;** every agent reads them on each run. That's all you *must* fill in: the optional vision/design/architecture docs ([two tiers](#project-knowledge--two-tiers)) fill in as you build.
 3. **Non-JS stack?** — override `.claude/hooks/stack-profile.sh` for your stack (one file; Laravel/Django/FastAPI examples included). On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
 4. **Seed the roadmap** — add one task to `docs/ROADMAP.md`, or let `/planner` write it.
 5. **Build it** — in Claude Code:
 
    ```
-   /discovery        # optional — scope a fuzzy idea into a brief (PRD + threat model)
+   /discovery        # optional — scope a fuzzy idea into a brief (PRD + threat model); seeds PRODUCT.md
+   /design-import    # optional — pull a design into a spec; seeds DESIGN.md
    /planner          # turn it into a roadmap task with acceptance criteria
    /ship-task <ID>   # autonomous: tests → code → reviews → PR
    ```
@@ -51,6 +53,9 @@ cp -r temp-template/.claude your-project/
 cp -r temp-template/.github your-project/
 cp temp-template/CLAUDE.md your-project/
 cp temp-template/docs/ROADMAP.md your-project/docs/  # if docs/ exists
+# Optional Tier-2 knowledge docs (or let /discovery, /design-import create them on demand):
+cp temp-template/PRODUCT.md temp-template/DESIGN.md your-project/
+cp temp-template/docs/ARCHITECTURE.md your-project/docs/
 cp temp-template/.gitignore your-project/  # merge, don't overwrite
 rm -rf temp-template
 ```
@@ -72,8 +77,11 @@ Update the sections marked `[CONFIGURE]`:
 - Project description
 - Tech stack
 - Commands
-- Architecture overview
 - Absolute rules (same as `context.md` — keep in sync)
+
+> Architecture detail no longer lives in `CLAUDE.md` — it's in the optional Tier-2 doc
+> `docs/ARCHITECTURE.md` (see [Project knowledge — two tiers](#project-knowledge--two-tiers)).
+> Fill it in when the system is complex enough to warrant it; skip it for small projects.
 
 ### 4. Adapt the hooks (only if not React/Next/Prisma)
 
@@ -202,10 +210,38 @@ Audits all planned tasks for DoR before the sprint begins.
   workflows/
     ci.yml            ← lint + test:coverage + build on every PR
 docs/
-  ROADMAP.md          ← DoR / DoD / task template + sprint planning
-CLAUDE.md             ← project instructions for Claude Code
+  ROADMAP.md          ← DoR / DoD / task template + sprint planning  (Tier-1)
+  ARCHITECTURE.md     ← system shape, decisions, deep specs  (Tier-2, optional)
+  discovery/          ← per-feature product briefs (written by /discovery)
+  design/             ← per-screen design specs (written by /design-import)
+CLAUDE.md             ← project instructions for Claude Code  (Tier-1)
+PRODUCT.md            ← product vision; indexes docs/discovery/  (Tier-2, optional)
+DESIGN.md             ← design language; indexes docs/design/  (Tier-2, optional)
 .gitignore            ← includes .current-task
 ```
+
+### Project knowledge — two tiers
+
+The pipeline separates *how the agent works* from *what it knows*, and splits knowledge by how
+often it's needed:
+
+- **Tier 1 — operational (required, read every run):** `CLAUDE.md`, `.claude/context.md`,
+  `docs/ROADMAP.md`. Kept lean because every agent loads them on each task.
+- **Tier 2 — knowledge (optional, read when relevant):** `PRODUCT.md`, `DESIGN.md`,
+  `docs/ARCHITECTURE.md`. Standing entrypoints that index the per-feature docs the pipeline
+  generates (`docs/discovery/`, `docs/design/`). Each is optional — agents fall back to
+  `.claude/context.md` if it's absent, and `/discovery` / `/design-import` create `PRODUCT.md` /
+  `DESIGN.md` on first use.
+
+| Tier-2 doc | Holds | Indexes | Read by |
+|---|---|---|---|
+| `PRODUCT.md` | Vision, users, non-goals | `docs/discovery/<slug>.md` | `/discovery`, `/planner` |
+| `DESIGN.md` | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
+| `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
+
+**The one rule against drift:** a fact lives in exactly one tier. Exact tokens/badge classes →
+`.claude/context.md`, not `DESIGN.md`. The short isolation-key rule → `.claude/context.md`; its
+rationale and edge cases → `docs/ARCHITECTURE.md`.
 
 ---
 
@@ -218,6 +254,7 @@ CLAUDE.md             ← project instructions for Claude Code
 | `.claude/hooks/stack-profile.sh` | All hook patterns (ORM delete, audit table, sensitive fields, gated paths, migrations…) — one file |
 | `.github/workflows/ci.yml` | ORM generate command, env vars, build command |
 | `docs/ROADMAP.md` | Domain names in the global status table |
+| `PRODUCT.md` · `DESIGN.md` · `docs/ARCHITECTURE.md` | **Optional** Tier-2 knowledge docs — fill in when useful; the relevant skills create/update them on demand |
 
 Everything else works as-is.
 

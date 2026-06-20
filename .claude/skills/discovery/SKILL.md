@@ -21,7 +21,7 @@ It is **conversational and iterative**: it asks focused questions in small batch
 ## Permissions
 
 ✅ CAN read    : all project files · any document or text the user provides for context
-✅ CAN write   : `docs/discovery/<slug>.md` only (the product brief)
+✅ CAN write   : `docs/discovery/<slug>.md` (the product brief) · the **index table** in `PRODUCT.md` (add a row for the new brief; create `PRODUCT.md` from the template if it is missing)
 ✅ CAN run     : read-only git commands (`git log`, `git branch`) for context
 ❌ CANNOT      : write to source, tests, schema, or `docs/ROADMAP.md` (roadmap belongs to `/planner`)
 ❌ CANNOT      : create branches, run migrations, builds, or tests
@@ -45,6 +45,7 @@ If the user pastes or references a document (brief, ticket, transcript, email, s
 
 1. If the user provided a document, file path, or pasted text → read it fully.
 2. Read `docs/ROADMAP.md` and `.claude/context.md` to learn the existing product, personas, and domain glossary — so questions use the project's own vocabulary and you don't re-ask known facts.
+   - If [`PRODUCT.md`](../../../PRODUCT.md) exists, read it too — the standing vision, goals, and **non-goals**. Frame this initiative against it; flag immediately if the request contradicts a stated non-goal.
 3. Build a private working model of: **who** the user is, **what** problem they have, **why** it matters, **what** a solution looks like. Note every field you can already fill and every field still unknown.
 
 Do not ask the user about anything you can already answer from intake.
@@ -168,6 +169,8 @@ Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative
 ```
 
 Each user story must be **INVEST**-shaped: Independent, Negotiable, Valuable, Estimable, Small, Testable. Lead acceptance criteria with the nominal case, then edge cases — the same shape `/planner` expects.
+
+After writing the brief, keep the vision index current: add a row to the **Feature briefs (index)** table in `PRODUCT.md` linking the new `docs/discovery/<slug>.md` (status `Draft`). If `PRODUCT.md` does not exist, create it from the template and seed the vision sections from what you learned — then add the row. Do not touch any other section of `PRODUCT.md`.
 
 ### 6 — Confirm with the user
 

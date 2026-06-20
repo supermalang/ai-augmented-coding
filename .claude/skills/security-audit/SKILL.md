@@ -38,6 +38,8 @@ Read each modified file. Classify by risk:
 - **High**: components with forms, middleware, database queries
 - **Standard**: read-only components, pure utilities
 
+If [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) exists, read its **trust boundaries** section — where untrusted input enters the system — and weight the review toward changes that cross those boundaries.
+
 ### 2 — OWASP Top 10 checklist
 
 #### A01 — Broken Access Control

@@ -24,7 +24,7 @@ If the Stitch MCP tools are **not** available when this skill runs, stop and tel
 ## Permissions
 
 ✅ CAN read    : all project files · Stitch MCP design data
-✅ CAN write   : a design spec under `docs/design/<slug>.md` only
+✅ CAN write   : a design spec under `docs/design/<slug>.md` · the **index table** in `DESIGN.md` (add a row for the new spec; create `DESIGN.md` from the template if it is missing)
 ✅ CAN run     : the Stitch MCP tools (read design, list projects/frames)
 ✅ CAN delegate: implementation to `/coder`
 ❌ CANNOT      : write component/source code directly — `/coder` implements, under project conventions
@@ -50,6 +50,8 @@ Use the Stitch MCP tools to read the design's structured data:
 Extract values; do not screenshot-and-guess.
 
 ### 3 — Reconcile with project conventions
+
+If [`DESIGN.md`](../../../DESIGN.md) exists, read it first — it sets the standing design language (principles, tone, mood). Reconcile the imported design against that feeling, not just the exact tokens. Flag any imported design that fights the stated principles.
 
 Map the design onto the project's system (from `.claude/context.md`):
 - Map Stitch colors to the project's design tokens / Tailwind theme — **reuse existing tokens** where they match; only add new ones when genuinely needed (respect the "no invented badge variants" discipline).
@@ -88,6 +90,8 @@ Write `docs/design/<slug>.md`:
 ## Open conflicts (need decision)
 - <design vs convention> → recommendation
 ```
+
+After writing the spec, keep the design index current: add a row to the **Screen specs (index)** table in `DESIGN.md` linking the new `docs/design/<slug>.md`. If `DESIGN.md` does not exist, create it from the template (seed the design-language sections from the imported design) and then add the row. Do not touch any other section of `DESIGN.md`.
 
 ### 5 — Hand off to implementation
 

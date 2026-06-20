@@ -39,6 +39,8 @@ Focus on files that touch:
 - Server components or functions that fetch data
 - Functions that run multiple async operations
 
+If [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) exists, read its **performance-sensitive paths** section — hot paths and scale assumptions (expected row counts, traffic shape) tell you which changes actually matter and which are micro-optimisations.
+
 ### 2 — N+1 query check
 
 An N+1 happens when a loop triggers a separate DB call per iteration.

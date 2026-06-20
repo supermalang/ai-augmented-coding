@@ -5,7 +5,7 @@ description: Review edited pages and components for visual harmony, WCAG accessi
 
 # /ux-review — UX / Accessibility Agent
 
-Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions.
+Before starting, read `.claude/context.md` for project-specific rules, constraints, and conventions. If [`DESIGN.md`](../../../DESIGN.md) exists, read it too — it is the source of truth for the standing design language (principles, tone, mood) that Dimension 7 (harmony) is judged against. Exact tokens/badges/icons still come from `.claude/context.md`.
 
 ## Permissions
 

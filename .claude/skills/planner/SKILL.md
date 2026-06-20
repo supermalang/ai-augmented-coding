@@ -37,6 +37,7 @@ The Planner is the only agent authorised to write or modify task definitions in 
 Before asking the user anything, gather context autonomously:
 
 1. **Read `docs/ROADMAP.md`** — identify the current sprint, next available task ID, open dependencies, and whether a similar task already exists under a different name.
+   - If [`PRODUCT.md`](../../../PRODUCT.md) exists, read its goals and **non-goals** — verify the task advances a stated goal and violates no non-goal. If it contradicts a non-goal, stop and raise it with the user before writing the task.
 2. **Read the affected source files** — if the user's request mentions a page, feature, or module, read it to determine: which source paths are involved, whether a schema change is needed, which API routes exist or would need to be created.
 3. **Infer all fields you can** — domain, sprint, components, API routes, schema impact, risk level, code tasks. Most of these are determinable from the codebase without asking.
 4. **Draft the full task block** with your best inference for every field.
