@@ -37,6 +37,7 @@ Classify the changes and map each to the docs it affects:
 | New/changed API route | API reference · `CHANGELOG` |
 | Schema / model change | Schema cheatsheet (path in `.claude/context.md`) · `docs/ARCHITECTURE.md` (data model) *if present* · `CHANGELOG` |
 | New component, layer, or architectural decision | `docs/ARCHITECTURE.md` (system shape / decisions) *if present* |
+| Module added, moved, renamed, or removed | `docs/ARCHITECTURE.md` **code map** table + dependency diagram *if present* — keeps `/locate` accurate |
 | New setup step, dependency, or command | `README` |
 | New feature / user-facing behaviour | `README` (if surfaced) · `CHANGELOG` |
 | Config / env var added | `README` · `.env.example` notes |
