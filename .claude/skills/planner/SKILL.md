@@ -77,6 +77,7 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Planned date** | Estimated from sprint cadence (typically 1–2 weeks after write date) |
 | **Completion date** | `—` (filled at delivery) |
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
+| **Priority** | `P0` must ship this sprint / blocks other work or core value · `P1` important, not blocking · `P2` nice to have. Sequencing aid for sprint selection — *not* a DoR gate; infer from the request, ask only if genuinely ambiguous |
 | **Description** | What the task does, not how |
 | **User value** | Format: *As a [persona], I want [action] so that [benefit].* [PROJECT CONVENTION — see .claude/context.md for valid personas] |
 | **Acceptance criteria** | At least 3 concrete and verifiable criteria. Lead with nominal cases, then edge cases |
@@ -97,6 +98,7 @@ Before writing to the file, check every DoR item (section at the top of the road
 
 - [ ] All fields completed and non-empty
 - [ ] Acceptance criteria: at least 3, concrete and verifiable
+- [ ] Story is Independent and Small — deliverable in a single sprint with no hidden dependency on unplanned work; if not, split it into separate tasks (INVEST I + S)
 - [ ] Schema impact declared
 - [ ] Dependencies identified
 - [ ] Wireframe or mockup mentioned (or N/A with justification)

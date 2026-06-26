@@ -10,6 +10,7 @@ A task must satisfy **all** of the following before any code is written. The pip
 
 - [ ] All template fields filled and non-empty
 - [ ] Acceptance criteria: at least 3, concrete and verifiable
+- [ ] Story is **Independent and Small** — deliverable in a single sprint with no hidden dependency on unplanned work; if not, split it (INVEST I + S)
 - [ ] Schema impact declared (`Migration` or `None`)
 - [ ] Dependencies identified (or explicitly `None`)
 - [ ] Wireframe or mockup referenced (or `N/A` with justification for non-UI tasks)
@@ -45,6 +46,7 @@ Copy this block when creating a new task via `/planner`.
 **Planned date:** YYYY-MM-DD
 **Completion date:** —
 **Risk:** Low | Medium | High
+**Priority:** P0 | P1 | P2  *(P0 = must ship this sprint / blocking · P1 = important, not blocking · P2 = nice to have)*
 
 **Description**
 One paragraph — what this task does, not how.
