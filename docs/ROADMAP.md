@@ -62,6 +62,9 @@ As a [persona], I want [action] so that [benefit].
 **Components:** `src/app/...` · `src/lib/...`
 **API:** `POST /api/...` · `GET /api/...`
 
+**Change-set (locate):** N/A — greenfield | *for change-type tasks, coarse scout output reused by `/coder`:*
+- Targets: `src/...` (areas to modify) · Call path: entry → change point · Ripples: shared types / signatures / tests likely affected
+
 **Code tasks**
 1. [Implementation sub-task]
 2. [Implementation sub-task]

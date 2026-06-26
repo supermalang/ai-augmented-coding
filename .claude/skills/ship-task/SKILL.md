@@ -36,7 +36,8 @@ The task ID must match an entry in `docs/ROADMAP.md`. If the task does not exist
 | 1 | Setup | Always — writes `.current-task`, creates feature branch |
 | 2 | Schema | `impactSchema = "Migration"` only |
 | 3 | Test Writer (RED) | Always — writes tests from criteria, confirms they **fail** |
-| 4 | Coder | Always — implements until RED tests turn green |
+| 3b | Locate (scout) | Always — cheap read-only Haiku pass; scopes the change-set so the coder loads only what it needs |
+| 4 | Coder | Always — implements until RED tests turn green, starting from the scout's change-set |
 | 5 | Test Writer (GREEN) | Always — re-runs same tests |
 | 5b | Debugger (self-repair) | If GREEN fails — auto root-causes and fixes, re-runs; up to 2 attempts before handing to a human |
 | 6 | Docs | Task touches API, schema, or UI — updates README/API/CHANGELOG before the commit |
@@ -99,6 +100,18 @@ const CODER_RESULT_SCHEMA = {
     touchesUI:     { type: 'boolean' },
     touchesPrisma: { type: 'boolean' },
     summary:       { type: 'string' },
+  },
+}
+
+const LOCATE_SCHEMA = {
+  type: 'object',
+  required: ['targets', 'editOrder'],
+  properties: {
+    targets:    { type: 'array', items: { type: 'string' }, description: 'files to edit, with line ranges where known (e.g. "src/lib/x.ts:40-72")' },
+    callPath:   { type: 'array', items: { type: 'string' }, description: 'entry → change point, as file:line hops' },
+    readForContext: { type: 'array', items: { type: 'string' }, description: 'files to read but not edit' },
+    editOrder:  { type: 'array', items: { type: 'string' }, description: 'recommended order of edits (target paths)' },
+    ripples:    { type: 'array', items: { type: 'string' }, description: 'shared types/signatures/tests that may need to follow' },
   },
 }
 
@@ -222,12 +235,39 @@ if (!redResult) return { status: 'error', reason: 'Test-writer (RED) agent faile
 if (redResult.warning) log('⚠️  ' + redResult.warning)
 log('🔴 RED phase: ' + redResult.testCount + ' tests written, ' + redResult.failCount + ' failing (expected)')
 
-// ── Phase 4: Implement ────────────────────────────────────────────────────
+// ── Phase 4: Locate (cheap scout) then Implement ──────────────────────────
+// A read-only Haiku scout scopes the change-set first, so the coder loads only
+// what it needs instead of re-discovering the codebase structure itself.
+log('Running locate scout…')
+const locateResult = await agent(
+  'Read .claude/skills/locate/SKILL.md and follow it exactly.\n' +
+  'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n\n' +
+  'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
+  'Scope the implementation change-set for this task: the minimal files to edit (with line ranges), ' +
+  'the call path from entry point to change point, files to read for context, the edit order, and any ripples. ' +
+  'If the task block above has a "Change-set (locate)" field from planning (and it is not "N/A — greenfield"), ' +
+  'verify and REFINE it to precise line ranges rather than rebuilding from scratch. ' +
+  'Do NOT edit anything — you are a scout.\n' +
+  'Return: targets, callPath, readForContext, editOrder, ripples.',
+  { schema: LOCATE_SCHEMA, phase: 'Implement', label: 'locate', agentType: 'locate' }
+)
+if (locateResult) log('🧭 Located ' + locateResult.targets.length + ' target file(s)')
+
+const locateHint = locateResult
+  ? '\n\nChange-set from the locate scout (start here; verify, then implement):\n' +
+    '- Targets: ' + JSON.stringify(locateResult.targets) + '\n' +
+    '- Call path: ' + JSON.stringify(locateResult.callPath || []) + '\n' +
+    '- Read for context: ' + JSON.stringify(locateResult.readForContext || []) + '\n' +
+    '- Edit order: ' + JSON.stringify(locateResult.editOrder) + '\n' +
+    '- Ripples to watch: ' + JSON.stringify(locateResult.ripples || []) + '\n'
+  : ''
+
 log('Running coder…')
 const coderResult = await agent(
   'Read .claude/skills/coder/SKILL.md and follow it exactly.\n' +
   'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
-  'Tests already written (RED phase): ' + JSON.stringify(redResult.testFiles) + '\n\n' +
+  'Tests already written (RED phase): ' + JSON.stringify(redResult.testFiles) + '\n' +
+  locateHint + '\n' +
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Implement the complete task. The test files listed above already exist and are failing — ' +
   'your goal is to make them pass. Do NOT modify the test files.\n' +

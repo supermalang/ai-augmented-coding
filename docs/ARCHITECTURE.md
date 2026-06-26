@@ -24,6 +24,28 @@
 **[CONFIGURE]** — the major building blocks (services, layers, modules) and how they talk to
 each other.
 
+## Code map (navigation)
+
+> The agent's shortcut to "where does this live?" — read this **one** table instead of grepping
+> the tree each session. Keep entries coarse (modules/features, not every file). `/locate` reads
+> this first to scope a change; `/docs` keeps it current when a module is added, moved, or
+> renamed.
+
+| Module / feature | Responsibility | Key files / dir | Public API (entry points) | Depends on |
+|---|---|---|---|---|
+| [e.g. auth] | [session, login, guards] | [`src/lib/auth/`] | [`getSession()`, `requireRole()`] | [db, env] |
+| … | … | … | … | … |
+
+Dependency graph (refresh with `/diagram architecture` whenever module edges change):
+
+```mermaid
+graph TD
+    %% [CONFIGURE] — module-level edges, not file-level. Who imports/calls whom.
+    UI[UI / pages] --> API[API routes]
+    API --> Domain[Domain logic]
+    Domain --> DB[(Data layer)]
+```
+
 ## Key technical decisions
 
 **[CONFIGURE]** — the choices a new contributor (human or agent) would otherwise have to

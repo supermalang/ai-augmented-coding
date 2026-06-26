@@ -107,11 +107,12 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 | Step | Skill | Run when |
 |---|---|---|
 | −1 | `/discovery` | Requirements are unclear — interviews the user, writes a product brief, then feeds `/planner` |
-| 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists) |
+| 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists; runs `/locate` on change-type tasks to scope impact and save a reusable change-set) |
 | 1 | `/start-task <ID>` | Always — validates DoR, sets `.current-task`, creates branch |
 | 2 | `/schema-agent` | Schema impact = `Migration` |
 | 3 | `/test-writer` (RED) | Always — writes tests from criteria, confirms they fail |
-| 4 | `/coder` | Always — implements until RED tests pass |
+| 3b | `/locate` | Non-trivial change — scouts the minimal change-set (files, line ranges, call path) so `/coder` edits surgically; refines the planning change-set if the task has one; skip when the target is obvious |
+| 4 | `/coder` | Always — implements until RED tests pass (starting from the scout's change-set) |
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
 | 7 | `/perf-review` | Task touches ORM queries or async fetching |
@@ -176,11 +177,12 @@ Skills are slash commands in `.claude/skills/`.
 | `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a product brief that feeds `/planner` |
 | `ship-task` | Autonomous orchestrator — chains all pipeline agents with skip logic, ships to a PR |
 | `sprint-start` | Sprint kickoff — verify all planned tasks satisfy DoR |
-| `planner` | Write a new task in the roadmap using the full template |
+| `planner` | Write a new task in the roadmap using the full template (runs `/locate` on change-type tasks to scope impact + save a reusable change-set) |
 | `start-task` | Validate DoR, write `.current-task`, create feature branch |
 | `schema-agent` | Design and apply schema migrations |
 | `coder` | Implement a task — frontend + backend |
 | `test-writer` | Write Vitest unit tests + E2E specs (RED and GREEN modes) |
+| `locate` | Read-only change-set scout — used twice: coarse at planning (by `/planner`, impact + saved change-set) and precise before `/coder` (exact files/line ranges, call path). Cheap, runs on Haiku |
 | `ux-review` | Review edited UI — visual harmony, conventions, accessibility |
 | `perf-review` | Audit ORM queries — N+1, pagination, over-fetching (static) |
 | `perf-measure` | Measure performance — bundle budget, Web Vitals, query EXPLAIN |
@@ -217,10 +219,11 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 `/ship-task` dispatches every step through these agents via the workflow's `agentType` option. The point is **least privilege as a hard boundary**, not just documentation:
 
 - **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
+- **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** can write docs only.
-- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers; Haiku for `commit`/`diagram`).
+- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers; Haiku for `commit`/`diagram`/`locate`).
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
 

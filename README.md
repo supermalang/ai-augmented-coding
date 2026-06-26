@@ -157,7 +157,8 @@ Audits all planned tasks for DoR before the sprint begins.
 | 1 | Setup | Always — branch + `.current-task` |
 | 2 | Schema | `impactSchema = Migration` |
 | 3 | Test Writer (RED) | Always — writes tests, confirms they fail |
-| 4 | Coder | Always — implements to make tests pass |
+| 3b | Locate (scout) | Always — cheap read-only Haiku pass; scopes the change-set so the coder loads only what it needs |
+| 4 | Coder | Always — implements to make tests pass, from the scout's change-set |
 | 5 | Test Writer (GREEN) | Always — confirms all tests pass |
 | 5b | Debugger (self-repair) | If GREEN fails — auto root-causes + fixes, retries (up to 2×) |
 | 6 | Docs | Task touches API, schema, or UI |
@@ -181,14 +182,15 @@ Audits all planned tasks for DoR before the sprint begins.
   settings.json       ← hook configuration
   hooks/              ← shell gates (13 hooks)
     stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  agents/             ← 15 agent definitions (tool scope + model per role; ship-task dispatches via these)
-  skills/             ← 23 agent skills (behaviour; agents reference these)
+  agents/             ← 16 agent definitions (tool scope + model per role; ship-task dispatches via these)
+  skills/             ← 24 agent skills (behaviour; agents reference these)
     discovery/        ← requirements/PRD/HCD kickoff + threat model
     design-import/    ← design-to-code via Google Stitch MCP
     ship-task/        ← autonomous orchestrator
     planner/          ← roadmap task creation
     start-task/       ← DoR validation + branch
     coder/            ← implementation
+    locate/           ← read-only change-set scout (cheap; runs before coder)
     test-writer/      ← TDD (RED + GREEN modes)
     schema-agent/     ← migrations
     ux-review/        ← UI review
