@@ -107,11 +107,11 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 | Step | Skill | Run when |
 |---|---|---|
 | −1 | `/discovery` | Requirements are unclear — interviews the user, writes a product brief, then feeds `/planner` |
-| 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists) |
+| 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists; runs `/locate` on change-type tasks to scope impact and save a reusable change-set) |
 | 1 | `/start-task <ID>` | Always — validates DoR, sets `.current-task`, creates branch |
 | 2 | `/schema-agent` | Schema impact = `Migration` |
 | 3 | `/test-writer` (RED) | Always — writes tests from criteria, confirms they fail |
-| 3b | `/locate` | Non-trivial change — scouts the minimal change-set (files, line ranges, call path) so `/coder` edits surgically; skip when the target is obvious |
+| 3b | `/locate` | Non-trivial change — scouts the minimal change-set (files, line ranges, call path) so `/coder` edits surgically; refines the planning change-set if the task has one; skip when the target is obvious |
 | 4 | `/coder` | Always — implements until RED tests pass (starting from the scout's change-set) |
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
@@ -177,12 +177,12 @@ Skills are slash commands in `.claude/skills/`.
 | `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a product brief that feeds `/planner` |
 | `ship-task` | Autonomous orchestrator — chains all pipeline agents with skip logic, ships to a PR |
 | `sprint-start` | Sprint kickoff — verify all planned tasks satisfy DoR |
-| `planner` | Write a new task in the roadmap using the full template |
+| `planner` | Write a new task in the roadmap using the full template (runs `/locate` on change-type tasks to scope impact + save a reusable change-set) |
 | `start-task` | Validate DoR, write `.current-task`, create feature branch |
 | `schema-agent` | Design and apply schema migrations |
 | `coder` | Implement a task — frontend + backend |
 | `test-writer` | Write Vitest unit tests + E2E specs (RED and GREEN modes) |
-| `locate` | Read-only change-set scout — finds the minimal files/line ranges and call path to touch before `/coder` (cheap, runs on Haiku) |
+| `locate` | Read-only change-set scout — used twice: coarse at planning (by `/planner`, impact + saved change-set) and precise before `/coder` (exact files/line ranges, call path). Cheap, runs on Haiku |
 | `ux-review` | Review edited UI — visual harmony, conventions, accessibility |
 | `perf-review` | Audit ORM queries — N+1, pagination, over-fetching (static) |
 | `perf-measure` | Measure performance — bundle budget, Web Vitals, query EXPLAIN |

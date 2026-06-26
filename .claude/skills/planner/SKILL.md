@@ -16,6 +16,7 @@ The Planner is the only agent authorised to write or modify task definitions in 
 ✅ CAN read    : all project files (for context)
 ✅ CAN write   : `docs/ROADMAP.md` only
 ✅ CAN run     : read-only git commands (`git log`, `git branch`)
+✅ CAN delegate: `/locate` (read-only scout) to scope impact for change-type tasks
 ❌ CANNOT      : write to source directories, test directories, schema files, or `.claude/`
 ❌ CANNOT      : mark tasks `[x]` (reserved for the agent that satisfies the DoD)
 ❌ CANNOT      : delete tasks (soft-archive only: add `[CANCELLED]` + reason)
@@ -39,6 +40,7 @@ Before asking the user anything, gather context autonomously:
 1. **Read `docs/ROADMAP.md`** — identify the current sprint, next available task ID, open dependencies, and whether a similar task already exists under a different name.
    - If [`PRODUCT.md`](../../../PRODUCT.md) exists, read its goals and **non-goals** — verify the task advances a stated goal and violates no non-goal. If it contradicts a non-goal, stop and raise it with the user before writing the task.
 2. **Read the affected source files** — if the user's request mentions a page, feature, or module, read it to determine: which source paths are involved, whether a schema change is needed, which API routes exist or would need to be created.
+   - **For change-type tasks** (the task modifies *existing* behaviour — a tweak, fix, or improvement), run `/locate` to scope the impact precisely. Use its **coarse** output (target areas, call path, ripples) to fill **Components**, **API**, **Schema impact**, **Risk**, and the **Code tasks** breakdown accurately, and record it in the task's **Change-set (locate)** field so `/coder` reuses it instead of re-discovering the structure. **Skip `/locate` for greenfield tasks** (new feature, little existing code to locate) — set the field to `N/A — greenfield`. Planning needs *breadth* (what it touches, how risky); leave the *precise line ranges* to the implementation-time scout.
 3. **Infer all fields you can** — domain, sprint, components, API routes, schema impact, risk level, code tasks. Most of these are determinable from the codebase without asking.
 4. **Draft the full task block** with your best inference for every field.
 5. **Ask only for fields you cannot determine** — typically acceptance criteria (requires business intent) and occasionally risk level or wireframe. Phrase as one grouped message with specific, closed questions, not an open checklist.
@@ -81,6 +83,7 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Schema impact** | `Migration — [detail]` or `None` |
 | **Components** | Affected source paths |
 | **API** | Routes to create or modify |
+| **Change-set (locate)** | Change-type tasks: coarse `/locate` output (target areas · call path · ripples) for `/coder` to reuse. Greenfield: `N/A — greenfield` |
 | **Code tasks** | Ordered list of implementation sub-tasks |
 | **Unit tests** | File + cases to cover |
 | **E2E tests** | Scenarios + screenshot path |

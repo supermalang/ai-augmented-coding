@@ -245,6 +245,8 @@ const locateResult = await agent(
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Scope the implementation change-set for this task: the minimal files to edit (with line ranges), ' +
   'the call path from entry point to change point, files to read for context, the edit order, and any ripples. ' +
+  'If the task block above has a "Change-set (locate)" field from planning (and it is not "N/A — greenfield"), ' +
+  'verify and REFINE it to precise line ranges rather than rebuilding from scratch. ' +
   'Do NOT edit anything — you are a scout.\n' +
   'Return: targets, callPath, readForContext, editOrder, ripples.',
   { schema: LOCATE_SCHEMA, phase: 'Implement', label: 'locate', agentType: 'locate' }

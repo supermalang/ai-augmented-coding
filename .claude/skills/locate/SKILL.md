@@ -46,6 +46,10 @@ Skip it for changes you can already pinpoint (you just edited the file) — it's
 
 ## Step-by-step
 
+### 0 — Reuse a prior change-set if one exists
+
+If the active task block in `docs/ROADMAP.md` already has a **Change-set (locate)** field from planning (or the prompt hands you one), start from it: **verify and refine** it to precise file + line ranges rather than rebuilding from scratch. Planning produces a *coarse* change-set (target areas, call path, ripples); your job at implementation time is to sharpen it. If it's `N/A — greenfield` or absent, scope from scratch.
+
 ### 1 — Anchor on the code map
 
 If `docs/ARCHITECTURE.md` has a code map, match the request to a module row first — that gives you
