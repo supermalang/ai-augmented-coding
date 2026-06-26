@@ -2,8 +2,9 @@
 
 This file provides guidance to Claude Code when working with code in this repository.
 
-> **Setup:** fill in the sections marked `[CONFIGURE]` before using the pipeline.
-> All agents also read `.claude/context.md` — fill that in first.
+> **Setup:** run `/setup` first — it detects your stack, interviews for the gaps, and fills the
+> sections marked `[CONFIGURE]` here plus `.claude/context.md`, `stack-profile.sh`, and the
+> coverage config. (Or fill them by hand; all agents read `.claude/context.md`, so do that first.)
 > Vision, design, and deep architecture live in optional Tier-2 docs that fill in as you build —
 > see [Project knowledge — two tiers](#project-knowledge--two-tiers).
 
@@ -195,6 +196,7 @@ Skills are slash commands in `.claude/skills/`.
 
 | Skill | When to use |
 |---|---|
+| `setup` | **First run after adopting the template** — the technical counterpart to `/discovery`. Detects the stack, interviews for the gaps, and fills the operational config (`.claude/context.md`, the `[CONFIGURE]` blocks in this file, `stack-profile.sh`, `package.json` scripts, coverage config). Defines the stack; does not scaffold the app |
 | `commit` | Conventional Commits-compliant commit |
 | `refactor` | Behaviour-preserving structural cleanup, guarded by green tests |
 | `debugger` | Reproduce, root-cause, and minimally fix a bug |

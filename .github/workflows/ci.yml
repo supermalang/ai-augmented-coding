@@ -45,7 +45,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Runs tests with coverage. Fails if thresholds in vitest.config.ts are not met.
+      # Runs tests with coverage. Fails if the thresholds defined in the project's coverage config are not met.
       - name: Tests + coverage
         run: npm run test:coverage
 
