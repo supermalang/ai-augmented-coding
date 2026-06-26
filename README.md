@@ -9,6 +9,7 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
 - **Coverage enforcement** — Vitest thresholds fail CI if coverage drops
 - **Layered project knowledge** — a two-tier doc model keeps the every-run context lean while vision (`PRODUCT.md`), design (`DESIGN.md`), and architecture (`docs/ARCHITECTURE.md`) grow on demand as the pipeline builds
+- **Fast, cheap navigation** — a maintained code map plus a read-only `/locate` scout (on Haiku) find the minimal change-set before the expensive coder runs, so changes are surgical and tokens go to the edit, not re-discovering the codebase
 
 ---
 
@@ -133,6 +134,8 @@ Human touchpoints: DoR failure → fix the roadmap. Tests still failing after au
 
 Or just describe what you want — if no matching task exists in the roadmap, `/planner` is invoked automatically.
 
+For **change-type tasks** (modifying existing behaviour), `/planner` runs `/locate` to scope the impact — filling Components/API/Schema-impact/Risk accurately — and saves a coarse **change-set** in the task. `/coder` later refines that to exact line ranges instead of re-discovering the codebase, so navigation is paid for once. Greenfield tasks skip it.
+
 ### Check roadmap progress
 
 ```
@@ -190,7 +193,7 @@ Audits all planned tasks for DoR before the sprint begins.
     planner/          ← roadmap task creation
     start-task/       ← DoR validation + branch
     coder/            ← implementation
-    locate/           ← read-only change-set scout (cheap; runs before coder)
+    locate/           ← read-only change-set scout (coarse at planning, precise before coder; cheap, Haiku)
     test-writer/      ← TDD (RED + GREEN modes)
     schema-agent/     ← migrations
     ux-review/        ← UI review
