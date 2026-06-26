@@ -206,6 +206,7 @@ Skills are slash commands in `.claude/skills/`.
 | `webapp-testing` | Drive the running app in a browser — live screenshots, DOM, console logs (throwaway, not E2E) |
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
+| `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and can emit a modern PDF deck and an editable PowerPoint (Pandoc + headless Chrome, zero extra deps). Read-only on code |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |
