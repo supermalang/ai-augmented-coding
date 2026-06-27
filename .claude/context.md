@@ -96,6 +96,8 @@ Exact values used by `/report` to brand PDF decks and PowerPoint exports. The *f
 - **Logo:** [path, e.g. `assets/brand/logo.svg`]
 - **Brand colors:** [primary `#......` · accent `#......` · ink/text `#......` · surface `#......`]
 - **Deck fonts:** [heading font · body font — names that exist on the render machine or are embedded]
+- **Default deck style:** [`classical` | `notebooklm` | `sketch` | `illustrated`]
+- **Image generation (for `illustrated` style only):** [provider + model, e.g. `kie.ai` / `nano-banana`] · API key env var: [e.g. `KIE_API_KEY`] — *key lives in env, never committed*
 
 ---
 

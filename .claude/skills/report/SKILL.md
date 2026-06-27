@@ -1,6 +1,6 @@
 ---
 name: report
-description: Progress-report generator for status/sprint-review meetings. Reads the roadmap, recent git history, and PRODUCT.md, then writes a branded, stakeholder-readable progress report to docs/reports/<date>.md — and can emit it as a modern PDF deck and an editable PowerPoint (.pptx), both from the same source, with zero extra dependencies (Pandoc + headless Chrome, already on the machine). Read-only on code. Run before a standup, sprint review, or steering update.
+description: Progress-report generator for status/sprint-review meetings. Reads the roadmap, recent git history, and PRODUCT.md, then writes a branded, stakeholder-readable progress report to docs/reports/<date>.md — and can emit it as a deck in several styles (classical editable PPTX/PDF, notebooklm clean-minimal, sketch hand-drawn diagrams, or illustrated full image-slides via an image model). Default styles need zero extra dependencies (Pandoc + headless Chrome, already on the machine); illustrated is opt-in and uses a configurable image API. Read-only on code. Run before a standup, sprint review, or steering update.
 ---
 
 # /report — Progress Report & Deck Generator
@@ -36,6 +36,7 @@ from the markdown + the brand theme, never hand-edited, never committed.
 /report sprint-3              # A specific sprint
 /report --since 2026-06-01    # Custom period
 /report --emit pdf,pptx       # Also generate the deck files (default: markdown only)
+/report --style notebooklm    # Pick a presentation style (default from context.md, else classical)
 ```
 
 ---
@@ -100,10 +101,19 @@ Keep it honest and tight — a report that hides a slip is worse than no report.
 
 ### 3 — (Optional) Emit the deck — only on `--emit`
 
-Both paths are **zero extra dependency** — Pandoc and headless Chrome are already available. Both
-produce **editable / vector** output (not images), branded from the project's tokens.
+The **content markdown is the single source**; a `--style` only changes *how* it is rendered. Pick the
+style, then run its renderer. Default is `classical`.
 
-**Editable PowerPoint — Pandoc native pptx writer:**
+| `--style` | Renderer | Dependency | Output |
+|---|---|---|---|
+| `classical` *(default)* | Pandoc pptx + branded HTML/PDF | none (Pandoc + Chrome) | editable PPTX · vector PDF |
+| `notebooklm` | HTML deck theme (clean minimal) | none | vector PDF (+ pptx) |
+| `sketch` | Mermaid `look: handDrawn` / Excalidraw | none | vector, hand-drawn diagrams |
+| `illustrated` | image model (see §3b) | external API + key | art-directed image slides |
+
+**`classical` / `notebooklm` — zero extra dependency**, editable/vector, branded from the project tokens.
+
+*Editable PowerPoint — Pandoc native pptx writer:*
 
 ```bash
 pandoc docs/reports/<date>-<scope>.md \
@@ -115,15 +125,40 @@ pandoc docs/reports/<date>-<scope>.md \
 content stays editable text/placeholders. (`#` → section slide, `##` → content slide, tables/bullets
 map to placeholders.)
 
-**Modern PDF deck — HTML + headless Chrome:**
+*Modern PDF deck — HTML + headless Chrome:*
 
-1. Render the report into the HTML deck theme at `.claude/reporting/deck.html` — a self-contained,
-   modern slide layout whose CSS variables are bound to the brand tokens from `.claude/context.md`.
-   Use the `artifact-design` skill's principles for the layout so it looks intentional, not templated.
+1. Render the report into the chosen HTML deck theme under `.claude/reporting/styles/<style>/deck.html`
+   — self-contained, CSS variables bound to the brand tokens in `.claude/context.md`. Use the
+   `artifact-design` skill's principles so it looks intentional, not templated.
 2. Print to PDF with the project's existing Playwright/Chromium (the `webapp-testing` setup):
    `page.pdf({ path: 'out/reports/<date>.pdf', printBackground: true, landscape: true })`.
 
-This yields a vector, real-text PDF — beautiful and not image-based.
+Yields a vector, real-text PDF.
+
+**`sketch` — hand-drawn, but accurate.** Diagrams are defined as text (Mermaid `%%{init: {'look':
+'handDrawn'}}%%` or an Excalidraw scene) and rendered deterministically. The hand-drawn *look* without
+an image model — so topology stays correct and the diagram is version-controlled.
+
+### 3b — `illustrated` style: full image-slide decks (opt-in, external API)
+
+Renders every slide as a generated image for a fully art-directed look. This is the one renderer that
+leaves the self-contained/zero-dependency envelope, so it is **opt-in and guarded**:
+
+- **Correctness guard (non-negotiable):** any slide carrying a system/architecture/data diagram is
+  **rendered first** (`sketch` path → PNG), then passed to the image model **as a reference for
+  image-to-image restyling** — never generated from a text prompt. This preserves real boxes, arrows,
+  and labels while applying the art style. Cover, section, and narrative slides may generate freely
+  from prompts. **Never let the model invent an information-bearing diagram.**
+- **Provider is configuration, not hardcoded** — read the image provider + model from
+  `.claude/context.md` → *Reporting → Image generation* (e.g. `kie.ai` / `nano-banana`). Swappable; no
+  vendor baked into the skill.
+- **Secret handling** — the API key comes from an **environment variable** named in `context.md`,
+  never written to a file or committed (respects the `guard-secret-scan` hook).
+- **Generated images are committed deliverables** — image generation is non-deterministic, so the
+  chosen images are saved under `docs/reports/assets/<date>/` and committed (the deck cannot be
+  reproduced otherwise). They do **not** go in gitignored `out/`.
+- **Cost is visible** — log the number of image-generation calls before running; warn if a deck would
+  exceed a sensible per-report image budget so a 30-call deck is a conscious choice, not a surprise.
 
 ### 4 — First-run setup of the brand assets (one time)
 
@@ -133,15 +168,18 @@ If `.claude/reporting/` is missing, scaffold it without any install:
    `pandoc -o .claude/reporting/brand-reference.pptx --print-default-data-file reference.pptx`,
    then patch `ppt/theme/theme1.xml` (palette + fonts) and the slide master (logo) to the tokens in
    `.claude/context.md`. No libraries — standard zip tooling.
-2. **HTML deck theme** — write `.claude/reporting/deck.html` with brand CSS variables.
-3. Ensure `out/` is gitignored (binaries are artifacts, not source).
+2. **Style themes** — write `.claude/reporting/styles/<style>/deck.html` per style (`classical`,
+   `notebooklm`, …), each with brand CSS variables. Add new styles by adding a folder here.
+3. Ensure `out/` is gitignored (rebuildable binaries). Note `docs/reports/assets/` is **not** ignored
+   — `illustrated` images are committed deliverables.
 
 ### 5 — Report back
 
 ```
 ✅ Report written : docs/reports/<date>-<scope>.md
 📊 Period         : <start> → <today>  ·  done <n> · in-progress <n> · blocked <n>
-🎨 Emitted        : <pdf / pptx / none>  (out/reports/, gitignored)
+🎨 Style / emitted : <style> → <pdf / pptx / none>  (out/reports/, gitignored)
+🖼️  Images          : <n generated, docs/reports/assets/, committed>  (illustrated only)
 ➡️  Next           : review, then present
 ```
 
@@ -152,6 +190,9 @@ If `.claude/reporting/` is missing, scaffold it without any install:
 - Does not change the roadmap, mark tasks done, or touch code — it reports, the pipeline delivers.
 - Does not invent or inflate progress — every line traces to the roadmap or git history.
 - Does not commit PDF/PPTX — those are gitignored build artifacts, regenerated from the markdown.
-- Does not install Python or extra libraries — Pandoc (pptx/pdf) and headless Chrome are enough.
+- Does not install Python or extra libraries for the default styles — Pandoc (pptx/pdf) and headless
+  Chrome are enough. Only the opt-in `illustrated` style reaches an external image API.
+- Does not let an image model invent information-bearing diagrams — those are rendered first, then
+  restyled (see §3b).
 - Does not redefine brand values — it reads tokens from `.claude/context.md` and feel from `DESIGN.md`.
 ```
