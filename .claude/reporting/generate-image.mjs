@@ -19,10 +19,11 @@
 //
 // Docs: https://docs.kie.ai/market/google/nano-banana · /nano-banana-edit · /market/common/get-task-detail
 
-import { writeFile, mkdir } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { writeFile, mkdir, readFile } from 'node:fs/promises'
+import { basename, dirname } from 'node:path'
 
 const BASE = process.env.KIE_BASE_URL ?? 'https://api.kie.ai'
+const UPLOAD_URL = process.env.KIE_UPLOAD_URL ?? `${BASE}/api/file-base64-upload`
 const KEY = process.env.KIE_API_KEY
 const MODEL_T2I = process.env.KIE_MODEL_T2I ?? 'google/nano-banana'
 const MODEL_I2I = process.env.KIE_MODEL_I2I ?? 'google/nano-banana-edit'
@@ -34,7 +35,8 @@ function arg(name, fallback = undefined) {
 
 const prompt = arg('prompt')
 const out = arg('out')
-const imageUrl = arg('image-url')        // optional → triggers image-to-image restyle
+let imageUrl = arg('image-url')          // already-hosted reference → triggers image-to-image restyle
+const imageFile = arg('image-file')      // local reference PNG → uploaded first, then restyled
 const aspect = arg('aspect', '16:9')      // slide default
 const format = arg('format', 'png')
 const timeoutMs = Number(arg('timeout', '180000'))
@@ -48,11 +50,21 @@ if (!out) die('--out <path> is required.')
 
 const headers = { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 
-const model = imageUrl ? MODEL_I2I : MODEL_T2I
-const input = { prompt, output_format: format, aspect_ratio: aspect }
-if (imageUrl) input.image_urls = [imageUrl]
+// Upload a local reference PNG and return its public URL, so nano-banana-edit can restyle it.
+async function uploadLocal(path) {
+  const data = await readFile(path).catch(() => die(`Cannot read --image-file ${path}`))
+  const body = { base64Data: data.toString('base64'), uploadPath: 'report-refs', fileName: basename(path) }
+  const res = await fetch(UPLOAD_URL, { method: 'POST', headers, body: JSON.stringify(body) })
+  const json = await res.json().catch(() => ({}))
+  const url = json.data?.downloadUrl
+  if (!res.ok || !url) die(`Reference upload failed (${res.status}): ${json.msg ?? JSON.stringify(json)}`)
+  return url
+}
 
 async function createTask() {
+  const model = imageUrl ? MODEL_I2I : MODEL_T2I
+  const input = { prompt, output_format: format, aspect_ratio: aspect }
+  if (imageUrl) input.image_urls = [imageUrl]
   const res = await fetch(`${BASE}/api/v1/jobs/createTask`, {
     method: 'POST', headers, body: JSON.stringify({ model, input }),
   })
@@ -92,7 +104,11 @@ async function download(url, path) {
   await writeFile(path, buf)
 }
 
-console.error(`→ ${imageUrl ? 'restyling (image-to-image)' : 'generating (text-to-image)'} via ${model}`)
+if (imageFile && !imageUrl) {
+  console.error(`↑ uploading reference ${imageFile}`)
+  imageUrl = await uploadLocal(imageFile)
+}
+console.error(`→ ${imageUrl ? `restyling (image-to-image) via ${MODEL_I2I}` : `generating (text-to-image) via ${MODEL_T2I}`}`)
 const taskId = await createTask()
 const url = await poll(taskId)
 await download(url, out)

@@ -150,18 +150,20 @@ leaves the self-contained/zero-dependency envelope, so it is **opt-in and guarde
   and labels while applying the art style. Cover, section, and narrative slides may generate freely
   from prompts. **Never let the model invent an information-bearing diagram.**
 - **Generator** — call `node .claude/reporting/generate-image.mjs --prompt "…" --out <path>` for a
-  cover/narrative slide, and add `--image-url <hosted-png>` to **restyle** a pre-rendered diagram
-  (image-to-image). Zero dependencies (Node 18+ built-in `fetch`). It creates a kie.ai job
-  (`POST /api/v1/jobs/createTask`), polls `GET /api/v1/jobs/recordInfo?taskId=…` until `state:success`,
-  parses `resultJson.resultUrls[0]`, and downloads it.
+  cover/narrative slide, and add `--image-file <local-png>` to **restyle** a pre-rendered diagram
+  (the script uploads it via `POST /api/file-base64-upload`, then runs image-to-image). Use
+  `--image-url <hosted-png>` instead if the reference is already hosted. Zero dependencies (Node 18+
+  built-in `fetch`). It creates a kie.ai job (`POST /api/v1/jobs/createTask`), polls
+  `GET /api/v1/jobs/recordInfo?taskId=…` until `state:success`, parses `resultJson.resultUrls[0]`,
+  and downloads it.
 - **Provider is configuration, not hardcoded** — base URL and model come from env
   (`KIE_BASE_URL`, `KIE_MODEL_T2I`, `KIE_MODEL_I2I`), defaulting to kie.ai / `google/nano-banana`(`-edit`).
   Named in `.claude/context.md` → *Brand assets → Image generation*. Swappable; no vendor baked in.
 - **Secret handling** — the API key is read from the `KIE_API_KEY` **environment variable**, never
   written to a file or committed (respects the `guard-secret-scan` hook).
-- **Restyling needs a hosted reference** — `nano-banana-edit` takes `image_urls`, so a locally
-  rendered diagram PNG must first be uploaded to a URL the API can reach (use your configured upload/
-  asset host); pass that URL as `--image-url`.
+- **Local diagram restyle is automatic** — `--image-file` uploads the local PNG to the kie.ai file
+  host (`KIE_UPLOAD_URL`, returns a temporary public `downloadUrl`) and feeds it to `nano-banana-edit`.
+  No manual hosting step.
 - **Generated images are committed deliverables** — image generation is non-deterministic, so the
   chosen images are saved under `docs/reports/assets/<date>/` and committed (the deck cannot be
   reproduced otherwise). They do **not** go in gitignored `out/`.
