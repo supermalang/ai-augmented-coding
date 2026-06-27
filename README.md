@@ -7,7 +7,7 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 - **Structured review gates** — security, UX, performance, and QA reviews run in parallel; any blocker stops the pipeline before the PR opens
 - **Least-privilege agents** — every pipeline role runs as a tool-scoped agent (auditors can't edit code, only the PR agent can push) and is right-sized to a model
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
-- **Coverage enforcement** — Vitest thresholds fail CI if coverage drops
+- **Coverage enforcement** — configurable coverage thresholds fail CI if coverage drops
 - **Layered project knowledge** — a two-tier doc model keeps the every-run context lean while vision (`PRODUCT.md`), design (`DESIGN.md`), and architecture (`docs/ARCHITECTURE.md`) grow on demand as the pipeline builds
 
 ---
@@ -19,8 +19,8 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 The fastest path from zero to your first agent-built PR:
 
 1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-5-minutes) below).
-2. **Configure two files** — fill in `.claude/context.md` (commands, stack, absolute rules, isolation key) and the `[CONFIGURE]` blocks in `CLAUDE.md`. **This is the engine — nothing works until these are filled in;** every agent reads them on each run. That's all you *must* fill in: the optional vision/design/architecture docs ([two tiers](#project-knowledge--two-tiers)) fill in as you build.
-3. **Non-JS stack?** — override `.claude/hooks/stack-profile.sh` for your stack (one file; Laravel/Django/FastAPI examples included). On the default React/Next/Prisma stack, skip this. See [Adapting to another stack](#adapting-to-another-stack).
+2. **Run `/setup`** — the technical kickoff (counterpart to `/discovery`). It detects your stack from the repo, interviews you for the gaps, and fills the operational config: `.claude/context.md`, the `[CONFIGURE]` blocks in `CLAUDE.md`, `.claude/hooks/stack-profile.sh`, the `package.json` scripts, and the coverage config. **This is the engine — nothing works until it's configured;** every agent reads `context.md` on each run. It defines the stack, it doesn't scaffold the app. (Prefer to do it by hand? The same steps are spelled out in [Setup](#setup-5-minutes).) The optional vision/design/architecture docs ([two tiers](#project-knowledge--two-tiers)) fill in later as you build.
+3. **Non-JS stack?** — `/setup` retargets `.claude/hooks/stack-profile.sh` for you (one file; Laravel/Django/FastAPI examples included). On the default React/Next/Prisma stack there's nothing to change. See [Adapting to another stack](#adapting-to-another-stack).
 4. **Seed the roadmap** — add one task to `docs/ROADMAP.md`, or let `/planner` write it.
 5. **Build it** — in Claude Code:
 
@@ -59,6 +59,10 @@ cp temp-template/docs/ARCHITECTURE.md your-project/docs/
 cp temp-template/.gitignore your-project/  # merge, don't overwrite
 rm -rf temp-template
 ```
+
+> **The fast path is `/setup`** — running it in Claude Code does steps 2–5 below for you (detects the
+> stack, interviews for the gaps, writes the config). The manual steps that follow document *what it
+> fills in*, for when you'd rather configure by hand or review what changed.
 
 ### 2. Fill in `.claude/context.md`
 

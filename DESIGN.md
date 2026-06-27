@@ -38,6 +38,20 @@
 
 - [Baseline commitment — e.g. "WCAG 2.1 AA on every shipped screen; color is never the sole signal."]
 
+## Reporting & decks (the look of `/report` output)
+
+How progress reports, PDF decks, and PowerPoint exports should *feel* — applied by `/report` via the
+brand theme. Intent only; exact values live in `.claude/context.md`.
+
+- **Tone:** [e.g. "executive-clean — calm, confident, uncluttered; one idea per slide"]
+- **Cover & section style:** [e.g. "full-bleed brand color cover, logo top-left, generous margins"]
+- **Data presentation:** [e.g. "tables over dense paragraphs; one chart per slide, never a wall of metrics"]
+- **Restraint:** [e.g. "brand accent for emphasis only; no clip-art, no gradients-for-decoration"]
+
+> Logo path, brand palette (hex), and deck fonts are exact values — defined **once** in
+> `.claude/context.md` under *UI conventions → Brand assets*, and read by `/report` at emit time.
+> The theme files live in `.claude/reporting/` (HTML deck + branded PPTX reference).
+
 ---
 
 ## Screen specs (index)
