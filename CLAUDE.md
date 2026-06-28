@@ -207,6 +207,9 @@ Skills are slash commands in `.claude/skills/`.
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
 | `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and can emit a modern PDF deck and an editable PowerPoint (Pandoc + headless Chrome, zero extra deps). Read-only on code |
+| `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
+| `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
+| `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |

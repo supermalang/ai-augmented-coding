@@ -80,6 +80,22 @@ Repeat until the **Definition of Clear** (below) is satisfied. Cover, across the
 
 Stop asking as soon as the picture is clear. Don't pad the interview — quality of understanding, not number of questions, is the goal. If the user says "you decide" or "use your judgement," record a stated assumption and move on rather than pressing.
 
+### 3a — Ideate (diverge before you converge)
+
+Do **not** jump from problem to a single solution — that's how the obvious-but-wrong answer gets built.
+Once the problem, user, and job-to-be-done are clear, deliberately generate **2–3 distinct solution
+concepts** that each address the pain differently (e.g. automate it · remove the step · surface it
+earlier · change who does it). Sketch each in a sentence or two.
+
+Then **converge**: score the concepts against the goals, constraints, non-functional needs, and rough
+feasibility/risk, and pick one — recording *why* it won and *why the others didn't*. If the user already
+has a fixed solution in mind, still name one or two alternatives and the reason the chosen one is better;
+a one-option "decision" isn't a decision. Capture this in the brief's **Options considered** section so
+the rationale survives, and feed the winner into the Solution overview.
+
+For a genuinely simple or pre-decided request, keep this light — two lines naming the alternative you
+ruled out is enough; don't manufacture options theatre.
+
 ### 3b — Threat model (shift security left)
 
 Before the brief is final, do a lightweight threat pass — security is far cheaper to design in than to review out later. For the proposed solution, identify:
@@ -102,6 +118,7 @@ Do not write the brief until every item holds:
 - [ ] At least one measurable success metric exists
 - [ ] Key constraints and non-functional requirements are captured
 - [ ] Major assumptions and risks are listed
+- [ ] At least two solution concepts were considered and the choice is justified (Options considered)
 - [ ] The solution is sliced into at least one INVEST-shaped user story with testable acceptance criteria
 
 If any item is unmet → return to step 3 and ask. State which items are still open so the user knows why you're continuing.
@@ -136,6 +153,12 @@ Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative
 
 ## 6. Solution overview
 <Plain-language description of the proposed solution, from the user's perspective.>
+
+### 6a. Options considered
+| Concept | How it addresses the pain | Why chosen / ruled out |
+|---|---|---|
+| <Option A — chosen> | … | ✅ <why it won> |
+| <Option B> | … | ✗ <why not> |
 
 ## 7. User stories (draft — for /planner)
 - **Story A** — As a <persona>, I want <action> so that <benefit>.
