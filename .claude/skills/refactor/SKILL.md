@@ -15,6 +15,7 @@ Improves the **internal structure** of code without changing its **observable be
 
 ✅ CAN read    : all project files
 ✅ CAN write   : source files (structural changes only — no behaviour change, no new features)
+✅ CAN write   : the **Code map (navigation)** table + dependency diagram in `docs/ARCHITECTURE.md` — only to reflect modules you moved/renamed/removed (keeps `/locate` accurate)
 ✅ CAN run     : lint · build · type-check · the test suite (read + execute)
 ❌ CANNOT      : change observable behaviour, public API contracts, or response shapes
 ❌ CANNOT      : modify test files — tests are the safety net and must stay unchanged (escalate to `/test-writer` if a test itself is wrong)
@@ -64,6 +65,15 @@ Use behaviour-preserving moves: extract function/variable, inline, rename, move,
 - No new feature, no new config, no changed default.
 - Follow the project's absolute rules and conventions in `.claude/context.md` (soft delete, isolation key, validation, etc.) — a refactor must not weaken them.
 
+### 4b — Keep the code map current (if you moved modules)
+
+Refactors are the **most common source of code-map drift** — moving, renaming, or removing a module
+silently invalidates the navigation map that `/locate` relies on. If your refactor added, moved,
+renamed, or deleted any module/file, update the **Code map (navigation)** table and dependency diagram
+in `docs/ARCHITECTURE.md` to match the new tree (or run `/docs` if the change is large). A pure in-file
+refactor (extract/inline/rename within one file) needs no map change. This is the only doc the refactor
+agent touches, and only to prevent the drift its own work causes.
+
 ### 5 — Verify
 
 - [ ] Full test suite green — same pass count as the baseline
@@ -71,6 +81,7 @@ Use behaviour-preserving moves: extract function/variable, inline, rename, move,
 - [ ] Build / type-check passes
 - [ ] No change in observable behaviour (same inputs → same outputs)
 - [ ] No test files modified
+- [ ] Code map updated if modules moved/renamed/removed (else `/locate` drifts)
 - [ ] Diff is smaller and clearer than what it replaced
 
 ### 6 — Handoff
@@ -79,6 +90,7 @@ Use behaviour-preserving moves: extract function/variable, inline, rename, move,
 ✅ Refactor complete — behaviour unchanged
 🧹 Smell addressed : <duplication / coupling / naming / …>
 🧪 Tests           : green (N/N, same as baseline)
+🗺️  Code map        : updated / not needed (no module moved)
 📄 Files touched   : <list>
 ➡️  Next step       : /commit  (or /pr-reviewer if part of a task)
 ```

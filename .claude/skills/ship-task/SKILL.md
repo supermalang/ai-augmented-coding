@@ -126,10 +126,11 @@ const CODER_RESULT_SCHEMA = {
   type: 'object',
   required: ['filesChanged', 'touchesUI', 'touchesPrisma'],
   properties: {
-    filesChanged:  { type: 'array', items: { type: 'string' } },
-    touchesUI:     { type: 'boolean' },
-    touchesPrisma: { type: 'boolean' },
-    summary:       { type: 'string' },
+    filesChanged:     { type: 'array', items: { type: 'string' } },
+    touchesUI:        { type: 'boolean' },
+    touchesPrisma:    { type: 'boolean' },
+    structuralChange: { type: 'boolean', description: 'true if any module/file was added, moved, renamed, or deleted (not just edited) — triggers a code-map refresh' },
+    summary:          { type: 'string' },
   },
 }
 
@@ -326,6 +327,7 @@ const coderResult = isFix
       'Reproduce, isolate the ROOT CAUSE, and apply the MINIMAL fix so the failing regression test(s) pass. ' +
       'Do NOT modify the test files — they are the contract. Do NOT add features or refactor unrelated code.\n' +
       'When done, report: which files you changed (array of paths), touchesUI (bool), touchesPrisma (bool), ' +
+      'structuralChange (bool — true if you added, moved, renamed, or deleted any file/module, not just edited), ' +
       'and a one-sentence summary of the fix and its root cause.',
       { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'debugger (fix)', agentType: 'debugger' }
     )
@@ -340,6 +342,7 @@ const coderResult = isFix
       'When done, report: which files you changed (array of paths), ' +
       'whether you touched UI source files (touchesUI bool), ' +
       'whether you touched database queries (touchesPrisma bool), ' +
+      'structuralChange (bool — true if you added, moved, renamed, or deleted any file/module, not just edited), ' +
       'and a one-sentence summary of what was implemented.',
       { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
     )
@@ -394,7 +397,7 @@ log('✅ GREEN phase: all tests passing' + (fixAttempts > 0 ? ' (after ' + fixAt
 // ── Phase: Documentation (conditional) ───────────────────────────────────
 // Update docs when the change touches an interface or user-facing surface.
 let docFiles = []
-if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI) {
+if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI || coderResult.structuralChange) {
   phase('Document')
   log('Running docs agent…')
   const docsResult = await agent(
@@ -402,6 +405,7 @@ if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI ||
     'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
     'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n\n' +
     'Update README, API reference, schema cheatsheet, and CHANGELOG to reflect these changes. ' +
+    (coderResult.structuralChange ? 'Modules were added/moved/renamed/removed — also refresh the Code map (navigation) table + dependency diagram in docs/ARCHITECTURE.md so /locate stays accurate. ' : '') +
     'Do NOT touch application logic, tests, schema definitions, or docs/ROADMAP.md.\n' +
     'If nothing user-facing or interface-facing changed, make no edits and return updated=false.\n' +
     'Report: docFiles (array of doc paths changed), updated (bool), and a one-sentence summary.',
