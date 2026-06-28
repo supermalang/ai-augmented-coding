@@ -11,7 +11,7 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 
 ✅ CAN read    : all project files · full git diff
 ✅ CAN write   : `docs/ROADMAP.md` (delivery fields only: commit, PR, date, `[x]`, sprint status table) — **gate mode only**
-✅ CAN run     : lint · tests · `git push` · `gh pr create` · `rm .current-task` — **gate mode only**
+✅ CAN run     : lint · tests · `git push` · open PR/MR via the **forge configured in `.claude/context.md`** (`gh pr create` or `glab mr create`) · `rm .current-task` — **gate mode only**
 ❌ CANNOT      : write to source files, tests, or schema files
 ❌ CANNOT      : fix bugs or add code (escalate to `/coder`)
 ❌ CANNOT      : open a PR if any DoD item is ❌
@@ -158,11 +158,17 @@ Update the **Global status** table at the top of the roadmap.
 
 Run `/commit` to create a clean commit in Conventional Commits format with staged files.
 
-### 6 — Open the PR
+### 6 — Open the PR / MR
+
+Read the **forge** and the **open-PR command** from `.claude/context.md` → *Version control & forge*.
+Use `gh` for GitHub or `glab` for GitLab — same body, same base/target branch. For unattended runs
+(batch `/ship-task open`, CI, cron), the token (`GH_TOKEN` / `GITLAB_TOKEN`) must already be in the
+environment so `git push` and the create command work without an interactive login.
 
 ```bash
 git push -u origin <branch>
 
+# GitHub (forge = github):
 gh pr create \
   --base <integration-branch> \
   --title "<type>(<scope>): <short description>" \
@@ -200,6 +206,10 @@ Verify the feature does what you actually need, not just what the criteria said.
 🤖 Agents: Planner · Schema · Coder · Test Writer · UX · QA · Security · Dep · PR Reviewer
 EOF
 )"
+
+# GitLab (forge = gitlab): same branch + body, MR instead of PR:
+#   glab mr create --target-branch <integration-branch> \
+#     --title "<type>(<scope>): <short description>" --description "<same body as above>"
 ```
 
 When generating the PR body, expand the first UAT checkbox into one unchecked box **per acceptance criterion** from the task block, so the human verifies each explicitly. Leave the entire **Human UAT** section unchecked — it is the reviewer's job, not the agent's.

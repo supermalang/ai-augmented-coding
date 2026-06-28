@@ -45,8 +45,10 @@ Copy this block when creating a new task via `/planner`.
 **Write date:** YYYY-MM-DD
 **Planned date:** YYYY-MM-DD
 **Completion date:** —
+**Type:** Feature | Fix  *(Fix = bug on already-shipped behaviour → orchestrator routes the build to `/debugger`)*
 **Risk:** Low | Medium | High
 **Priority:** P0 | P1 | P2  *(P0 = must ship this sprint / blocking · P1 = important, not blocking · P2 = nice to have)*
+**Dependencies:** <task IDs this blocks on, comma-separated> | None  *(batch `/ship-task open` skips a task until every dependency is delivered `[x]`)*
 
 **Description**
 One paragraph — what this task does, not how.

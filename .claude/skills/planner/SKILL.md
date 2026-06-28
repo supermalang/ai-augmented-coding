@@ -76,8 +76,10 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Write date** | Today |
 | **Planned date** | Estimated from sprint cadence (typically 1–2 weeks after write date) |
 | **Completion date** | `—` (filled at delivery) |
+| **Type** | `Feature` (new behaviour) or `Fix` (bug on already-shipped behaviour). `Fix` tasks make the orchestrator route the build to `/debugger` (root-cause + minimal fix) instead of `/coder`. For a `Fix`, frame acceptance criteria as the regression contract: *given <repro>, when <action>, then <correct behaviour>* + *existing behaviour X unaffected* |
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
 | **Priority** | `P0` must ship this sprint / blocks other work or core value · `P1` important, not blocking · `P2` nice to have. Sequencing aid for sprint selection — *not* a DoR gate; infer from the request, ask only if genuinely ambiguous |
+| **Dependencies** | Task IDs this work blocks on (comma-separated) or `None`. Required by DoR. The batch orchestrator (`/ship-task open`) skips a task until every dependency is delivered `[x]`, so name them precisely |
 | **Description** | What the task does, not how |
 | **User value** | Format: *As a [persona], I want [action] so that [benefit].* [PROJECT CONVENTION — see .claude/context.md for valid personas] |
 | **Acceptance criteria** | At least 3 concrete and verifiable criteria. Lead with nominal cases, then edge cases |

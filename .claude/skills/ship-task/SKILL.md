@@ -1,6 +1,6 @@
 ---
 name: ship-task
-description: Autonomous end-to-end pipeline that ships a roadmap task to a PR. Validates DoR, creates branch, runs schema/coder/test-writer/docs/reviews/PR agents in the correct order with automatic skip logic. Human touchpoints only on DoR failure, test failure, and final PR URL. Usage: /ship-task <TASK-ID> (e.g. /ship-task 10.3).
+description: Autonomous end-to-end pipeline that ships a roadmap task to a PR. Validates DoR, creates branch, runs schema/coder(or debugger for Fix tasks)/test-writer/docs/reviews/PR agents in the correct order with automatic skip logic. Ships one task by ID, or batches the whole ready backlog with `/ship-task open` (dependency-gated, priority-ordered). Human touchpoints only on DoR failure, test failure, and final PR URL. Usage: /ship-task <TASK-ID> (e.g. /ship-task 10.3) or /ship-task open.
 ---
 
 # ship-task — Autonomous Task Pipeline
@@ -21,10 +21,15 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ## How to use
 
 ```
-/ship-task 10.3
+/ship-task 10.3        # ship one task by ID
+/ship-task open        # batch: ship every open, DoR-ready task whose dependencies are delivered
 ```
 
-The task ID must match an entry in `docs/ROADMAP.md`. If the task does not exist, stop and tell the user to run `/planner` first.
+**Single task** — the ID must match an entry in `docs/ROADMAP.md`. If it does not exist, stop and tell the user to run `/planner` first.
+
+**Batch (`open` / `all` / no ID)** — reads the roadmap and drains the ready backlog: each open task that satisfies the DoR **and** whose `Dependencies` are all delivered (`[x]`), ordered `P0 → P1 → P2` then by ID. It ships each through the same pipeline, **continues past** any task that blocks, and returns a summary (shipped / blocked / skipped-not-ready / waiting-on-deps). A task shipped in the run is *not* counted as a satisfied dependency — its PR is open but unmerged — so dependents are picked up on the next run after you merge.
+
+**Type routing** — a task with `Type: Fix` routes the build step to `/debugger` (reproduce → root cause → minimal fix) instead of `/coder`; both get the RED regression test and the locate change-set. `Feature` (or absent) uses `/coder`.
 
 ---
 
@@ -62,8 +67,9 @@ When this skill is invoked with `/ship-task <TASK-ID>`, call the Workflow tool i
 ```js
 export const meta = {
   name: 'ship-task',
-  description: 'Autonomous end-to-end pipeline that ships a roadmap task to a PR',
+  description: 'Autonomous pipeline that ships a roadmap task to a PR — one task by ID, or the whole ready backlog with "open"',
   phases: [
+    { title: 'Backlog' },
     { title: 'Validate' },
     { title: 'Setup' },
     { title: 'Schema' },
@@ -75,20 +81,44 @@ export const meta = {
   ],
 }
 
-const TASK_ID = args
-if (!TASK_ID) return { status: 'error', reason: 'No task ID provided. Usage: /ship-task <ID>' }
+// Schemas first (shared by single-task and batch modes); shipOne() and the dispatcher follow them.
 
 const TASK_INFO_SCHEMA = {
   type: 'object',
-  required: ['taskBlock', 'taskTitle', 'impactSchema', 'touchesUI', 'touchesPrisma', 'dorMet', 'dorMissing'],
+  required: ['taskBlock', 'taskTitle', 'impactSchema', 'taskType', 'touchesUI', 'touchesPrisma', 'dorMet', 'dorMissing'],
   properties: {
     taskBlock:     { type: 'string' },
     taskTitle:     { type: 'string' },
     impactSchema:  { type: 'string', enum: ['Migration', 'None', 'To confirm'] },
+    taskType:      { type: 'string', enum: ['Fix', 'Feature'], description: '"Fix" routes the build to /debugger; "Feature" to /coder' },
+    dependencies:  { type: 'array', items: { type: 'string' }, description: 'task IDs this blocks on' },
     touchesUI:     { type: 'boolean' },
     touchesPrisma: { type: 'boolean' },
     dorMet:        { type: 'boolean' },
     dorMissing:    { type: 'array', items: { type: 'string' } },
+  },
+}
+
+const BACKLOG_SCHEMA = {
+  type: 'object',
+  required: ['tasks', 'doneIds'],
+  properties: {
+    doneIds: { type: 'array', items: { type: 'string' }, description: 'IDs of tasks already marked [x] / delivered' },
+    tasks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['id', 'dorMet'],
+        properties: {
+          id:           { type: 'string' },
+          title:        { type: 'string' },
+          taskType:     { type: 'string', enum: ['Fix', 'Feature'] },
+          priority:     { type: 'string' },
+          dependencies: { type: 'array', items: { type: 'string' } },
+          dorMet:       { type: 'boolean' },
+        },
+      },
+    },
   },
 }
 
@@ -156,6 +186,10 @@ const REVIEW_RESULT_SCHEMA = {
   },
 }
 
+// The full single-task pipeline as a function, so batch mode can loop it in-process
+// (no workflow nesting, no registry dependency). Returns a status object per task.
+async function shipOne(TASK_ID) {
+
 // ── Phase 0: Validate DoR ────────────────────────────────────────────────
 phase('Validate')
 log('Reading roadmap and validating DoR for task ' + TASK_ID + '…')
@@ -169,6 +203,8 @@ const taskInfo = await agent(
   '- impactSchema: the value after "Schema impact:" — return exactly "Migration", "None", or "To confirm"\n' +
   '- touchesUI: true if the task description mentions UI, page, form, modal, component, or paths that match the UI source directories defined in .claude/context.md\n' +
   '- touchesPrisma: true if the task description mentions schema, API route, database, or ORM queries\n' +
+  '- taskType: the value after "Type:" — return exactly "Fix" or "Feature"; if the field is absent, return "Feature"\n' +
+  '- dependencies: array of task IDs listed after "Dependencies:" (empty array if "None" or absent)\n' +
   '- dorMet: true only if ALL of the following are present in the task block:\n' +
   '  1. A task ID is assigned (the block exists)\n' +
   '  2. Schema impact is NOT "To confirm"\n' +
@@ -262,23 +298,39 @@ const locateHint = locateResult
     '- Ripples to watch: ' + JSON.stringify(locateResult.ripples || []) + '\n'
   : ''
 
-log('Running coder…')
-const coderResult = await agent(
-  'Read .claude/skills/coder/SKILL.md and follow it exactly.\n' +
-  'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
-  'Tests already written (RED phase): ' + JSON.stringify(redResult.testFiles) + '\n' +
-  locateHint + '\n' +
-  'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
-  'Implement the complete task. The test files listed above already exist and are failing — ' +
-  'your goal is to make them pass. Do NOT modify the test files.\n' +
-  'When done, report: which files you changed (array of paths), ' +
-  'whether you touched UI source files (touchesUI bool), ' +
-  'whether you touched database queries (touchesPrisma bool), ' +
-  'and a one-sentence summary of what was implemented.',
-  { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
-)
+// Build routing: Fix tasks go to /debugger (root cause + minimal fix), Feature tasks to /coder.
+// Both receive the same RED tests and the locate scout's change-set.
+const isFix = taskInfo.taskType === 'Fix'
+log(isFix ? 'Fix task — routing the build to /debugger (root cause + minimal fix)…' : 'Running coder…')
+const coderResult = isFix
+  ? await agent(
+      'Read .claude/skills/debugger/SKILL.md and follow it exactly.\n' +
+      'Active task (FIX): ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+      'A failing regression test already captures this bug (RED): ' + JSON.stringify(redResult.testFiles) + '\n' +
+      locateHint + '\n' +
+      'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
+      'Reproduce, isolate the ROOT CAUSE, and apply the MINIMAL fix so the failing regression test(s) pass. ' +
+      'Do NOT modify the test files — they are the contract. Do NOT add features or refactor unrelated code.\n' +
+      'When done, report: which files you changed (array of paths), touchesUI (bool), touchesPrisma (bool), ' +
+      'and a one-sentence summary of the fix and its root cause.',
+      { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'debugger (fix)', agentType: 'debugger' }
+    )
+  : await agent(
+      'Read .claude/skills/coder/SKILL.md and follow it exactly.\n' +
+      'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
+      'Tests already written (RED phase): ' + JSON.stringify(redResult.testFiles) + '\n' +
+      locateHint + '\n' +
+      'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
+      'Implement the complete task. The test files listed above already exist and are failing — ' +
+      'your goal is to make them pass. Do NOT modify the test files.\n' +
+      'When done, report: which files you changed (array of paths), ' +
+      'whether you touched UI source files (touchesUI bool), ' +
+      'whether you touched database queries (touchesPrisma bool), ' +
+      'and a one-sentence summary of what was implemented.',
+      { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
+    )
 
-if (!coderResult) return { status: 'error', reason: 'Coder agent failed for task ' + TASK_ID }
+if (!coderResult) return { status: 'error', reason: (isFix ? 'Debugger' : 'Coder') + ' agent failed for task ' + TASK_ID }
 
 // ── Phase 5: Tests — GREEN (with /debugger self-repair loop) ──────────────
 async function runGreen() {
@@ -484,6 +536,65 @@ await agent(
 
 log('🎉 Task ' + TASK_ID + ' — automated pipeline complete, PR opened. Human UAT + merge are yours.')
 return { status: 'done', taskId: TASK_ID, awaiting: 'human UAT + merge on the PR' }
+
+} // end shipOne
+
+// ── Dispatch: single task, or batch over the ready backlog ─────────────────
+const INPUT = (typeof args === 'string' ? args : '').trim()
+const isBatch = INPUT === '' || /^(open|all|ready)$/i.test(INPUT)
+if (!isBatch) return await shipOne(INPUT)
+
+// Batch mode: drain every open, DoR-ready task whose dependencies are already delivered.
+phase('Backlog')
+log('Batch mode — scanning roadmap for open, DoR-ready tasks…')
+const backlog = await agent(
+  'Read docs/ROADMAP.md. Return:\n' +
+  '- doneIds: IDs of every task already marked [x] / delivered.\n' +
+  '- tasks: every task NOT marked [x], each with: id, title, ' +
+  'taskType ("Fix"/"Feature"; "Feature" if absent), priority ("P0"/"P1"/"P2" or empty string), ' +
+  'dependencies (array of task IDs after "Dependencies:", empty if None/absent), ' +
+  'and dorMet (true only if it satisfies the Definition of Ready at the top of the roadmap).',
+  { schema: BACKLOG_SCHEMA, phase: 'Backlog' }
+)
+if (!backlog || !backlog.tasks || backlog.tasks.length === 0) {
+  return { status: 'idle', reason: 'No open tasks found in the roadmap.' }
+}
+
+const done = new Set(backlog.doneIds || [])
+const rankOf = { P0: 0, P1: 1, P2: 2 }
+const rank = function(p) { return rankOf[p] != null ? rankOf[p] : 3 }
+const depsMet = function(t) { return (t.dependencies || []).every(function(d) { return done.has(d) }) }
+
+// A task shipped in THIS run is NOT a satisfied dependency: its PR is open but unmerged,
+// so a dependent built now would lack its code. Dependents wait for the next run (after merge).
+const notReady = backlog.tasks.filter(function(t) { return !t.dorMet })
+const blockedByDeps = backlog.tasks.filter(function(t) { return t.dorMet && !depsMet(t) })
+const ready = backlog.tasks
+  .filter(function(t) { return t.dorMet && depsMet(t) })
+  .sort(function(a, b) { return rank(a.priority) - rank(b.priority) || String(a.id).localeCompare(String(b.id)) })
+
+log('Backlog: ' + ready.length + ' ready · ' + blockedByDeps.length + ' waiting on dependencies · ' + notReady.length + ' not DoR-ready')
+if (notReady.length) log('⏭️  Not DoR-ready (run /planner): ' + notReady.map(function(t) { return t.id }).join(', '))
+if (blockedByDeps.length) log('⛓️  Waiting on unmerged dependencies: ' + blockedByDeps.map(function(t) { return t.id }).join(', '))
+
+const results = []
+for (const t of ready) {
+  log('▶ Shipping ' + t.id + (t.title ? ' — ' + t.title : '') + ' [' + (t.taskType || 'Feature') + ']')
+  const r = await shipOne(t.id)
+  results.push({ id: t.id, status: (r && r.status) || 'error', detail: r })
+}
+
+const shipped = results.filter(function(r) { return r.status === 'done' })
+const blocked = results.filter(function(r) { return r.status === 'blocked' })
+log('🏁 Batch complete — ' + shipped.length + ' PR(s) opened, ' + blocked.length + ' blocked')
+return {
+  status: 'batch-complete',
+  shipped: shipped.map(function(r) { return r.id }),
+  blocked: blocked.map(function(r) { return { id: r.id, detail: r.detail } }),
+  skippedNotReady: notReady.map(function(t) { return t.id }),
+  skippedDeps: blockedByDeps.map(function(t) { return t.id }),
+  awaiting: 'human UAT + merge on each opened PR',
+}
 ```
 
 ---
@@ -500,6 +611,8 @@ The pipeline returns control to you only when:
 | PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
 
 All other steps — branch creation, schema migration, implementation, doc updates, the debugger self-repair loop, and all six parallel reviews — run without prompting.
+
+**In batch mode (`/ship-task open`)** a single task hitting one of these gates does **not** stop the run — that task is recorded (blocked / not-ready / waiting-on-deps) and the orchestrator moves to the next ready task, returning the full summary at the end. Fix the recorded items and re-run `/ship-task open` to pick them up.
 
 ---
 

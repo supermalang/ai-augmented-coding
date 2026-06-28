@@ -42,6 +42,22 @@ npm run test:coverage # Vitest + coverage thresholds
 
 ---
 
+## Version control & forge
+
+How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.
+
+- **Forge:** [`github` | `gitlab`]
+- **Integration branch:** [e.g. `develop` — the base PRs/MRs target]
+- **Open-PR command:**
+  - GitHub → `gh pr create --base <integration-branch> --title "…" --body "…"`
+  - GitLab → `glab mr create --target-branch <integration-branch> --title "…" --description "…"`
+- **Unattended auth (batch / CI / cron — no interactive login):** set the token in the environment so push + PR work headless.
+  - GitHub → `GH_TOKEN` (read automatically by `gh`); the git remote must use a credential helper or token URL for `git push`.
+  - GitLab → `GITLAB_TOKEN` (read by `glab`); same for push.
+  - **Never commit the token** — env var only (respects `guard-secret-scan`).
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.
