@@ -42,6 +42,22 @@ npm run test:coverage # Vitest + coverage thresholds
 
 ---
 
+## Version control & forge
+
+How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.
+
+- **Forge:** [`github` | `gitlab`]
+- **Integration branch:** [e.g. `develop` — the base PRs/MRs target]
+- **Open-PR command:**
+  - GitHub → `gh pr create --base <integration-branch> --title "…" --body "…"`
+  - GitLab → `glab mr create --target-branch <integration-branch> --title "…" --description "…"`
+- **Unattended auth (batch / CI / cron — no interactive login):** set the token in the environment so push + PR work headless.
+  - GitHub → `GH_TOKEN` (read automatically by `gh`); the git remote must use a credential helper or token URL for `git push`.
+  - GitLab → `GITLAB_TOKEN` (read by `glab`); same for push.
+  - **Never commit the token** — env var only (respects `guard-secret-scan`).
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.
@@ -88,6 +104,16 @@ npm run test:coverage # Vitest + coverage thresholds
 - **Component library:** [e.g. shadcn/ui]
 - **Status badge classes:** [document exact Tailwind classes per status, e.g. ACTIVE → `bg-green-100 text-green-800`]
 - **Toast library:** [e.g. Sonner]
+
+### Brand assets (reporting)
+
+Exact values used by `/report` to brand PDF decks and PowerPoint exports. The *feel* is in `DESIGN.md`.
+
+- **Logo:** [path, e.g. `assets/brand/logo.svg`]
+- **Brand colors:** [primary `#......` · accent `#......` · ink/text `#......` · surface `#......`]
+- **Deck fonts:** [heading font · body font — names that exist on the render machine or are embedded]
+- **Default deck style:** [`classical` | `notebooklm` | `sketch` | `illustrated`]
+- **Image generation (for `illustrated` style only):** [provider + model, e.g. `kie.ai` / `nano-banana`] · API key env var: [e.g. `KIE_API_KEY`] — *key lives in env, never committed*
 
 ---
 
