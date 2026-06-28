@@ -25,8 +25,12 @@ A task must satisfy **all** of the following before any code is written. The pip
 A task is done only when **all** of the following are true:
 
 - [ ] All acceptance criteria verifiably met
-- [ ] Unit tests written and passing (`test:coverage` above thresholds)
-- [ ] E2E tests written and passing
+- [ ] Tests written and passing at the layers the task needs (`test:coverage` above thresholds):
+  - [ ] Unit — for new/changed business logic
+  - [ ] Component — for new/changed UI components (states, props, interaction)
+  - [ ] Integration — for new/changed API routes / DB access (real test DB)
+  - [ ] E2E — for new/changed user-facing flows
+  - [ ] Accessibility (axe) — no violations on new/changed UI
 - [ ] No lint errors (`npm run lint`)
 - [ ] Code reviewed (security, performance, UX if applicable)
 - [ ] Roadmap task marked `[x]` with completion date
@@ -78,6 +82,18 @@ File: `src/lib/[module]/[file].test.ts`
 | Function | Cases |
 |---|---|
 | `functionName` | nominal · edge · error |
+
+**Component tests** *(if the task adds/changes UI — else `N/A`)*
+File: `src/components/[Component].test.tsx`
+| Component | States / interactions |
+|---|---|
+| `Component` | renders · empty · error · disabled · onAction fires · axe clean |
+
+**Integration tests** *(if the task adds/changes an API route or DB access — else `N/A`)*
+File: `tests/integration/[route].test.ts`
+| Endpoint / flow | Cases (real test DB) |
+|---|---|
+| `POST /api/...` | persists + scoped to isolation key · validation error · soft-delete respected |
 
 **E2E tests**
 File: `tests/e2e/[feature].spec.ts`

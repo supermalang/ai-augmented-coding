@@ -260,7 +260,9 @@ const redResult = await agent(
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Instructions:\n' +
   '1. Do NOT read implementation files — derive tests from acceptance criteria only\n' +
-  '2. Write unit tests and E2E specs per the project test conventions in .claude/context.md\n' +
+  '2. Write tests at the layers this task needs per .claude/context.md conventions: unit (logic), ' +
+  'component (new/changed UI — states/props/interaction, jsdom), integration (new/changed API or DB — real test DB), ' +
+  'E2E (user-facing flow), plus an axe accessibility check on new UI. Skip layers the task does not touch.\n' +
   '3. Run the unit test suite\n' +
   '4. Tests SHOULD fail — the implementation does not exist yet\n' +
   'Report: testFiles (array of paths written), testCount (number), failCount (number), ' +

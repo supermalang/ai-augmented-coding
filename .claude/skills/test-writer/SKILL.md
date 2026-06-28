@@ -1,6 +1,6 @@
 ---
 name: test-writer
-description: Write unit tests and E2E tests for the active roadmap task. Supports two TDD modes — RED (before /coder, derives tests from acceptance criteria, confirms they fail) and GREEN (after /coder, runs same tests, confirms they pass). The mode is specified in the agent prompt.
+description: Write tests for the active roadmap task across the right layers — unit, component (UI in isolation), integration (real DB), E2E, plus automated accessibility (axe) — derived from acceptance criteria. Supports two TDD modes — RED (before /coder, derives tests from criteria, confirms they fail) and GREEN (after /coder, runs same tests, confirms they pass). The mode is specified in the agent prompt.
 ---
 
 # /test-writer — Test Writer Agent
@@ -26,9 +26,9 @@ This skill operates in two modes. **The calling agent must specify the mode expl
 
 Goal: write tests that encode the acceptance criteria. They MUST fail — if they all pass before any implementation, they are not testing anything meaningful.
 
-1. Read the task block from `docs/ROADMAP.md` — extract acceptance criteria, unit test table, E2E scenarios
+1. Read the task block from `docs/ROADMAP.md` — extract acceptance criteria, unit/component/integration test tables, E2E scenarios
 2. Do NOT read implementation files — derive tests from criteria alone
-3. Write unit tests and E2E specs (see patterns below)
+3. Write tests at the layers the task needs — unit (logic), component (new/changed UI), integration (new/changed API/DB), E2E (user-facing flow), plus axe on new UI (see patterns below). Pick layers by what the task touches; don't write empty layers.
 4. Run the unit test suite
 5. Confirm that tests FAIL (expected — no implementation yet). If all pass vacuously, report a warning.
 6. Report: `testFiles` (array), `testCount` (number), `failCount` (number), `redConfirmed` (bool — true if failCount > 0)
@@ -47,7 +47,7 @@ Goal: confirm the implementation makes all RED-phase tests pass without modifyin
 
 ### 1 — Read the task block only
 
-1. Read the task block in `docs/ROADMAP.md` — extract **Acceptance criteria**, **Unit tests**, and **E2E tests**
+1. Read the task block in `docs/ROADMAP.md` — extract **Acceptance criteria**, **Unit tests**, **Component tests**, **Integration tests**, and **E2E tests**
 2. Read existing tests in the same module to follow established patterns
 3. Read library type signatures if needed to write correct imports — do not read application pages
 
@@ -81,6 +81,75 @@ Rules:
 - Cover: nominal + edge case + error case
 - Do not mock the database — use pure functions or fakes
 - Run after writing: use the unit test command from `.claude/context.md`
+
+### 2a — Component tests (UI rendered in isolation)
+
+Write these **when the task adds or changes a UI component** — the layer between unit (no render) and
+E2E (whole app). Render the component with Testing Library (jsdom), mock its data/handlers, and assert
+**what renders and how it reacts** — without routing or a real backend. Run on the **unit runner**
+(same command as unit). jsdom has no pixels, so **no screenshots here** — that's the page-level visual
+layer's job.
+
+```ts
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { PriceTag } from './PriceTag'
+
+it('renders the formatted price', () => {
+  render(<PriceTag cents={1999} />)
+  expect(screen.getByText('$19.99')).toBeInTheDocument()
+})
+it('shows the empty state for null', () => {
+  render(<PriceTag cents={null} />)
+  expect(screen.getByText('—')).toBeInTheDocument()
+})
+it('fires onSubmit with the entered values', async () => {
+  const onSubmit = vi.fn()
+  render(<LoginForm onSubmit={onSubmit} />)
+  await userEvent.type(screen.getByLabelText('Email'), 'a@b.co')
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  expect(onSubmit).toHaveBeenCalledWith({ email: 'a@b.co' })
+})
+```
+
+Rules:
+- Cover the component's **states**: loading · empty · error · disabled · each variant.
+- Query by **role/label** (accessible queries), never invented `data-testid`.
+- Mock collaborators (fetch, handlers) — the component is the unit under test, not the system.
+
+### 2b — Integration tests (real collaborators, real DB)
+
+Write these **when the task adds or changes an API route, service, or anything that touches the
+database** — exercise the units *together* against a **real test database** (the skill forbids mocking
+the DB). They sit between unit and E2E: no browser, but real persistence and wiring.
+
+```ts
+// Exercises the route handler + repository against a real test DB — no mocks.
+it('creates a record scoped to the tenant and returns it', async () => {
+  const res = await POST(req({ body: valid, session: { tenantId: 't1' } }))
+  expect(res.status).toBe(201)
+  const row = await db.record.findFirst({ where: { tenantId: 't1' } })
+  expect(row).toMatchObject({ ...valid, deletedAt: null })
+})
+```
+
+Rules:
+- Use a **real test database**; seed and tear down per test/suite. Never mock it.
+- Assert **both** the response *and* the persisted state (and that it respects the isolation key + soft-delete).
+- Run on the unit/integration command from `.claude/context.md`.
+
+### 2c — Accessibility assertions (axe)
+
+Add an automated **axe** check to component and/or E2E tests for any new UI — it complements
+`/ux-review`'s manual WCAG pass by catching machine-detectable violations (labels, roles, contrast,
+landmarks) on every run, cheaply.
+
+```ts
+import { axe } from 'vitest-axe'            // component level (jsdom)
+const { container } = render(<LoginForm />)
+expect(await axe(container)).toHaveNoViolations()
+// E2E level: @axe-core/playwright → new AxeBuilder({ page }).analyze()
+```
 
 ### 3 — E2E tests
 
