@@ -150,6 +150,7 @@ These apply to every agent that writes code (`/coder`, `/refactor`, `/debugger`)
 2. **Simplicity first** — write the minimal code that satisfies the acceptance criteria. No speculative abstractions, no features that aren't in the task. The smallest correct change wins.
 3. **Surgical changes** — touch only what the task requires. Don't refactor adjacent code, rename unrelated symbols, or reformat files you didn't need to change. Structural cleanup is `/refactor`'s job, behind green tests.
 4. **Goal-driven execution** — define what "done" looks like as verifiable criteria (the task's acceptance criteria and tests), then work until they're objectively met. Don't declare done by vibe — prove it with passing tests.
+5. **Edit source through Edit/Write, never the shell** — create and modify source/test/schema files with the Edit/Write tools only. Do **not** write them via shell redirects (`>`/`>>`), `tee`, `sed -i`, or a generated script (`python … `, `node …`). Those paths bypass the roadmap/branch gates, which can only see Edit/Write. Use Bash for running things (tests, lint, build, git), not for writing code.
 
 ---
 

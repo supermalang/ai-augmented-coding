@@ -1,33 +1,17 @@
 #!/usr/bin/env bash
 # guard-generated-files.sh — block manual edits to auto-generated doc files.
-#
-# Wired as PreToolUse(Edit) and PreToolUse(Write) in settings.json.
-# *.generated.md files are produced by `npm run docs:generate` (from the Prisma
-# schema and API routes). Hand-editing them would be silently overwritten on
-# the next generate run, creating conflicting diffs or data loss.
-#
-# To update them: edit the source (schema.prisma or the API route), then run
-# `npm run docs:generate`.
-
+# PURE BASH (builtins only) — no jq. Glob pattern comes from stack-profile.sh.
 set -uo pipefail
+. "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/_hooklib.sh"
 
-# Stack-specific patterns live in stack-profile.sh (override there, not here).
-PROFILE="${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/hooks/stack-profile.sh"
-[ -f "$PROFILE" ] && . "$PROFILE"
-
-input=$(cat)
-file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
+hook_load_profile
+hook_read_stdin
+file_path="$(hook_field file_path)"
+[ -z "$file_path" ] && exit 0
 
 case "$file_path" in
   ${STACK_GENERATED_FILES_GLOB:-*.generated.md})
-    jq -n --arg f "$file_path" '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: ("Fichier auto-généré — ne pas modifier à la main : " + $f + ". Modifie la source (schema.prisma ou la route API) puis relance `npm run docs:generate`. (Auto-generated — edit the source and regenerate.)")
-      }
-    }'
-    exit 0
+    hook_deny "Fichier auto-généré — ne pas modifier à la main : ${file_path}. Modifie la source (schema ou route API) puis relance la génération de docs. (Auto-generated — edit the source and regenerate, don't hand-edit.)"
     ;;
 esac
 

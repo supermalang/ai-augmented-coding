@@ -1,71 +1,39 @@
 #!/usr/bin/env bash
-# guard-git-flow.sh — enforce the branch → PR → develop → release workflow.
-#
-# Wired as a PreToolUse(Bash) hook in .claude/settings.json. Reads the hook
-# JSON on stdin and, for git commands only, emits a "deny" permission decision
-# when the action would land directly on the protected branch:
-#   - committing while HEAD is on `main`
-#   - pushing `main` (explicit ref, or a bare `git push` while sitting on main)
-#
-# Workflow (see CLAUDE.md — Branches):
-#   feature branch → PR/MR → develop  (daily integration)
-#   develop → release PR → main        (production deployments only)
-#
-# Exit 0 with no output = allow (the harness falls back to normal permissions).
-
+# guard-git-flow.sh — enforce branch → PR → develop → release. Deny commits/pushes
+# that would land directly on the protected branch (main).
+# PURE BASH (builtins only; branch read from .git/HEAD) — no jq/git/grep dependency.
 set -uo pipefail
+. "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/_hooklib.sh"
 
 PROTECTED="main"
-
-input=$(cat)
-cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+hook_read_stdin
+cmd="$(hook_field command)"
 
 # Fast path: ignore anything that isn't a git command.
-case "$cmd" in
-  *git*) ;;
-  *) exit 0 ;;
-esac
+[[ $cmd == *git* ]] || exit 0
 
-deny () {
-  jq -n --arg r "$1" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: $r
-    }
-  }'
-  exit 0
-}
-
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+branch="$(hook_git_branch)"
 
 # --- Block commits made while on the protected branch -----------------------
-if printf '%s' "$cmd" | grep -Eq 'git( +-[^ ]+)* +commit\b'; then
+if [[ $cmd =~ (^|[[:space:]])commit([[:space:]]|$) ]]; then
   if [ "$branch" = "$PROTECTED" ]; then
-    deny "Refus de committer sur '$PROTECTED' (branche de production). Workflow : crée une branche de feature depuis develop — git switch develop && git switch -c <type>/<description> — puis committe et ouvre une PR/MR vers develop. (Blocked: committing directly on '$PROTECTED'. Branch from develop and open a PR targeting develop instead.)"
+    hook_deny "Refus de committer sur '$PROTECTED' (branche de production). Workflow : crée une branche de feature depuis develop — git switch develop && git switch -c <type>/<description> — puis committe et ouvre une PR/MR vers develop. (Blocked: committing directly on '$PROTECTED'. Branch from develop and open a PR targeting develop instead.)"
   fi
-
-  # --- Warn on non-conventional branch name ----------------------------------
   case "$branch" in
-    main|master|develop|feature/*|fix/*|chore/*|hotfix/*|release/*|refactor/*|test/*|docs/*|ci/*)
-      ;;  # valid branch name
-    "")
-      ;;  # detached HEAD, skip
+    main|master|develop|feature/*|fix/*|chore/*|hotfix/*|release/*|refactor/*|test/*|docs/*|ci/*|"") ;;
     *)
-      printf '⚠️  BRANCH NAME : la branche "%s" ne suit pas la convention de nommage.\nConvention : feature/<description>, fix/<description>, chore/<description>, hotfix/<description>.\nCréer la branche correcte : git switch -c feature/<courte-description>\n' "$branch"
+      printf '⚠️  BRANCH NAME : la branche "%s" ne suit pas la convention de nommage.\nConvention : feature/<description>, fix/<description>, chore/<description>, hotfix/<description>.\n' "$branch"
       ;;
   esac
 fi
 
 # --- Block pushing the protected branch -------------------------------------
-if printf '%s' "$cmd" | grep -Eq 'git( +-[^ ]+)* +push\b'; then
-  # Explicit ref to main: `git push origin main`, `HEAD:main`, `+main`, etc.
-  if printf '%s' "$cmd" | grep -Eq '(^|[[:space:]:+])main([[:space:]]|$)'; then
-    deny "Refus de pousser vers '$PROTECTED'. Pousse ta branche feature et ouvre une PR/MR vers develop : git push -u origin <branche> puis gh pr create --base develop (GitHub) ou glab mr create --target-branch develop (GitLab). (Blocked: pushing to '$PROTECTED'. Push your feature branch and open a PR targeting develop.)"
+if [[ $cmd =~ (^|[[:space:]])push([[:space:]]|$) ]]; then
+  if [[ $cmd =~ (^|[[:space:]:+])main([[:space:]]|$) ]]; then
+    hook_deny "Refus de pousser vers '$PROTECTED'. Pousse ta branche feature et ouvre une PR/MR vers develop : git push -u origin <branche> puis gh pr create --base develop (GitHub) ou glab mr create --target-branch develop (GitLab). (Blocked: pushing to '$PROTECTED'. Push your feature branch and open a PR targeting develop.)"
   fi
-  # Bare `git push` while sitting on main (tracking branch is main).
   if [ "$branch" = "$PROTECTED" ]; then
-    deny "Tu es sur '$PROTECTED' — un 'git push' nu mettrait à jour la production. Branche depuis develop, committe, et ouvre une PR vers develop. (Blocked: bare push from '$PROTECTED' would update production. Branch from develop and open a PR targeting develop.)"
+    hook_deny "Tu es sur '$PROTECTED' — un 'git push' nu mettrait à jour la production. Branche depuis develop, committe, et ouvre une PR vers develop. (Blocked: bare push from '$PROTECTED' would update production. Branch from develop and open a PR targeting develop.)"
   fi
 fi
 
