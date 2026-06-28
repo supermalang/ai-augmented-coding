@@ -2,12 +2,16 @@
 
 A reusable Claude Code multi-agent development pipeline. Drop it into any project to get:
 
-- **Autonomous task execution** — `/ship-task <ID>` chains all agents from planning to PR with no human input between steps
-- **TDD by default** — tests are written from acceptance criteria *before* the coder touches a file
+- **Autonomous task execution** — `/ship-task <ID>` chains all agents from planning to PR with no human input between steps; `/ship-task open` drains the whole ready backlog (dependency-gated, priority-ordered)
+- **Feature *and* fix flows** — `Type: Fix` tasks route the build to `/debugger` (root cause + minimal fix) instead of `/coder`, then run the same tests + reviews
+- **TDD by default** — tests are written from acceptance criteria *before* the coder touches a file; a passing-too-early RED test hard-blocks the pipeline
 - **Structured review gates** — security, UX, performance, and QA reviews run in parallel; any blocker stops the pipeline before the PR opens
 - **Least-privilege agents** — every pipeline role runs as a tool-scoped agent (auditors can't edit code, only the PR agent can push) and is right-sized to a model
 - **Shell-enforced guards** — hooks block edits without an active task, commits to protected branches, and destructive DB operations
 - **Coverage enforcement** — configurable coverage thresholds fail CI if coverage drops
+- **Forge-agnostic** — push + PR/MR via GitHub (`gh`) or GitLab (`glab`), configured in `.claude/context.md`; unattended auth via `GH_TOKEN`/`GITLAB_TOKEN`
+- **Product & process methodology** — `/discovery` (with ideation), `/story-map`, `/usability-test`, and `/retro` cover the Design-Thinking / HCD / Agile loop, not just the build
+- **Branded reporting** — `/report` turns the roadmap + git history into a progress report and a deck (classical · notebooklm · sketch · illustrated) as PDF + editable PowerPoint
 - **Layered project knowledge** — a two-tier doc model keeps the every-run context lean while vision (`PRODUCT.md`), design (`DESIGN.md`), and architecture (`docs/ARCHITECTURE.md`) grow on demand as the pipeline builds
 
 ---
@@ -112,44 +116,40 @@ Edit `docs/ROADMAP.md`:
 ### Start a task autonomously
 
 ```
-/ship-task 1.1
+/ship-task 1.1        # one task by ID
+/ship-task open       # batch: every ready task whose dependencies are delivered
 ```
 
 The pipeline will:
 1. Validate DoR (stops here if any field is missing)
 2. Create a feature branch and set `.current-task`
 3. Run migrations if needed (`/schema-agent`)
-4. Write tests (RED — must fail)
-5. Implement until tests pass (`/coder`); if GREEN fails, `/debugger` auto-fixes and retries (up to 2×)
-6. Update docs if the API, schema, or UI changed (`/docs`)
+4. Write tests (RED — must fail; a RED test that passes too early **hard-blocks**)
+5. Build it: `/coder` for a Feature, `/debugger` for a `Type: Fix` task — both work from the `/locate` change-set until tests pass; if GREEN fails, `/debugger` auto-fixes and retries (up to 2×)
+6. Update docs if the API, schema, or UI changed — or if modules moved (`/docs` refreshes the code map)
 7. Commit the implementation
 8. Run reviews in parallel: UX, perf (static + measured), QA, security, and dependency/SCA
 9. Stop if any review returns blockers
-10. Open a PR
+10. Open a PR / MR (GitHub or GitLab per `.claude/context.md`)
 
-Human touchpoints: DoR failure → fix the roadmap. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. **PR opened → run human UAT against the PR, tick the UAT checklist, then merge.** The pipeline is autonomous up to the PR; final user acceptance is always yours.
+In **batch mode** a task that blocks doesn't stop the run — it's recorded and the orchestrator moves on, returning a summary.
 
-### Plan a new task
+Human touchpoints: DoR failure → fix the roadmap. RED gate → rewrite the tests to fail first. Tests still failing after auto-fix → fix the code. Review blocker → resolve it. **PR opened → run human UAT against the PR, tick the UAT checklist, then merge.** The pipeline is autonomous up to the PR; final user acceptance is always yours.
+
+### Plan, map, and report
 
 ```
-/planner
+/discovery        # scope a fuzzy idea — interview, ideate options, write a brief
+/planner          # turn it into a roadmap task (Feature or Fix)
+/story-map        # the journey × release-slice view above the flat backlog
+/roadmap-status   # progress; mark tasks done
+/sprint-start     # audit all planned tasks for DoR before a sprint
+/report           # branded progress report + PDF/PPTX deck for a meeting
+/retro            # end-of-sprint retrospective → action items
+/usability-test   # heuristic eval + real-user test protocol + findings synthesis
 ```
 
 Or just describe what you want — if no matching task exists in the roadmap, `/planner` is invoked automatically.
-
-### Check roadmap progress
-
-```
-/roadmap-status
-```
-
-### Start a sprint
-
-```
-/sprint-start
-```
-
-Audits all planned tasks for DoR before the sprint begins.
 
 ---
 
@@ -160,12 +160,12 @@ Audits all planned tasks for DoR before the sprint begins.
 | 0 | Validate | Always — DoR check |
 | 1 | Setup | Always — branch + `.current-task` |
 | 2 | Schema | `impactSchema = Migration` |
-| 3 | Test Writer (RED) | Always — writes tests, confirms they fail |
-| 3b | Locate (scout) | Always — cheap read-only Haiku pass; scopes the change-set so the coder loads only what it needs |
-| 4 | Coder | Always — implements to make tests pass, from the scout's change-set |
+| 3 | Test Writer (RED) | Always — writes tests from criteria, confirms they fail; **hard-stops if a RED test passes** (vacuous / reverse-engineered) |
+| 3b | Locate (scout) | Always — cheap read-only Haiku pass; scopes the change-set so the builder loads only what it needs |
+| 4 | Coder **or** Debugger | Always — `/coder` for a Feature, `/debugger` for a `Type: Fix` task; both start from the scout's change-set |
 | 5 | Test Writer (GREEN) | Always — confirms all tests pass |
 | 5b | Debugger (self-repair) | If GREEN fails — auto root-causes + fixes, retries (up to 2×) |
-| 6 | Docs | Task touches API, schema, or UI |
+| 6 | Docs | Task touches API, schema, UI — or moved modules (refreshes the code map) |
 | 7 | Commit | Always — lint + commit before reviews |
 | 8 | UX Review | Task touches UI |
 | 9 | Perf Review (static) | Task touches ORM queries or API routes |
@@ -174,7 +174,9 @@ Audits all planned tasks for DoR before the sprint begins.
 | 11 | Security Audit | Always |
 | 11b | Dep Audit | Always — SCA scan for vulnerable dependencies |
 | — | Blocker gate | Stops pipeline if any review (8–11b, parallel) returns blockers |
-| 12 | PR Reviewer | Always — marks roadmap done, opens PR |
+| 12 | PR Reviewer | Always — marks roadmap done, opens PR/MR (GitHub or GitLab) |
+
+`/ship-task open` runs this whole pipeline once per ready task, in priority order, skipping any task whose dependencies aren't delivered yet and continuing past blockers.
 
 ---
 
