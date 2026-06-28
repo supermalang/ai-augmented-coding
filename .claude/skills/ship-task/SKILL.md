@@ -269,6 +269,20 @@ const redResult = await agent(
 
 if (!redResult) return { status: 'error', reason: 'Test-writer (RED) agent failed for task ' + TASK_ID }
 if (redResult.warning) log('⚠️  ' + redResult.warning)
+// Hard gate: RED tests MUST fail before any implementation. A test that already passes is either
+// vacuous or reverse-engineered from existing code — it proves nothing and would sail through GREEN.
+// Block rather than ship a hollow test. Critical for Fix tasks, where the buggy implementation
+// already exists at RED time, so a code-conforming test would pass and bless the bug.
+if (!redResult.redConfirmed || (redResult.failCount || 0) < 1) {
+  log('🚫 RED gate: no test failed before implementation — tests look vacuous or conform to existing code, not the criteria')
+  return {
+    status: 'blocked',
+    reason: 'RED phase produced no failing test. Tests must be derived from acceptance criteria and fail before implementation exists (a passing RED test proves nothing).',
+    taskId: TASK_ID,
+    testFiles: redResult.testFiles,
+    warning: redResult.warning,
+  }
+}
 log('🔴 RED phase: ' + redResult.testCount + ' tests written, ' + redResult.failCount + ' failing (expected)')
 
 // ── Phase 4: Locate (cheap scout) then Implement ──────────────────────────
@@ -606,6 +620,7 @@ The pipeline returns control to you only when:
 | Situation | What to do |
 |-----------|------------|
 | DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/ship-task <ID>` |
+| RED gate — no failing test | The RED tests passed before any implementation (vacuous, or reverse-engineered from existing code). Rewrite them from the acceptance criteria so they fail first, then re-run |
 | Tests still failing after auto-fix | `/debugger` already tried twice and couldn't make them pass — review the failures, fix manually, then re-run |
 | Review blockers | A review (UX/perf/QA/security/dep/perf-measure) found a must-fix issue — resolve it, then re-run |
 | PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
