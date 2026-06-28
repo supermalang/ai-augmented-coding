@@ -89,9 +89,19 @@ important remaining unknown. Cover only what detection could not settle:
   logic layer) rather than chasing 100%.
 - **UI conventions** (if there's a UI) — language, icon library, component library, status-badge
   classes, toast library.
+- **Version control & forge** — `github` or `gitlab`; the integration branch PRs/MRs target; and the
+  unattended-auth token env var (`GH_TOKEN` / `GITLAB_TOKEN`) if batch/CI runs are wanted. This is what
+  lets `/pr-reviewer` push and open a PR/MR without a vendor hardcoded.
+- **Brand assets (for `/report` decks)** — logo path, brand palette (primary/accent/ink/surface), deck
+  fonts, and the default deck style (`classical` / `notebooklm` / `sketch` / `illustrated`). Only if the
+  team will generate reports; otherwise leave the placeholders.
+- **Image generation** — *only if* the `illustrated` deck style is wanted: the provider + model (e.g.
+  `kie.ai` / `nano-banana`) and the API-key env var (e.g. `KIE_API_KEY`). The key lives in the
+  environment, never committed.
 
 Stop as soon as the picture is clear. If the user says "you decide," record a stated default and move
-on rather than pressing.
+on rather than pressing. Forge, brand, and image-gen are **optional** — skip them cleanly if the project
+won't push via an agent or won't generate decks.
 
 ### 3 — Definition of Configured (gate before writing)
 
@@ -105,15 +115,23 @@ Do not write config until every item holds:
 - [ ] At least the project's absolute rules are captured (or explicitly "none beyond the defaults")
 - [ ] `stack-profile.sh` pattern targets are known (delete call, migrations dir, sensitive fields)
 
-If any item is unmet → return to step 2 and ask, naming what's still open.
+Optional (gate only if the team wants the capability — otherwise leave placeholders, don't block):
+- [ ] Forge settled (`github`/`gitlab` + integration branch) **if** agents will push/PR
+- [ ] Brand tokens captured **if** `/report` decks will be generated; image-gen provider **if** the
+      `illustrated` style is wanted
+
+If any required item is unmet → return to step 2 and ask, naming what's still open.
 
 ### 4 — Write the operational config
 
 Fill, and only, these files — keep each lean (agents read `context.md` every run):
 
-1. **`.claude/context.md`** — Project, Tech stack, the five Key commands, Absolute rules, Roles,
-   Data isolation, Domain glossary (seed what's known), UI conventions, File-structure conventions,
-   Reference formats, Key constraints. This is the every-run operational truth.
+1. **`.claude/context.md`** — Project, Tech stack, the five Key commands, **Version control & forge**
+   (forge, integration branch, token env var), Absolute rules, Roles, Data isolation, Domain glossary
+   (seed what's known), UI conventions, **Brand assets** (logo, palette, fonts, default deck style,
+   image-gen provider — only if reports will be generated), File-structure conventions, Reference
+   formats, Key constraints. This is the every-run operational truth. Leave optional blocks
+   (forge/brand/image-gen) as placeholders if the project won't use them.
 2. **`CLAUDE.md` `[CONFIGURE]` blocks only** — Project, Tech stack, Commands, Absolute rules. Mirror
    the facts from `context.md`; do **not** touch the workflow, skill tables, or hook documentation.
 3. **`.claude/hooks/stack-profile.sh`** — retarget the patterns for the detected stack (ORM delete
