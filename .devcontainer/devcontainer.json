@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "claude-pipeline-template",
+  // [CONFIGURE] swap to your project's stack image (node/python/go/php …).
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    // [CONFIGURE] add language/runtime features your stack needs, e.g.:
+    // "ghcr.io/devcontainers/features/node:1": {}
+  },
+  // Guarantee the hooks' toolchain: bash is in the base image; jq is what the
+  // non-pure-bash guards need. A guard that can't find jq fails OPEN, so install it.
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq && jq --version",
+  "remoteEnv": {
+    // [CONFIGURE] forge auth for unattended push/PR (see .claude/context.md):
+    // "GH_TOKEN": "${localEnv:GH_TOKEN}",
+    // "GITLAB_TOKEN": "${localEnv:GITLAB_TOKEN}"
+  }
+}

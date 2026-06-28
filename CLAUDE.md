@@ -247,8 +247,17 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Edit / Write | `guard-branch.sh` | Editing implementation files on `develop` or `main` |
 | Bash | `guard-destructive-db.sh` | Destructive database operations |
 | Bash | `guard-commit-message.sh` | Non-Conventional Commits format |
-| Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` |
+| Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` — **pure-bash, fails closed** |
+| Bash | `guard-bash-write.sh` | Shell writes (`>`/`tee`/`sed -i`) into gated paths without `.current-task` — closes the Edit/Write bypass; **pure-bash** |
 | Edit / Write | `guard-generated-files.sh` | Hand-editing auto-generated files |
+
+> **Fail-closed & tool independence.** A guard that can't find its tools (missing `jq`/coreutils, or a
+> CRLF shebang) fails *open* — it silently allows. The two **write-gates** (`guard-roadmap-gate`,
+> `guard-bash-write`) are therefore written in **pure bash** (builtins only) and **block on any parse
+> failure**, so they work regardless of PATH. The other hooks use `jq`/coreutils — keep them on PATH
+> (see README Prerequisites / the dev container). **Hooks are a backstop, not a sandbox:** a write done
+> *inside* a script file (`python build.py`) can't be seen by a command-string guard — the real
+> boundary there is least-privilege agent tools (deny raw shell writes so the only path is Edit/Write).
 
 ### PostToolUse (warnings)
 

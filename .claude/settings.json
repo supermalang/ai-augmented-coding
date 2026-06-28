@@ -30,6 +30,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-commit-message.sh\"",
             "timeout": 5,
             "statusMessage": "Checking commit message format…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash-write.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking shell writes to gated paths…"
           }
         ]
       },
