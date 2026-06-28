@@ -129,6 +129,26 @@ tests/e2e/        # Playwright specs
 
 ---
 
+## Generated files & artifacts
+
+**Single source of truth for where agents write generated files** — do not scatter outputs. Three
+buckets by lifecycle; agents pick by *what the file is*, not by convenience.
+
+| Bucket | Location | What | Git |
+|---|---|---|---|
+| **Knowledge / deliverables** | `docs/<category>/` | `docs/discovery/` · `docs/design/` · `docs/reports/*.md` · `docs/retros/` · `docs/usability/` · `docs/story-map.md` · `docs/ARCHITECTURE.md` | **committed** |
+| Non-reproducible images | `docs/reports/assets/<date>/` | `/report` illustrated-style images (can't be regenerated identically) | **committed** |
+| Visual baselines | next to specs (`tests/e2e/**`) | blessed `toHaveScreenshot` PNGs — reviewed before commit | **committed** |
+| **Generated deliverables** | `out/<type>/` | `out/reports/` PDF + PPTX (regenerable from the committed `.md`) | ignored |
+| **Throwaway verification** | `.scratch/<purpose>/` | `.scratch/webapp-testing/` · `.scratch/perf-measure/` · `.scratch/uat/` (QA/UAT review shots) | ignored |
+| Tool-native output | tool defaults | `coverage/` · `test-results/` · `playwright-report/` — leave where the tools write them | ignored |
+
+Rules: a *regenerable* output is gitignored (`out/`, `.scratch/`, tool dirs); only *knowledge* and
+*non-reproducible* artifacts are committed. Never stage `.scratch/`, `out/`, or tool-output dirs in a
+task commit. New subfolders are fine **within** a bucket; don't invent new top-level output roots.
+
+---
+
 ## Reference formats
 
 [Document any auto-generated reference numbers, e.g.:]
