@@ -38,6 +38,27 @@ A task is done only when **all** of the following are true:
 
 ---
 
+## Sprint rituals (cadence-level checks)
+
+The DoR/DoD above are **per-task** gates. Some work is **per-sprint**, not per-task — it can't be a
+task checkbox, so it lives here, verified by the sprint rituals that bracket a sprint.
+
+**Sprint entry — checked by `/sprint-start`:**
+- [ ] Every planned task satisfies the **task DoR**
+- [ ] The **story map** is current — the user journey is mapped and every journey gap is either planned as a task or consciously deferred (`/story-map`)
+
+**Sprint exit — checked by `/report` + `/retro`:**
+- [ ] Every task taken into the sprint is DoD-done `[x]` or explicitly carried over
+- [ ] **Usability** checked on the user-facing features shipped this sprint — heuristic pass at minimum, real-user sessions when scheduled (`/usability-test`); findings filed as `/planner` tasks
+- [ ] Progress **report** generated for the review (`/report`)
+- [ ] **Retrospective** held and action items captured (`/retro`)
+
+> Why here and not the DoD: story mapping and usability testing are about the *product/journey across
+> many tasks*, are periodic, and (for real-user testing) need humans — so they're sprint-cadence checks,
+> not per-task gates. Their *outputs* become tasks, which then pass the normal DoD.
+
+---
+
 ## Task Template
 
 Copy this block when creating a new task via `/planner`.

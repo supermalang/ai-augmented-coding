@@ -1,6 +1,6 @@
 ---
 name: sprint-start
-description: Sprint kickoff ritual. Verifies every planned task satisfies the Definition of Ready before the sprint begins. Blocks the sprint if any task has unfilled template fields. Use when a new sprint is about to start.
+description: Sprint kickoff ritual. Verifies every planned task satisfies the Definition of Ready (hard gate) and that the story map / user journey is current with gaps planned (recommendation) before the sprint begins. Use when a new sprint is about to start.
 ---
 
 # /sprint-start — Sprint Kickoff Agent
@@ -44,6 +44,14 @@ For each planned task, check every item from the Definition of Ready (at the top
 | X.1 | ✅/❌ | ✅/❌ | ✅/❌ | ✅/❌ | ✅/❌ | ✅/❌ |
 
 A task is **Ready** only if every column is ✅.
+
+### 2b — Story-map / journey check (sprint-entry ritual)
+
+Beyond per-task DoR, verify the **sprint-entry** check from *Sprint rituals* in the roadmap: is the
+story map current, and are the user-journey gaps it surfaces either planned into a task or consciously
+deferred? If `docs/story-map.md` is missing or stale, or it flags a `⚠️ GAP` that the sprint needs,
+recommend running `/story-map` (then `/planner` for any gap) before the sprint starts. This is a
+**recommendation**, not a hard block like DoR — note it in the report.
 
 ### 3 — Report
 
