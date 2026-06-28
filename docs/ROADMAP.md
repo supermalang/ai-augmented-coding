@@ -124,7 +124,7 @@ File: `tests/e2e/[feature].spec.ts`
 
 **UAT:** [What the user sees or does in the browser to verify this works]
 **QA:** — (to be signed off)
-**Delivery:** —
+**Delivery:** — *(filled by `/pr-reviewer`: Commit · PR · Started · Delivered · Cycle time — timestamps ISO 8601 UTC)*
 ```
 
 ---
