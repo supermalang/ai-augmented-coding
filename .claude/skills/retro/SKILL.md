@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Sprint retrospective — the Agile continuous-improvement ceremony. Reads the sprint's git history, the roadmap (done / blocked / carried-over tasks), and the blockers/warnings raised by reviews, then writes a structured retrospective to docs/retros/<date>.md — what went well, what didn't, and concrete action items. Action items become /planner tasks or process changes (skills, hooks, DoR/DoD). Read-only on code. Run at the end of a sprint, after /report.
+description: Sprint retrospective — the Agile continuous-improvement ceremony that also closes the sprint. Verifies the sprint-exit checklist (all tasks DoD-done or carried over, usability run on shipped UI, report generated), then reads git history + roadmap outcomes + review blockers and writes a structured retrospective to docs/retros/<date>.md — what went well, what didn't, and concrete action items (unmet exit checks become action items). Read-only on code. Run at the end of a sprint, after /report.
 ---
 
 # /retro — Sprint Retrospective
@@ -44,6 +44,19 @@ so each sprint runs a little better than the last.
 - **Friction** — the blockers/warnings reviews raised (UX, perf, QA, security, dep), and any pipeline
   stops (DoR failures, RED-gate blocks, tests failing after auto-fix). Recurring blockers are the
   highest-value signal.
+
+### 1b — Sprint-exit checklist (cadence ritual)
+
+Before synthesising, verify the **sprint-exit** checks from *Sprint rituals* in the roadmap — the retro
+is where the sprint formally closes:
+
+- [ ] Every task taken into the sprint is DoD-done `[x]` or explicitly carried over (note carry-overs).
+- [ ] **Usability** was run on the user-facing features shipped this sprint — heuristic at minimum (`/usability-test`); flag any shipped UI that never got a usability pass.
+- [ ] A progress **report** was generated for the review (`/report`).
+
+Any unchecked item becomes an **action item** below (e.g. "run `/usability-test heuristic` on the new
+booking flow — shipped without one"). This is how the sprint-level methodology work is *made sure of*:
+the retro won't quietly close a sprint that skipped it.
 
 ### 2 — Synthesise (don't just list events)
 
