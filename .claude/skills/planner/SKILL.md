@@ -88,7 +88,9 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **API** | Routes to create or modify |
 | **Change-set (locate)** | Change-type tasks: coarse `/locate` output (target areas · call path · ripples) for `/coder` to reuse. Greenfield: `N/A — greenfield` |
 | **Code tasks** | Ordered list of implementation sub-tasks |
-| **Unit tests** | File + cases to cover |
+| **Unit tests** | File + cases to cover (business logic) |
+| **Component tests** | New/changed UI: component + states/interactions (else `N/A`) |
+| **Integration tests** | New/changed API route or DB access: endpoint + cases against a real test DB (else `N/A`) |
 | **E2E tests** | Scenarios + screenshot path |
 | **UAT** | What the user sees or does in the browser |
 | **QA** | `— (to be signed)` |

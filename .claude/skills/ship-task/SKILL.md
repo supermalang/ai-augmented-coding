@@ -126,10 +126,11 @@ const CODER_RESULT_SCHEMA = {
   type: 'object',
   required: ['filesChanged', 'touchesUI', 'touchesPrisma'],
   properties: {
-    filesChanged:  { type: 'array', items: { type: 'string' } },
-    touchesUI:     { type: 'boolean' },
-    touchesPrisma: { type: 'boolean' },
-    summary:       { type: 'string' },
+    filesChanged:     { type: 'array', items: { type: 'string' } },
+    touchesUI:        { type: 'boolean' },
+    touchesPrisma:    { type: 'boolean' },
+    structuralChange: { type: 'boolean', description: 'true if any module/file was added, moved, renamed, or deleted (not just edited) — triggers a code-map refresh' },
+    summary:          { type: 'string' },
   },
 }
 
@@ -259,7 +260,9 @@ const redResult = await agent(
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Instructions:\n' +
   '1. Do NOT read implementation files — derive tests from acceptance criteria only\n' +
-  '2. Write unit tests and E2E specs per the project test conventions in .claude/context.md\n' +
+  '2. Write tests at the layers this task needs per .claude/context.md conventions: unit (logic), ' +
+  'component (new/changed UI — states/props/interaction, jsdom), integration (new/changed API or DB — real test DB), ' +
+  'E2E (user-facing flow), plus an axe accessibility check on new UI. Skip layers the task does not touch.\n' +
   '3. Run the unit test suite\n' +
   '4. Tests SHOULD fail — the implementation does not exist yet\n' +
   'Report: testFiles (array of paths written), testCount (number), failCount (number), ' +
@@ -269,6 +272,20 @@ const redResult = await agent(
 
 if (!redResult) return { status: 'error', reason: 'Test-writer (RED) agent failed for task ' + TASK_ID }
 if (redResult.warning) log('⚠️  ' + redResult.warning)
+// Hard gate: RED tests MUST fail before any implementation. A test that already passes is either
+// vacuous or reverse-engineered from existing code — it proves nothing and would sail through GREEN.
+// Block rather than ship a hollow test. Critical for Fix tasks, where the buggy implementation
+// already exists at RED time, so a code-conforming test would pass and bless the bug.
+if (!redResult.redConfirmed || (redResult.failCount || 0) < 1) {
+  log('🚫 RED gate: no test failed before implementation — tests look vacuous or conform to existing code, not the criteria')
+  return {
+    status: 'blocked',
+    reason: 'RED phase produced no failing test. Tests must be derived from acceptance criteria and fail before implementation exists (a passing RED test proves nothing).',
+    taskId: TASK_ID,
+    testFiles: redResult.testFiles,
+    warning: redResult.warning,
+  }
+}
 log('🔴 RED phase: ' + redResult.testCount + ' tests written, ' + redResult.failCount + ' failing (expected)')
 
 // ── Phase 4: Locate (cheap scout) then Implement ──────────────────────────
@@ -312,6 +329,7 @@ const coderResult = isFix
       'Reproduce, isolate the ROOT CAUSE, and apply the MINIMAL fix so the failing regression test(s) pass. ' +
       'Do NOT modify the test files — they are the contract. Do NOT add features or refactor unrelated code.\n' +
       'When done, report: which files you changed (array of paths), touchesUI (bool), touchesPrisma (bool), ' +
+      'structuralChange (bool — true if you added, moved, renamed, or deleted any file/module, not just edited), ' +
       'and a one-sentence summary of the fix and its root cause.',
       { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'debugger (fix)', agentType: 'debugger' }
     )
@@ -326,6 +344,7 @@ const coderResult = isFix
       'When done, report: which files you changed (array of paths), ' +
       'whether you touched UI source files (touchesUI bool), ' +
       'whether you touched database queries (touchesPrisma bool), ' +
+      'structuralChange (bool — true if you added, moved, renamed, or deleted any file/module, not just edited), ' +
       'and a one-sentence summary of what was implemented.',
       { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
     )
@@ -380,7 +399,7 @@ log('✅ GREEN phase: all tests passing' + (fixAttempts > 0 ? ' (after ' + fixAt
 // ── Phase: Documentation (conditional) ───────────────────────────────────
 // Update docs when the change touches an interface or user-facing surface.
 let docFiles = []
-if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI) {
+if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI || coderResult.structuralChange) {
   phase('Document')
   log('Running docs agent…')
   const docsResult = await agent(
@@ -388,6 +407,7 @@ if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI ||
     'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
     'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n\n' +
     'Update README, API reference, schema cheatsheet, and CHANGELOG to reflect these changes. ' +
+    (coderResult.structuralChange ? 'Modules were added/moved/renamed/removed — also refresh the Code map (navigation) table + dependency diagram in docs/ARCHITECTURE.md so /locate stays accurate. ' : '') +
     'Do NOT touch application logic, tests, schema definitions, or docs/ROADMAP.md.\n' +
     'If nothing user-facing or interface-facing changed, make no edits and return updated=false.\n' +
     'Report: docFiles (array of doc paths changed), updated (bool), and a one-sentence summary.',
@@ -606,6 +626,7 @@ The pipeline returns control to you only when:
 | Situation | What to do |
 |-----------|------------|
 | DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/ship-task <ID>` |
+| RED gate — no failing test | The RED tests passed before any implementation (vacuous, or reverse-engineered from existing code). Rewrite them from the acceptance criteria so they fail first, then re-run |
 | Tests still failing after auto-fix | `/debugger` already tried twice and couldn't make them pass — review the failures, fix manually, then re-run |
 | Review blockers | A review (UX/perf/QA/security/dep/perf-measure) found a must-fix issue — resolve it, then re-run |
 | PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
