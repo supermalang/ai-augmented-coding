@@ -45,7 +45,7 @@ task checkbox, so it lives here, verified by the sprint rituals that bracket a s
 
 **Sprint entry — checked by `/sprint-start`:**
 - [ ] Every planned task satisfies the **task DoR**
-- [ ] The **story map** is current — the user journey is mapped and every journey gap is either planned as a task or consciously deferred (`/story-map`)
+- [ ] The **story map** is current — the user journey is mapped and every journey gap is planned or consciously deferred (`/story-map`). **Hard gate** (blocks the sprint) on the first sprint or any sprint adding new user-facing journeys; a reminder otherwise
 
 **Sprint exit — checked by `/report` + `/retro`:**
 - [ ] Every task taken into the sprint is DoD-done `[x]` or explicitly carried over
@@ -124,7 +124,7 @@ File: `tests/e2e/[feature].spec.ts`
 
 **UAT:** [What the user sees or does in the browser to verify this works]
 **QA:** — (to be signed off)
-**Delivery:** —
+**Delivery:** — *(filled by `/pr-reviewer`: Commit · PR · Started · Delivered · Cycle time — timestamps ISO 8601 UTC)*
 ```
 
 ---

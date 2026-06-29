@@ -1,41 +1,32 @@
 #!/usr/bin/env bash
-# guard-commit-message.sh — enforce Conventional Commits format on git commit -m (R contribution).
-#
-# Wired as PreToolUse(Bash) in settings.json.
-# Checks that the commit subject matches: type(scope): description
-# Types: feat, fix, docs, refactor, test, chore, ci, perf, style, build, revert
-#
-# Only inspects -m "..." / -m '...' patterns. Heredoc commits (git commit -m "$(cat ...)")
-# are skipped gracefully — they can't be parsed reliably.
-
+# guard-commit-message.sh — warn when git commit -m doesn't follow Conventional Commits.
+# PURE BASH (builtins only) — no jq/grep/sed. Advisory (prints a warning), does not deny.
 set -uo pipefail
+. "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/_hooklib.sh"
 
-input=$(cat)
-cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+hook_read_stdin
+cmd="$(hook_field command)"
 
-# Fast path: only check git commit commands that use -m
-case "$cmd" in
-  *git*commit*-m*) ;;
-  *) exit 0 ;;
-esac
+# Fast path: only git commit commands that use -m.
+[[ $cmd == *git*commit*-m* ]] || exit 0
 
-# Extract the first argument after -m (handles both " and ' quoting)
-msg=$(printf '%s' "$cmd" | grep -oP "(?<=-m\s)['\"].*?['\"]" | head -1 | sed "s/^['\"]//;s/['\"]$//")
-
-# If we couldn't parse the message (heredoc, variable, etc.), allow through
+# Extract the message after -m (handles "..." or '...'); heredoc/$(...) → skip.
+msg=""
+if [[ $cmd =~ -m[[:space:]]+\"([^\"]*)\" ]]; then
+  msg="${BASH_REMATCH[1]}"
+elif [[ $cmd =~ -m[[:space:]]+\'([^\']*)\' ]]; then
+  msg="${BASH_REMATCH[1]}"
+fi
 [ -z "$msg" ] && exit 0
 
-# Extract first line (subject) only
-subject=$(printf '%s' "$msg" | head -1)
+subject="${msg%%$'\n'*}"   # first line only
 
 TYPES="feat|fix|docs|refactor|test|chore|ci|perf|style|build|revert"
-if ! printf '%s' "$subject" | grep -Eq "^($TYPES)(\(.+\))?: .{1,}"; then
+if [[ ! $subject =~ ^($TYPES)(\(.+\))?:\ .+ ]]; then
   printf '⚠️  CONVENTIONAL COMMITS : "%s" ne respecte pas le format.\n' "$subject"
-  printf 'Format attendu : type(scope): description courte en français\n'
-  printf 'Exemples : feat(analyses): ajoute le filtre par matrice\n'
-  printf '           fix(lots): corrige le blocage sur NC produit\n'
-  printf '           chore(deps): met à jour prisma-erd-generator\n'
-  printf 'Types valides : feat, fix, docs, refactor, test, chore, ci, perf, style, build, revert\n'
+  printf 'Format attendu : type(scope): description courte\n'
+  printf 'Exemples : feat(analyses): ajoute le filtre par matrice ; fix(lots): corrige le blocage\n'
+  printf 'Types valides : %s\n' "${TYPES//|/, }"
 fi
 
 exit 0

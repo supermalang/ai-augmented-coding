@@ -56,18 +56,24 @@ If a DoR item is **missing** → list the missing items, ask the user to fill th
 
 ### 3 — Write `.current-task`
 
-If all DoR items are satisfied, write the file `.current-task` at the project root:
+If all DoR items are satisfied, write the file `.current-task` at the project root. **Line 3 is the
+start timestamp** — get it from the system clock with `date -u +%Y-%m-%dT%H:%M:%SZ` (run the command;
+never type a literal date). This is what `/pr-reviewer` later uses to compute how long the task took.
 
 ```
 <TASK-ID>
 <short task title>
+<ISO 8601 UTC start timestamp — from `date -u +%Y-%m-%dT%H:%M:%SZ`>
 ```
 
 Example:
 ```
 10.3
 Add conditional start gate for step X
+2026-06-27T14:32:05Z
 ```
+
+(The guard hooks read only line 1 (the task ID), so the extra lines are safe.)
 
 ### 4 — Verify the branch
 

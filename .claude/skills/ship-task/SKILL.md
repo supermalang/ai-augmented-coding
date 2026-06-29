@@ -230,7 +230,10 @@ phase('Setup')
 const branchSlug = TASK_ID.replace(/\./g, '-')
 await agent(
   'You are setting up the dev environment for task ' + TASK_ID + '.\n' +
-  '1. Write the string "' + TASK_ID + '" (no quotes, no trailing newline) to the file .current-task at the project root.\n' +
+  '1. Write .current-task at the project root with THREE lines: line 1 = "' + TASK_ID + '", ' +
+  'line 2 = the task title "' + taskInfo.taskTitle + '", line 3 = the start timestamp in ISO 8601 UTC ' +
+  'obtained by RUNNING `date -u +%Y-%m-%dT%H:%M:%SZ` (do not type a literal date). The start timestamp ' +
+  'lets /pr-reviewer compute the task cycle time at delivery.\n' +
   '2. Run: git switch -c feature/task-' + branchSlug + '\n' +
   '   If that branch already exists, run: git switch feature/task-' + branchSlug + '\n' +
   '3. Confirm both steps succeeded.',

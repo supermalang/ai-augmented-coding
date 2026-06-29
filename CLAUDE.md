@@ -97,7 +97,7 @@ Check every DoR item at the top of `docs/ROADMAP.md`. If any item is missing →
 - Read the task's acceptance criteria in full.
 - Check schema impact — if `Migration`, run your migration command first.
 
-This gate applies to all feature and fix tasks. It does not apply to bug fixes on already-implemented features, tooling changes, or documentation updates.
+This gate applies to **all feature and fix work, including bug fixes on already-shipped features** — a bug must be captured as a roadmap task (`Type: Fix`) *before* any code is written. The `guard-roadmap-gate` hook enforces this on `src/`, `tests/`, and the schema with **no exception for fixes**. A fix entry may be **lightweight** — it does not need the full feature DoR ceremony, but it must exist in the roadmap and be activated via `/start-task` (or `/ship-task`). The gate does **not** apply to tooling changes or documentation updates that don't touch gated implementation paths (`.claude/`, `docs/`, root config are exempt).
 
 ### When assigned a task
 
@@ -113,7 +113,7 @@ This gate applies to all feature and fix tasks. It does not apply to bug fixes o
 | 2 | `/schema-agent` | Schema impact = `Migration` |
 | 3 | `/test-writer` (RED) | Always — writes tests from criteria, confirms they fail |
 | 3b | `/locate` | Non-trivial change — scouts the minimal change-set (files, line ranges, call path) so `/coder` edits surgically; refines the planning change-set if the task has one; skip when the target is obvious |
-| 4 | `/coder` | Always — implements until RED tests pass (starting from the scout's change-set) |
+| 4 | `/coder` *(or `/debugger` for `Type: Fix`)* | Always — implements until RED tests pass (from the scout's change-set). `Type: Fix` tasks route the build to `/debugger` (root cause + minimal fix) instead — both get the RED tests + locate change-set |
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
 | 7 | `/perf-review` | Task touches ORM queries or async fetching |
@@ -150,6 +150,7 @@ These apply to every agent that writes code (`/coder`, `/refactor`, `/debugger`)
 2. **Simplicity first** — write the minimal code that satisfies the acceptance criteria. No speculative abstractions, no features that aren't in the task. The smallest correct change wins.
 3. **Surgical changes** — touch only what the task requires. Don't refactor adjacent code, rename unrelated symbols, or reformat files you didn't need to change. Structural cleanup is `/refactor`'s job, behind green tests.
 4. **Goal-driven execution** — define what "done" looks like as verifiable criteria (the task's acceptance criteria and tests), then work until they're objectively met. Don't declare done by vibe — prove it with passing tests.
+5. **Edit source through Edit/Write, never the shell** — create and modify source/test/schema files with the Edit/Write tools only. Do **not** write them via shell redirects (`>`/`>>`), `tee`, `sed -i`, or a generated script (`python … `, `node …`). Those paths bypass the roadmap/branch gates, which can only see Edit/Write. Use Bash for running things (tests, lint, build, git), not for writing code.
 
 ---
 
@@ -206,7 +207,7 @@ Skills are slash commands in `.claude/skills/`.
 | `webapp-testing` | Drive the running app in a browser — live screenshots, DOM, console logs (throwaway, not E2E) |
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
-| `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and can emit a modern PDF deck and an editable PowerPoint (Pandoc + headless Chrome, zero extra deps). Read-only on code |
+| `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and emits a deck in several styles (classical editable PPTX/PDF · notebooklm · sketch · illustrated image-slides). Default styles need zero extra deps (Pandoc + headless Chrome); `illustrated` is opt-in via a configurable image API. Read-only on code |
 | `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
@@ -228,8 +229,9 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
-- **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** can write docs only.
-- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers; Haiku for `commit`/`diagram`/`locate`).
+- **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
+- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
+- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers + `setup`/`report`; Haiku for `commit`/`diagram`/`locate`).
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
 
@@ -247,8 +249,17 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Edit / Write | `guard-branch.sh` | Editing implementation files on `develop` or `main` |
 | Bash | `guard-destructive-db.sh` | Destructive database operations |
 | Bash | `guard-commit-message.sh` | Non-Conventional Commits format |
-| Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` |
+| Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` — **pure-bash, fails closed** |
+| Bash | `guard-bash-write.sh` | Shell writes (`>`/`tee`/`sed -i`) into gated paths without `.current-task` — closes the Edit/Write bypass; **pure-bash** |
 | Edit / Write | `guard-generated-files.sh` | Hand-editing auto-generated files |
+
+> **Fail-closed & tool independence.** A guard that can't find its tools (missing `jq`/coreutils, or a
+> CRLF shebang) fails *open* — it silently allows. The two **write-gates** (`guard-roadmap-gate`,
+> `guard-bash-write`) are therefore written in **pure bash** (builtins only) and **block on any parse
+> failure**, so they work regardless of PATH. The other hooks use `jq`/coreutils — keep them on PATH
+> (see README Prerequisites / the dev container). **Hooks are a backstop, not a sandbox:** a write done
+> *inside* a script file (`python build.py`) can't be seen by a command-string guard — the real
+> boundary there is least-privilege agent tools (deny raw shell writes so the only path is Edit/Write).
 
 ### PostToolUse (warnings)
 

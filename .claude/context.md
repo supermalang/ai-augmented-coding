@@ -42,6 +42,22 @@ npm run test:coverage # Vitest + coverage thresholds
 
 ---
 
+## Dates & timestamps
+
+One format everywhere, always from the **system clock** — never guessed by the agent (a model's idea
+of "today" is unreliable).
+
+- **Format:** ISO 8601 UTC datetime — `YYYY-MM-DDThh:mm:ssZ` (e.g. `2026-06-27T14:32:05Z`).
+- **Get it from:** `date -u +%Y-%m-%dT%H:%M:%SZ` (run it; do not type a literal date).
+- **Filenames** stay date-only: `YYYY-MM-DD` prefix (e.g. `docs/reports/2026-06-27-sprint-3.md`).
+- **Duration tracking:** `/start-task` writes a **start timestamp** as line 3 of `.current-task`;
+  `/pr-reviewer` records **Started**, **Delivered**, and the **Cycle time** (Delivered − Started) in the
+  task's Delivery block. That pair is what lets you measure how long a task actually took.
+- Planning dates (`Write date`, `Planned date`) may stay date-only (`YYYY-MM-DD`) — they're estimates,
+  not measurements.
+
+---
+
 ## Version control & forge
 
 How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.

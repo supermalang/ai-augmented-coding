@@ -140,11 +140,18 @@ Looked good:
 
 In the task block in `docs/ROADMAP.md`:
 
+Read the **start timestamp** from line 3 of `.current-task` (written by `/start-task`). Get the
+delivery time from the system clock — `date -u +%Y-%m-%dT%H:%M:%SZ` (run it; never type a literal date).
+Record both in ISO 8601 UTC and the cycle time between them (compute with `date`, e.g.
+`date -u -d "<delivered>" +%s` minus the started epoch → human-readable):
+
 ```markdown
 **Delivery**
 - Commit : <short hash of last commit>
 - PR     : #<number> (fill in after opening)
-- Delivered on : <today's date>
+- Started   : <ISO 8601 UTC — from .current-task line 3, or "unknown" if absent>
+- Delivered : <ISO 8601 UTC — date -u +%Y-%m-%dT%H:%M:%SZ>
+- Cycle time : <Delivered − Started, e.g. 3h 38m — or "—" if Started unknown>
 ```
 
 Check off the task in the sprint status table:

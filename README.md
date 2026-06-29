@@ -18,7 +18,14 @@ A reusable Claude Code multi-agent development pipeline. Drop it into any projec
 
 ## Getting started
 
-**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed, and a git repository.
+**Prerequisites:** [Claude Code](https://claude.com/claude-code) installed, a git repository, and a
+**`bash`** shell to run the hooks (on Windows, **Git Bash**). The two write-gating guards
+(`guard-roadmap-gate`, `guard-bash-write`) are pure-bash and need nothing else; the remaining hooks
+also use **`jq`** + standard coreutils — install `jq` so they don't degrade. The included
+[dev container](.devcontainer/devcontainer.json) provisions `jq` automatically.
+
+> **Why this matters:** a guard that can't find its tools fails *open* (silently allows). The
+> write-gates are written to fail *closed* with builtins only; for the rest, ensure `jq` is on PATH.
 
 The fastest path from zero to your first agent-built PR:
 
