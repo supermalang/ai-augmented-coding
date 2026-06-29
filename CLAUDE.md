@@ -113,7 +113,7 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 | 2 | `/schema-agent` | Schema impact = `Migration` |
 | 3 | `/test-writer` (RED) | Always — writes tests from criteria, confirms they fail |
 | 3b | `/locate` | Non-trivial change — scouts the minimal change-set (files, line ranges, call path) so `/coder` edits surgically; refines the planning change-set if the task has one; skip when the target is obvious |
-| 4 | `/coder` | Always — implements until RED tests pass (starting from the scout's change-set) |
+| 4 | `/coder` *(or `/debugger` for `Type: Fix`)* | Always — implements until RED tests pass (from the scout's change-set). `Type: Fix` tasks route the build to `/debugger` (root cause + minimal fix) instead — both get the RED tests + locate change-set |
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
 | 7 | `/perf-review` | Task touches ORM queries or async fetching |
@@ -207,7 +207,7 @@ Skills are slash commands in `.claude/skills/`.
 | `webapp-testing` | Drive the running app in a browser — live screenshots, DOM, console logs (throwaway, not E2E) |
 | `domain-rules` | Verify the project's absolute rules |
 | `roadmap-status` | Check roadmap progress, mark tasks done |
-| `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and can emit a modern PDF deck and an editable PowerPoint (Pandoc + headless Chrome, zero extra deps). Read-only on code |
+| `report` | Generate a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + `PRODUCT.md`, writes `docs/reports/<date>.md`, and emits a deck in several styles (classical editable PPTX/PDF · notebooklm · sketch · illustrated image-slides). Default styles need zero extra deps (Pandoc + headless Chrome); `illustrated` is opt-in via a configurable image API. Read-only on code |
 | `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
@@ -229,8 +229,9 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
-- **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** can write docs only.
-- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers; Haiku for `commit`/`diagram`/`locate`).
+- **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
+- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
+- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers + `setup`/`report`; Haiku for `commit`/`diagram`/`locate`).
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
 
