@@ -97,7 +97,7 @@ Check every DoR item at the top of `docs/ROADMAP.md`. If any item is missing →
 - Read the task's acceptance criteria in full.
 - Check schema impact — if `Migration`, run your migration command first.
 
-This gate applies to all feature and fix tasks. It does not apply to bug fixes on already-implemented features, tooling changes, or documentation updates.
+This gate applies to **all feature and fix work, including bug fixes on already-shipped features** — a bug must be captured as a roadmap task (`Type: Fix`) *before* any code is written. The `guard-roadmap-gate` hook enforces this on `src/`, `tests/`, and the schema with **no exception for fixes**. A fix entry may be **lightweight** — it does not need the full feature DoR ceremony, but it must exist in the roadmap and be activated via `/start-task` (or `/ship-task`). The gate does **not** apply to tooling changes or documentation updates that don't touch gated implementation paths (`.claude/`, `docs/`, root config are exempt).
 
 ### When assigned a task
 
