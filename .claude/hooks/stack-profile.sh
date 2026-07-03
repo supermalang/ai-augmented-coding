@@ -46,6 +46,16 @@ export STACK_DOCS_GENERATE_CMD='npm run docs:generate'
 export STACK_MIGRATIONS_REGEX='^prisma/migrations/'
 export STACK_DOCKER_REBUILD_CMD='docker compose up -d --build app'
 
+# Visual re-baseline guard (guard-visual-update). Blocks AGENTS from blessing screenshot
+# baselines — only a human or the Tier 3 review app may re-baseline. Two parts:
+#   TOOL   — the command must be the actual capture INVOCATION (`playwright test`), not a
+#            mere mention. Matching the subcommand (not bare `playwright`) means a commit
+#            message or doc that references `--update-snapshots` doesn't false-trip; and
+#            unrelated `-u` flags (sort -u, git push -u) never match.
+#   UPDATE — the snapshot-update flag(s) for that tool.
+export STACK_VISUAL_TOOL_PATTERN='playwright[[:space:]]+test'
+export STACK_VISUAL_UPDATE_PATTERN='--update-snapshots|(^|[[:space:]])-u([[:space:]]|$)'
+
 # Hardcoded-secret patterns (guard-secret-scan). The hook ships a stack-agnostic
 # default (private keys, AWS/GCP keys, GitHub/Slack tokens, credential assignments).
 # Override only to add project-specific token formats — alternation, grep -E syntax:

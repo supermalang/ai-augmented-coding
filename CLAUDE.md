@@ -212,6 +212,7 @@ Skills are slash commands in `.claude/skills/`.
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
 | `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds a **pinned Playwright container** + config + example route specs. Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
+| `visual-review` | Read-only reporter of visual-approval state — compares baseline PNGs vs the integration branch, reads `visual-approvals.json`, and reports each changed baseline as approved / rejected / pending. Consumed by `/qa-tester` and `/pr-reviewer`; never re-baselines |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |
@@ -228,6 +229,7 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 
 - **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
+- **`visual-review`** is read-only (Read/Bash/Glob/Grep, no Edit/Write) — it reports visual-approval state; it cannot bless baselines. Runs on Haiku. (Blessing baselines is a human/review-app action, enforced by the `guard-visual-update` hook.)
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
@@ -252,6 +254,7 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Bash | `guard-commit-message.sh` | Non-Conventional Commits format |
 | Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` — **pure-bash, fails closed** |
 | Bash | `guard-bash-write.sh` | Shell writes (`>`/`tee`/`sed -i`) into gated paths without `.current-task` — closes the Edit/Write bypass; **pure-bash** |
+| Bash | `guard-visual-update.sh` | Agents re-baselining screenshots (`playwright … --update-snapshots`/`-u`) — blessing baselines is a human/review-app action; **pure-bash** |
 | Edit / Write | `guard-generated-files.sh` | Hand-editing auto-generated files |
 
 > **Fail-closed & tool independence.** A guard that can't find its tools (missing `jq`/coreutils, or a

@@ -36,6 +36,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash-write.sh\"",
             "timeout": 5,
             "statusMessage": "Checking shell writes to gated paths…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-visual-update.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking visual re-baseline guard…"
           }
         ]
       },
