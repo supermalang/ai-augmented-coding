@@ -46,6 +46,19 @@ ok(readApprovals(approvalsFile)[diffs[0].id]?.decision === 'rejected', 'reject: 
 // 4 — baselineId helper
 ok(baselineId(join(root, 'baselines'), baseline).endsWith('home-desktop-linux.png'), 'baselineId: relative + posix');
 
+// 5 — platform safety: with linux + darwin baselines for the same stem, a linux candidate
+//     must target the LINUX baseline, never overwrite the darwin one.
+const darwin = join(baselinesDir, 'home-desktop-darwin.png');
+writeFileSync(baseline, 'LINUX-OLD');
+writeFileSync(darwin, 'DARWIN-OLD');
+writeFileSync(actual, 'LINUX-NEW');
+const d2 = findDiffs({ ...dirs, platform: 'linux' });
+const picked = d2.find((d) => d.name === 'home-desktop');
+ok(picked && picked.baseline.endsWith('home-desktop-linux.png'), 'platform: picks the linux baseline, not darwin');
+approve({ id: picked.id, task: 'VBR-5', actualPath: picked.actual, baselinePath: picked.baseline, approvalsFile, at: 't' });
+ok(readFileSync(baseline, 'utf8') === 'LINUX-NEW', 'platform: linux baseline updated');
+ok(readFileSync(darwin, 'utf8') === 'DARWIN-OLD', 'platform: darwin baseline left untouched');
+
 rmSync(root, { recursive: true, force: true });
 console.log(`\nreview-app test.mjs — ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

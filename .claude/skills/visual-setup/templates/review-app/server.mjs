@@ -54,7 +54,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/diffs') {
-    const diffs = findDiffs({ outputDir, baselinesDir }).map((d) => ({
+    const diffs = findDiffs({ outputDir, baselinesDir, platform: process.env.VISUAL_PLATFORM }).map((d) => ({
       id: d.id,
       name: d.name,
       baseline: '/img?p=' + encodeURIComponent(d.baseline.replace(ROOT + '/', '').replace(ROOT + '\\', '')),
@@ -74,7 +74,7 @@ const server = createServer(async (req, res) => {
     const body = await readJsonBody(req);
     const at = new Date().toISOString();
     const task = body.task || currentTask();
-    const entry = findDiffs({ outputDir, baselinesDir }).find((d) => d.id === body.id);
+    const entry = findDiffs({ outputDir, baselinesDir, platform: process.env.VISUAL_PLATFORM }).find((d) => d.id === body.id);
     if (!entry) return send(res, 404, { error: 'unknown baseline id' });
     const result = url.pathname.endsWith('approve')
       ? approve({ id: entry.id, task, actualPath: entry.actual, baselinePath: entry.baseline, approvalsFile, at })

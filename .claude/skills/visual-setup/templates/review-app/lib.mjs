@@ -43,16 +43,27 @@ export function writeApprovals(approvalsFile, obj) {
  * Correlate container-rendered candidates with their committed baselines.
  * Scans outputDir for `*-actual.png`, pairs each with a sibling `*-diff.png` (if any) and the
  * baseline of the same name under baselinesDir. Returns one entry per changed baseline.
+ *
+ * Platform safety: baselines carry a `{platform}` suffix (home-desktop-linux.png). Candidates
+ * come from the pinned container, so we must re-baseline the baseline for THAT platform — never
+ * a same-stem baseline for a different OS. `platform` defaults to the container's (linux) and is
+ * overridable via VISUAL_PLATFORM; when several OS baselines share a stem we prefer the matching
+ * one and only fall back to the first if none matches.
  */
-export function findDiffs({ outputDir, baselinesDir }) {
+export function findDiffs({ outputDir, baselinesDir, platform }) {
+  const plat = platform || process.env.VISUAL_PLATFORM || 'linux';
   const actuals = walk(outputDir, (p) => p.endsWith('-actual.png'));
   const baselines = walk(baselinesDir, (p) => p.endsWith('.png'));
   const results = [];
   for (const actual of actuals) {
     const stem = basename(actual).replace(/-actual\.png$/, '');
     const diff = actual.replace(/-actual\.png$/, '-diff.png');
-    const baseline = baselines.find((b) => basename(b).replace(/\.png$/, '') === stem
-      || basename(b).replace(/-[a-z0-9]+\.png$/, '') === stem); // tolerate {platform} suffix
+    const sameStem = baselines.filter((b) => {
+      const bn = basename(b).replace(/\.png$/, '');
+      return bn === stem || bn.replace(/-[a-z0-9]+$/, '') === stem; // tolerate {platform} suffix
+    });
+    // Prefer the baseline for the capture platform; fall back only if none matches.
+    const baseline = sameStem.find((b) => basename(b).endsWith(`-${plat}.png`)) || sameStem[0];
     if (!baseline) continue; // an -actual with no committed baseline is a brand-new snapshot
     results.push({
       id: baselineId(baselinesDir, baseline),

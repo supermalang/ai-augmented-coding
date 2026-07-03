@@ -38,6 +38,7 @@ baselines will re-fail in CI on font/anti-aliasing differences.
 | `VISUAL_BASELINES_DIR` | `tests/visual/__screenshots__` |
 | `VISUAL_OUTPUT_DIR` | `test-results/visual` |
 | `VISUAL_APPROVALS` | `visual-approvals.json` |
+| `VISUAL_PLATFORM` | `linux` (the pinned container's OS — the baseline suffix Approve targets) |
 
 Task association defaults to line 1 of `.current-task`.
 
