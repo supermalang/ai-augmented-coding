@@ -20,6 +20,32 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 
 ---
 
+## Keeping the roadmap lean — read selectively, archive delivered work
+
+`docs/ROADMAP.md` is read by nearly every agent, so it must stay proportional to **active** work,
+not cumulative history. Two rules:
+
+**Read a slice, not the whole file.** When you only need one task, grep to its `### <ID> —` heading
+and read that block (with `offset`/`limit`) — do not read the entire roadmap. When you need the
+backlog, read the sprint **status tables** + the **✅ Delivered (archived)** ledger, then open only
+the non-delivered blocks. The static DoR/DoD/Template header is read intentionally, not every run.
+
+**Archive delivered tasks** — `/roadmap-status archive`:
+
+```bash
+node .claude/skills/roadmap-status/archive.mjs
+```
+
+This sweeps every task block whose `**Completion date:**` is set into
+`docs/roadmap/archive/sprint-<N>.md` and leaves a compact ledger row in the live file's
+**✅ Delivered (archived)** table (`| ID | Title | ✅ date | PR |`). It is **lossless** (the archived
+block equals the original), **idempotent** (re-running archives nothing new, never duplicates), and a
+**no-op** when nothing is delivered (creates no files). Git history holds the full blocks regardless.
+Run it at sprint close, or whenever the live roadmap feels large. Do not hand-move blocks — run the
+command so the move stays lossless.
+
+---
+
 Active work is tracked in [docs/ROADMAP.md](../../../docs/ROADMAP.md). Trigger when the user asks "what's next", "picks up task X", "is feature Y done", or "mark this complete".
 
 ## Before starting any task

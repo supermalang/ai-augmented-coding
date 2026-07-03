@@ -153,6 +153,7 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 | Bucket | Location | What | Git |
 |---|---|---|---|
 | **Knowledge / deliverables** | `docs/<category>/` | `docs/discovery/` · `docs/design/` · `docs/reports/*.md` · `docs/retros/` · `docs/usability/` · `docs/story-map.md` · `docs/ARCHITECTURE.md` | **committed** |
+| Roadmap archive | `docs/roadmap/archive/sprint-<N>.md` | full blocks of delivered tasks swept out of the live roadmap by `/roadmap-status archive` (lossless; git also holds them) — keeps `ROADMAP.md` proportional to active work | **committed** |
 | Non-reproducible images | `docs/reports/assets/<date>/` | `/report` illustrated-style images (can't be regenerated identically) | **committed** |
 | Visual baselines | `__screenshots__/` under the visual test dir (see the `Visual testing` block for the exact path) | blessed `toHaveScreenshot` PNGs — the approval record, reviewed before commit | **committed** |
 | **Generated deliverables** | `out/<type>/` | `out/reports/` PDF + PPTX (regenerable from the committed `.md`) | ignored |

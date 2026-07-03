@@ -60,10 +60,15 @@ If the request is specific enough that you can draft all fields including accept
 
 ### 2 — Read the current roadmap state
 
-Read `docs/ROADMAP.md` in full to:
+Read `docs/ROADMAP.md` to:
 - Determine the next available ID in the relevant sprint
 - Identify potential dependencies on existing tasks
 - Verify the task does not already exist under a different name
+
+On a large roadmap, **read selectively** rather than the whole file: the DoR/Template header, the
+sprint **status tables**, the **✅ Delivered (archived)** ledger (delivered IDs — also
+`docs/roadmap/archive/`), and the **current sprint's** open blocks. That's enough for the next ID,
+dependency, and duplicate checks; open a specific archived block only if you need its detail.
 
 ### 3 — Draft the task block
 

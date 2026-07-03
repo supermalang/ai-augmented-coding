@@ -160,12 +160,20 @@ Record both in ISO 8601 UTC and the cycle time between them (compute with `date`
 - Cycle time : <Delivered − Started, e.g. 3h 38m — or "—" if Started unknown>
 ```
 
+Also set the task block's **Completion date** field to today's date (`YYYY-MM-DD`) — this is the
+marker `/roadmap-status archive` uses to sweep a delivered block out of the live roadmap later:
+```markdown
+**Completion date:** <YYYY-MM-DD>
+```
+
 Check off the task in the sprint status table:
 ```markdown
 | ID Title | ✓ | <date> |
 ```
 
-Update the **Global status** table at the top of the roadmap.
+Update the **Global status** table at the top of the roadmap. (Read selectively — update the target
+task's block + the status/global tables; you don't need to read the whole roadmap or the
+`✅ Delivered (archived)` ledger.)
 
 ### 5 — Final commit (if uncommitted)
 
