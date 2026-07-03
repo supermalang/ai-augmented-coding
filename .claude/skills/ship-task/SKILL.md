@@ -196,8 +196,9 @@ phase('Validate')
 log('Reading roadmap and validating DoR for task ' + TASK_ID + '…')
 
 const taskInfo = await agent(
-  'Read docs/ROADMAP.md. Find the task block for task ID "' + TASK_ID + '" ' +
-  '(look for "**' + TASK_ID + ' —" or "**' + TASK_ID + '.**").\n' +
+  'In docs/ROADMAP.md, find the task block for task ID "' + TASK_ID + '" ' +
+  '(look for "### ' + TASK_ID + ' —", "**' + TASK_ID + ' —", or "**' + TASK_ID + '.**"). ' +
+  'On a large roadmap, grep to that heading and read just that block + the DoR header — do not read the whole file.\n' +
   'Extract and return:\n' +
   '- taskBlock: the full markdown block for this task (from its heading to the next task heading)\n' +
   '- taskTitle: the short title after the em dash\n' +
@@ -572,8 +573,10 @@ phase('Backlog')
 log('Batch mode — scanning roadmap for open, DoR-ready tasks…')
 const backlog = await agent(
   'Read docs/ROADMAP.md. Return:\n' +
-  '- doneIds: IDs of every task already marked [x] / delivered.\n' +
-  '- tasks: every task NOT marked [x], each with: id, title, ' +
+  '- doneIds: IDs of every task already marked [x] / delivered — INCLUDING rows in the ' +
+  '"✅ Delivered (archived)" ledger table (delivered tasks whose full block was archived out to ' +
+  'docs/roadmap/archive/). Archived-and-delivered still counts as a satisfied dependency.\n' +
+  '- tasks: every task NOT marked [x] and NOT in the delivered ledger, each with: id, title, ' +
   'taskType ("Fix"/"Feature"; "Feature" if absent), priority ("P0"/"P1"/"P2" or empty string), ' +
   'dependencies (array of task IDs after "Dependencies:", empty if None/absent), ' +
   'and dorMet (true only if it satisfies the Definition of Ready at the top of the roadmap).',

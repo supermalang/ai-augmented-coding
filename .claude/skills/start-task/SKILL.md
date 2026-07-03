@@ -34,7 +34,7 @@ Examples: `/start-task 10.3`, `/start-task INF-9`, `/start-task SP3-E`
 
 ### 1 — Find the task
 
-Read `docs/ROADMAP.md` and locate the block for `<TASK-ID>`.
+Locate the block for `<TASK-ID>` in `docs/ROADMAP.md`. On a large roadmap, **read selectively** — grep to the `### <TASK-ID> —` heading and read just that block (with `offset`/`limit`) plus the DoR header; don't read the whole file. (A delivered task may have been archived — see `docs/roadmap/archive/` / the `✅ Delivered (archived)` ledger.)
 
 - If the task **does not exist** → stop. Tell the user to add the task using the template at the top of `docs/ROADMAP.md` before continuing.
 - If the task is already `[x]` (done) → warn the user and ask for confirmation before continuing.

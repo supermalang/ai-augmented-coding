@@ -134,6 +134,7 @@ File: `tests/e2e/[feature].spec.ts`
 | Domain | Planned | In progress | Done |
 |--------|---------|-------------|------|
 | Visual baseline review (tooling) | 5 | 0 | 0 |
+| Pipeline tooling | 1 | 0 | 0 |
 
 ---
 
@@ -510,5 +511,86 @@ File: manual scenario in `.claude/skills/visual-setup/templates/review-app/READM
 | 2 | One changed baseline | Click Reject | Recorded rejected; no re-baseline; `/pr-reviewer` gate refuses to merge |
 
 **UAT:** Developer launches the review app, sees each changed screenshot side-by-side with the why-changed note, clicks Approve/Reject, and those decisions flow through `/visual-review` into the `/pr-reviewer` merge gate — matching the reference screenshot experience, with parity to CI pixels.
+**QA:** — (to be signed off)
+**Delivery:** —
+
+---
+
+## 🏃 Sprint 2 — Pipeline scaling
+
+| Task | Status | Delivered |
+|------|--------|-----------|
+| RB-1 Roadmap scaling: archive done tasks + selective reads | ⬜ | — |
+
+### RB-1 — Roadmap scaling: archive done tasks + selective reads
+
+**Sprint:** Sprint 2
+**Write date:** 2026-07-03
+**Planned date:** 2026-07-17
+**Completion date:** —
+**Type:** Feature
+**Risk:** Medium *(archiving rewrites the roadmap structure many agents depend on — must be lossless + idempotent)*
+**Priority:** P1
+**Dependencies:** None
+
+**Description**
+Keep `docs/ROADMAP.md` proportional to *active work* rather than *cumulative history*. Today the file
+is read (often in full) by nearly every agent — `/planner`, `/start-task`, `/ship-task` (validate +
+batch), `/pr-reviewer`, `/roadmap-status` — so on a long-lived project it grows past thousands of
+lines and taxes every run's tokens while making block extraction slow and error-prone. Two moves:
+(1) an **archive** mode in `/roadmap-status` that sweeps completed `[x]` task blocks into
+`docs/roadmap/archive/sprint-<N>.md` leaving a one-line ledger entry in the live file; (2) update the
+**read-instructions** in the consuming agents so they read a slice (the one task block, or the
+status/ledger tables) instead of the whole file. Git history preserves full blocks regardless.
+
+**User value**
+As a pipeline maintainer on a long-running project, I want the live roadmap to stay small and agents to
+read only the slice they need, so that every agent run stays fast and cheap no matter how much work has
+already shipped.
+
+**Acceptance criteria**
+- [ ] `/roadmap-status archive` moves every `[x]` task block out of `docs/ROADMAP.md` into `docs/roadmap/archive/sprint-<N>.md` (grouped by the task's sprint) and leaves a compact ledger row in the live file: `| <ID> | <title> | ✅ <date> | <PR> |`.
+- [ ] **Lossless round-trip** — every archived block is written to the archive byte-for-byte (heading through last field); nothing is dropped or truncated; the archive file is valid markdown and readable on its own.
+- [ ] **Idempotent** — re-running `archive` with no newly-done tasks makes no changes; running it twice never duplicates a block or a ledger row.
+- [ ] After archiving, the live `docs/ROADMAP.md` contains only the static header (DoR/DoD/Template), active + planned task blocks, the sprint status tables, and the done-ledger — no full `[x]` blocks.
+- [ ] The consuming agents' read-instructions are updated to read selectively: `/start-task` and `/ship-task` (validate) locate the single task block by ID (grep + offset/limit) rather than the whole file; `/ship-task` batch reads the status/ledger tables + only non-done blocks; `/pr-reviewer` reads the target block + status table; `/planner` reads the header + current sprint. The static DoR/DoD/Template header stays in `docs/ROADMAP.md`.
+- [ ] **No-op safety** — on an empty roadmap or one with zero `[x]` tasks, `archive` reports "nothing to archive" and changes nothing; it never creates an empty archive file.
+- [ ] The archive convention (location, ledger format, that git holds full history) is documented in `CLAUDE.md` and `.claude/context.md` (Generated files & artifacts).
+
+**Schema impact:** None — documentation/tooling only, no data model.
+
+**Components:** `.claude/skills/roadmap-status/SKILL.md` (new `archive` mode + `archive.mjs`) · `.claude/skills/start-task/SKILL.md` · `.claude/skills/ship-task/SKILL.md` · `.claude/skills/pr-reviewer/SKILL.md` · `.claude/skills/planner/SKILL.md` (read-instructions) · `docs/roadmap/archive/` (new) · `CLAUDE.md` · `.claude/context.md`
+
+**API:** N/A — no HTTP routes.
+
+**Change-set (locate):** *change-type — refine with `/locate` before coding.*
+- Targets: the five skill files' roadmap-read steps · `roadmap-status/SKILL.md` gains the archive procedure · Call path: `/roadmap-status archive` → parse `[x]` blocks → append to archive → replace with ledger row → rewrite live file · Ripples: any doc describing the roadmap layout (CLAUDE.md two-tier table, context.md artifacts table); the ledger table shape the batch scan reads
+
+**Code tasks**
+1. Define the archive layout + ledger row format; create `docs/roadmap/archive/` with a short README.
+2. Add the `archive` procedure to `/roadmap-status` (identify done blocks by Completion date, append losslessly, replace with ledger row, idempotent + no-op guards).
+3. Update read-instructions in `/start-task`, `/ship-task`, `/pr-reviewer`, `/planner` to read selectively (single block by ID / tables / current sprint).
+4. Document the archive convention in `CLAUDE.md` and `.claude/context.md`.
+
+**Unit tests**
+File: `.claude/skills/roadmap-status/tests/archive.test.mjs`
+| Function | Cases |
+|---|---|
+| archive sweep | one delivered block → moved to archive + ledger row left · lossless (archived content equals original block) · mixed done/open → only done moved |
+| idempotency | re-run with nothing new → zero changes · never duplicates a block/row |
+| no-op | empty roadmap → "nothing to archive", no archive file created · zero delivered → no change |
+
+**Component tests** *(N/A — no UI)*
+
+**Integration tests** *(N/A — no API/DB; behaviour verified by the fixture tests above)*
+
+**E2E tests**
+File: manual scenario in `.claude/skills/roadmap-status/tests/README.md`
+| # | Initial state | Action | Assertion |
+|---|---|---|---|
+| 1 | Roadmap with several delivered + open tasks | `/roadmap-status archive` | Live file keeps only active/planned + ledger; `docs/roadmap/archive/sprint-N.md` holds the full done blocks; re-run is a no-op |
+| 2 | Long roadmap after archive | `/start-task <open-id>` | Locates the task block without reading the whole file |
+
+**UAT:** Maintainer runs `/roadmap-status archive` on a bloated roadmap and sees the live file shrink to active work + a done-ledger, with the full history intact under `docs/roadmap/archive/`; a re-run reports nothing to archive.
 **QA:** — (to be signed off)
 **Delivery:** —
