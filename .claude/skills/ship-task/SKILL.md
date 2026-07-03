@@ -640,6 +640,32 @@ All other steps — branch creation, schema migration, implementation, doc updat
 
 ---
 
+## Visual approval — async park (only when visual testing is enabled)
+
+When the `Visual testing` block in `.claude/context.md` has `enabled: true`, a UI change produces
+screenshot diffs that **a human must approve** — and that approval is the **final gate before the PR**.
+This gate is **non-blocking**:
+
+- **Flag, don't fail.** In the Review phase, `/qa-tester` runs the visual suite. A *functional* failure
+  blocks like any test; a pure *visual diff* is recorded as **pending** (via `/visual-review`) and is
+  **not** a blocker — the pipeline does not treat "the UI looks different" as an error.
+- **Park at Ship.** In the Ship phase, `/pr-reviewer` calls `/visual-review`. If the gate is
+  `pending`, it **parks** the task — no PR is opened — and returns "pending visual approval". The task
+  is **not** marked done and stays open in the roadmap. In batch mode the orchestrator records it and
+  **moves on to the next ready task** — it never idles waiting for a human.
+- **Approve out of band.** You review the diffs (`npx playwright show-report`, or the Tier 3 review
+  app) and approve the intended ones — terminal `--update-snapshots` + commit, or the review app,
+  which writes `visual-approvals.json` and re-baselines. Agents cannot do this (`guard-visual-update`).
+- **Resume.** Once the approval record shows all-approved, re-run to finish. The **cheap** resume is
+  `/pr-reviewer` directly on the parked task (tests are already green — no need to re-run the whole
+  pipeline); `/ship-task <ID>` also works and will fast-path through the now-passing steps. A
+  `rejected` baseline instead routes back to `/coder`.
+
+The park state is durable and needs no separate file: the task is simply *open with no PR yet*, and
+`visual-approvals.json` (committed) records what's approved. Re-running reads both and proceeds.
+
+---
+
 ## Cross-references
 
 - Task not in roadmap yet: `/planner`

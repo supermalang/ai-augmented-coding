@@ -103,6 +103,8 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 **Recommended — fully autonomous:** `/ship-task <ID>` chains all agents automatically with skip logic, and only pauses on DoR failure, test failure, or when the PR URL is ready for your review.
 
+> **Opt-in visual gate.** If visual baseline testing is enabled (`/visual-setup` — off by default), a UI change adds one **async, non-blocking** human checkpoint: `/qa-tester` flags changed screenshots as *pending* (a visual diff is not a failure), and `/pr-reviewer` **parks** the task before the PR until you approve the baselines (`/ship-task` moves on to other tasks meanwhile). You approve out of band; re-running resumes to the PR. See `/ship-task` → *Visual approval — async park*.
+
 **Manual — step by step:** invoke each skill in order.
 
 | Step | Skill | Run when |
