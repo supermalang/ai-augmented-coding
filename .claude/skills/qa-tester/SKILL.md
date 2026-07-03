@@ -62,7 +62,19 @@ For each screenshot in the E2E test output directory:
 - [ ] Success/error messages appear in the right place
 - [ ] Page is readable at the capture resolution (desktop by default)
 
-**Visual baseline blessing.** This sign-off is the gate for visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). Only once you confirm the page is visually correct here — and `/ux-review` has passed — may a `toHaveScreenshot` baseline be captured/updated and committed. Inspect each generated PNG before committing it. Never bless a baseline for a page you would not sign off, and never regenerate a baseline just to make a failing visual test pass.
+**Visual baseline blessing.** This sign-off relates to visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). You may **inspect** baselines and confirm the page is visually correct, but as an agent you **must never re-baseline** — running `--update-snapshots` is blocked by the `guard-visual-update` hook. Blessing a baseline is a **human** action (or the Tier 3 review app). Never try to regenerate a baseline to make a failing visual test pass.
+
+### 3b — Visual baseline run *(only if visual testing is enabled)*
+
+Read the `Visual testing` block in `.claude/context.md`. If absent or `enabled: false`, **skip this step** (Tier 0 — nothing changes). If enabled:
+
+1. Run the visual suite in the pinned container (command from `docs/visual-testing.md` / the `Visual testing` block), e.g. `docker compose -f docker-compose.visual.yml run --rm visual`.
+2. **Classify the outcome — a visual diff is NOT a failure:**
+   - A **functional / assertion** failure (the spec errors, a locator is missing, the app won't serve) → **blocks**. Hand off to `/coder`, exactly like any failing test.
+   - A pure **screenshot diff** (pixels changed, spec otherwise fine) → **not a failure**. It means the UI changed and a human must decide. Do **not** re-baseline and do **not** block on it.
+3. For any screenshot diff, invoke `/visual-review` to record/confirm the changed baselines as **pending** and report them. Surface the pending list to the human — this is what routes the change to human UAT.
+
+> The rule: functional failure stops the pipeline; a visual diff *routes to the human*. You never bless it yourself.
 
 ### 4 — Verify acceptance criteria
 
@@ -107,6 +119,7 @@ If everything is green, update the task block in `docs/ROADMAP.md`:
 📋 Acceptance criteria : X/X verified in-browser
 🖥️  UAT scenarios       : Y/Y behave as specified
 📸 Screenshots         : conformant
+🎨 Visual baselines    : <N pending human approval | none changed | testing disabled>
 ✋ Human UAT            : deferred to the PR (human sign-off before merge)
 ➡️  Next step          : /security-audit → /pr-reviewer
 ```
