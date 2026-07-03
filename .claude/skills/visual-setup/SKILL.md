@@ -144,6 +144,28 @@ Then rewire capture to a **static** Storybook build (no live dev server in CI):
 
 Both tiers can coexist: full-route specs (Tier 1) + story specs (Tier 2) run under the same config.
 
+### 4c — Scaffold Tier 3 (local review app) — only if chosen
+
+A thin, dependency-free local web app giving a clickable **Approve / Reject** UI over the
+baseline-vs-candidate side-by-side. Requires Tier 1 (or 2) already scaffolded.
+
+Copy the whole `review-app/` template dir to a scaffold location (default `.visual-review-app/`):
+
+| Template | Written to |
+|---|---|
+| `review-app/lib.mjs` · `server.mjs` · `index.html` · `test.mjs` · `README.md` | `.visual-review-app/…` |
+
+Key properties to preserve (they're already built into the templates — just don't undo them):
+- **Parity:** the app reads candidates from the Playwright **output dir** (`test-results/visual/`),
+  i.e. container-rendered pixels — so a human approves exactly what CI will produce.
+- **Guard-compatible:** Approve re-baselines by a **file copy** (not `--update-snapshots`), so the
+  `guard-visual-update` hook never blocks the human-run app while still blocking agents.
+- **Writes the record:** Approve/Reject update `visual-approvals.json`, which `/visual-review` reads.
+
+Tell the user to run it themselves: produce candidates in the container, then `node
+.visual-review-app/server.mjs` → open `http://localhost:4444`. Verify with `node
+.visual-review-app/test.mjs` (10 assertions). Do not launch it or approve anything yourself.
+
 ### 5 — Write the flag to `.claude/context.md`
 
 Insert or update the `## Visual testing` block (idempotent — replace in place if it exists, never
@@ -167,6 +189,11 @@ For **Tier 2**, set `tier: 2` and add the Storybook fields:
 - **storybook framework:** @storybook/nextjs
 - **storybook build:** npx storybook build       # produces storybook-static/ (gitignored)
 - **storybook served at:** http://localhost:6006
+```
+
+For **Tier 3**, set `tier: 3` and add the review-app field:
+```markdown
+- **review app:** .visual-review-app/  (run: node .visual-review-app/server.mjs → http://localhost:4444)
 ```
 
 ### 6 — Handoff
