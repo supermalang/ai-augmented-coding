@@ -154,7 +154,7 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 |---|---|---|---|
 | **Knowledge / deliverables** | `docs/<category>/` | `docs/discovery/` · `docs/design/` · `docs/reports/*.md` · `docs/retros/` · `docs/usability/` · `docs/story-map.md` · `docs/ARCHITECTURE.md` | **committed** |
 | Non-reproducible images | `docs/reports/assets/<date>/` | `/report` illustrated-style images (can't be regenerated identically) | **committed** |
-| Visual baselines | next to specs (`tests/e2e/**`) | blessed `toHaveScreenshot` PNGs — reviewed before commit | **committed** |
+| Visual baselines | `__screenshots__/` under the visual test dir (see the `Visual testing` block for the exact path) | blessed `toHaveScreenshot` PNGs — the approval record, reviewed before commit | **committed** |
 | **Generated deliverables** | `out/<type>/` | `out/reports/` PDF + PPTX (regenerable from the committed `.md`) | ignored |
 | **Throwaway verification** | `.scratch/<purpose>/` | `.scratch/webapp-testing/` · `.scratch/perf-measure/` · `.scratch/uat/` (QA/UAT review shots) | ignored |
 | Tool-native output | tool defaults | `coverage/` · `test-results/` · `playwright-report/` — leave where the tools write them | ignored |
@@ -162,6 +162,24 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 Rules: a *regenerable* output is gitignored (`out/`, `.scratch/`, tool dirs); only *knowledge* and
 *non-reproducible* artifacts are committed. Never stage `.scratch/`, `out/`, or tool-output dirs in a
 task commit. New subfolders are fine **within** a bucket; don't invent new top-level output roots.
+
+---
+
+## Visual testing
+
+> Opt-in visual baseline review. **Disabled by default** — while `enabled: false` (or this block is
+> absent), no pipeline agent changes behaviour (Tier 0). Enable and scaffold with `/visual-setup`;
+> read approval state with `/visual-review`. Baselines are only valid when captured in the pinned
+> image, and CI must use the identical tag (local == CI).
+
+- **enabled:** false
+- **tier:** —              # 1 = Playwright full-route · 2 = + Storybook · 3 = + review app
+- **pinned image:** —      # e.g. mcr.microsoft.com/playwright:v1.48.0-noble — pin, never :latest
+- **base URL:** —          # served app URL screenshots are taken against
+- **serve command:** —     # command that serves the base URL (e.g. npm run dev)
+- **config:** —            # e.g. playwright.visual.config.ts
+- **baselines:** —         # e.g. tests/visual/__screenshots__/
+- **workers (PW_WORKERS):** —   # explicit, sized to the container's vCPU (~1 vCPU + ~1.5 GB RAM each)
 
 ---
 

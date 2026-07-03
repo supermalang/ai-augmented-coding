@@ -46,11 +46,17 @@ Read the DoD at the top of `docs/ROADMAP.md`. Check each item for the active tas
 | Acceptance criteria verified by QA agent | ✅ / ❌ |
 | QA review signed | ✅ / ❌ |
 | Security audit done | ✅ / ❌ |
+| Visual approval clear *(if visual testing enabled)* | ✅ / ⏸ / ❌ |
 | Roadmap up to date | to verify → step 4 |
 
 > **UAT is not on this list by design.** The QA agent *verifies the acceptance criteria*; it does **not** stand in for **U**ser **A**cceptance. Human UAT happens at the PR (step 6) — the human ticks it before merging. Opening the PR is allowed with every item above green; **merging** requires the human UAT sign-off.
 
-If any item is ❌ → stop and hand off to the relevant agent.
+**Visual approval gate (only if visual testing is enabled** — `Visual testing` block in `.claude/context.md`, `enabled: true`**).** Invoke `/visual-review` and read its gate verdict:
+- `gate: clear` (nothing pending or rejected) → ✅, proceed.
+- `gate: blocked — pending` → **⏸ park, do not open the PR.** A human hasn't approved the changed baselines yet. Report the pending list and stop *without* error — this is an async checkpoint, not a failure (see `/ship-task` → *Visual approval — async park*). The human approves (terminal `--update-snapshots` + commit, or the Tier 3 review app), then re-runs `/pr-reviewer` (or `/ship-task`) to resume.
+- `gate: blocked — rejected` → ❌ stop: a baseline was explicitly rejected. Hand back to `/coder` to change the UI.
+
+If any DoD item is ❌ → stop and hand off to the relevant agent. If visual approval is ⏸ → park (above), don't treat it as a hard failure.
 
 ### 2 — Lint and build
 
@@ -198,6 +204,7 @@ gh pr create \
 - [x] Acceptance criteria verified by QA agent
 - [x] Security audit + dependency scan done
 - [x] Roadmap updated
+<!-- If visual testing is enabled, add: "- [x] Visual baselines approved: <N> (see visual-approvals.json)" -->
 
 ## ✋ Human UAT — required before merge
 

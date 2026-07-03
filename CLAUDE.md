@@ -103,6 +103,8 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 **Recommended — fully autonomous:** `/ship-task <ID>` chains all agents automatically with skip logic, and only pauses on DoR failure, test failure, or when the PR URL is ready for your review.
 
+> **Opt-in visual gate.** If visual baseline testing is enabled (`/visual-setup` — off by default), a UI change adds one **async, non-blocking** human checkpoint: `/qa-tester` flags changed screenshots as *pending* (a visual diff is not a failure), and `/pr-reviewer` **parks** the task before the PR until you approve the baselines (`/ship-task` moves on to other tasks meanwhile). You approve out of band; re-running resumes to the PR. See `/ship-task` → *Visual approval — async park*.
+
 **Manual — step by step:** invoke each skill in order.
 
 | Step | Skill | Run when |
@@ -211,6 +213,8 @@ Skills are slash commands in `.claude/skills/`.
 | `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
+| `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds a **pinned Playwright container** + config + example route specs. Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
+| `visual-review` | Read-only reporter of visual-approval state — compares baseline PNGs vs the integration branch, reads `visual-approvals.json`, and reports each changed baseline as approved / rejected / pending. Consumed by `/qa-tester` and `/pr-reviewer`; never re-baselines |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
 | `test` | Run Vitest and report results |
@@ -227,10 +231,11 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 
 - **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
+- **`visual-review`** is read-only (Read/Bash/Glob/Grep, no Edit/Write) — it reports visual-approval state; it cannot bless baselines. Runs on Haiku. (Blessing baselines is a human/review-app action, enforced by the `guard-visual-update` hook.)
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
-- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
+- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`; `visual-setup` writes only the visual-testing config (the `Visual testing` block in `context.md` + scaffolded root files) and **never installs runtimes**. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
 - **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers + `setup`/`report`; Haiku for `commit`/`diagram`/`locate`).
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
@@ -251,6 +256,7 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Bash | `guard-commit-message.sh` | Non-Conventional Commits format |
 | Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` — **pure-bash, fails closed** |
 | Bash | `guard-bash-write.sh` | Shell writes (`>`/`tee`/`sed -i`) into gated paths without `.current-task` — closes the Edit/Write bypass; **pure-bash** |
+| Bash | `guard-visual-update.sh` | Agents re-baselining screenshots (`playwright … --update-snapshots`/`-u`) — blessing baselines is a human/review-app action; **pure-bash** |
 | Edit / Write | `guard-generated-files.sh` | Hand-editing auto-generated files |
 
 > **Fail-closed & tool independence.** A guard that can't find its tools (missing `jq`/coreutils, or a
