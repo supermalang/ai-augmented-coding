@@ -64,6 +64,17 @@ Also detect, without asking: the UI framework and package manager (from `package
 the installed Playwright version (`npx playwright --version`, if present), and how the app is served
 (a `dev`/`start`/`preview` script) — you'll propose these as defaults in the interview.
 
+**Framework → Storybook mapping (needed only for Tier 2).** Detect the UI framework and map it to a
+Storybook framework package:
+
+| Detected | `STORYBOOK_FRAMEWORK` | `STORYBOOK_FRAMEWORK_PKG` | `STORYBOOK_RENDERER_PKG` |
+|---|---|---|---|
+| Next.js | `@storybook/nextjs` | `@storybook/nextjs` | `@storybook/react` |
+| React + Vite | `@storybook/react-vite` | `@storybook/react-vite` | `@storybook/react` |
+| Vue 3 + Vite | `@storybook/vue3-vite` | `@storybook/vue3-vite` | `@storybook/vue3` |
+| Svelte + Vite | `@storybook/svelte-vite` | `@storybook/svelte-vite` | `@storybook/svelte` |
+| (none of these) | — unsupported — Tier 2 is not offered; stay on Tier 1 | | |
+
 ### 2 — Interview (only the gaps)
 
 Ask in one small batch, proposing detected defaults so the user can just confirm:
@@ -111,6 +122,28 @@ to the project root (skip any file that already exists — report it instead of 
 Defaults: `VISUAL_TEST_DIR = tests/visual`, `VISUAL_CONFIG = playwright.visual.config.ts`,
 `PW_WORKERS = CPUS` (both default 2), `MEMORY = 3g`. Keep `PW_WORKERS` and `CPUS` equal.
 
+### 4b — Scaffold Tier 2 (Storybook) — only if chosen and the framework is supported
+
+Component-isolation baselines: screenshot deterministic **stories** instead of full routes. Only
+proceed if step 1 mapped the framework to a Storybook package; otherwise **do not half-scaffold** —
+report "Storybook Tier 2 not available for <framework> — staying on Tier 1" and leave Tier 1 intact.
+
+If supported:
+
+| Template | Written to | Substitutions |
+|---|---|---|
+| `storybook/main.ts` | `.storybook/main.ts` | `{{STORYBOOK_FRAMEWORK}}` · `{{STORYBOOK_FRAMEWORK_PKG}}` · `{{VISUAL_TEST_DIR}}` |
+| `storybook/preview.ts` | `.storybook/preview.ts` | `{{STORYBOOK_RENDERER_PKG}}` |
+| `example.stories.tsx` | `<VISUAL_TEST_DIR>/example.stories.tsx` | `{{STORYBOOK_RENDERER_PKG}}` |
+| `example.story.visual.spec.ts` | `<VISUAL_TEST_DIR>/example.story.visual.spec.ts` | — |
+
+Then rewire capture to a **static** Storybook build (no live dev server in CI):
+- Set the config's `{{SERVE_COMMAND}}` to serve the build, e.g. `npx http-server storybook-static -p 6006`, and `{{BASE_URL}}` to `http://localhost:6006`.
+- Story baselines share the pinned image, `{platform}` suffix, and `PW_WORKERS` sizing — determinism is identical to Tier 1.
+- Tell the user to run `npx storybook build` before the visual run (do not run it yourself), and that `@storybook/*` are dev deps they add (not you). `storybook-static/` should be gitignored.
+
+Both tiers can coexist: full-route specs (Tier 1) + story specs (Tier 2) run under the same config.
+
 ### 5 — Write the flag to `.claude/context.md`
 
 Insert or update the `## Visual testing` block (idempotent — replace in place if it exists, never
@@ -127,6 +160,13 @@ append a duplicate):
 - **config:** playwright.visual.config.ts
 - **baselines:** tests/visual/__screenshots__/
 - **workers (PW_WORKERS):** 2   # sized to container cpus: 2 · mem 3g
+```
+
+For **Tier 2**, set `tier: 2` and add the Storybook fields:
+```markdown
+- **storybook framework:** @storybook/nextjs
+- **storybook build:** npx storybook build       # produces storybook-static/ (gitignored)
+- **storybook served at:** http://localhost:6006
 ```
 
 ### 6 — Handoff

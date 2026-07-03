@@ -19,6 +19,9 @@ test-results/
 playwright-report/
 coverage/
 
+# Visual testing (Tier 2) — static Storybook build is regenerable; baselines are committed
+storybook-static/
+
 # Throwaway live-verification artefacts (/webapp-testing)
 .scratch/
 
