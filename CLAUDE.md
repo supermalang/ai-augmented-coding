@@ -60,7 +60,7 @@ the every-run essentials from the read-when-relevant depth.
 |---|---|
 | `CLAUDE.md` (this file) | Instructions to the agent — rules, workflow, which skill when |
 | [`.claude/context.md`](.claude/context.md) | Concise operational facts — stack, commands, absolute rules, isolation key, UI conventions |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The work — tasks, DoR/DoD, sprints |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | The work — tasks, DoR/DoD, sprints. Kept lean: agents read it *selectively* (one block by ID, or the status/ledger tables), and `/roadmap-status archive` sweeps delivered blocks to `docs/roadmap/archive/` leaving a one-line ledger row |
 
 **Tier 2 — knowledge (optional, read when relevant).** Standing entrypoints that index the
 per-feature docs the pipeline generates. Each is optional — agents fall back to `.claude/context.md`
