@@ -1,6 +1,6 @@
 ---
 name: visual-setup
-description: Opt-in enabler for visual baseline review. Runs a short interview, verifies (never installs) prerequisites, records a Visual testing flag in .claude/context.md, and scaffolds a pinned Playwright container + config + example route specs. Disabled by default — absent the flag, no pipeline agent changes behaviour. Tier 1 = Playwright full-route screenshots (default); Tier 2 adds Storybook; Tier 3 adds a local review app.
+description: Opt-in enabler for visual baseline review. Runs a short interview, verifies (never installs) prerequisites, records a Visual testing flag in .claude/context.md, and scaffolds in-project Playwright config + example route specs under a single visual-review/ folder — no container. Disabled by default — absent the flag, no pipeline agent changes behaviour. Tier 1 = Playwright full-route screenshots (default); Tier 2 adds Storybook; Tier 3 adds a local review app.
 ---
 
 # /visual-setup — Visual Baseline Review Enabler
@@ -14,6 +14,12 @@ default** to keep the template stack-agnostic: until this skill writes the `Visu
 Like `/setup`, it **defines and scaffolds configuration** — it does **not** install runtimes and does
 **not** write application code. Its job is to make deterministic screenshot baselines *possible* with
 one guided command, then hand the review loop to a human.
+
+Everything it scaffolds lives under **one `visual-review/` folder**, each tool in its own subfolder —
+`specs/` and `baselines/` (committed), `results/` and `uat/` (gitignored), plus `storybook/` (Tier 2)
+and `review-app/` (Tier 3). It runs **in-project — no container**. Determinism comes from Playwright's
+per-OS `{platform}` snapshot names plus a small pixel tolerance; the one rule is **capture/bless
+baselines on the same OS your CI runs on** (local == CI without Docker).
 
 ### Tiers (chosen in the interview)
 
@@ -31,11 +37,11 @@ before it's available, record the intent, scaffold Tier 1, and say the higher ti
 
 ✅ CAN read    : all project files · manifests · `.claude/context.md` · `docs/ROADMAP.md`
 ✅ CAN write   : `.claude/context.md` (the `Visual testing` block only) · scaffolded visual-testing
-                 files at the project root (`docker-compose.visual.yml`, the visual Playwright config,
-                 an example `*.visual.spec.ts`, `docs/visual-testing.md`)
+                 files under `visual-review/` (the Playwright config, `specs/*.visual.spec.ts`, and —
+                 by tier — `storybook/` and `review-app/`) · `docs/visual-testing.md`
 ✅ CAN run     : read-only detection (`node --version`, `npx playwright --version`, `command -v …`) and
                  `verify-prereqs.sh`
-❌ CANNOT      : install Node, browsers, Docker, or any dependency — **detect and remediate only**
+❌ CANNOT      : install Node, browsers, or any dependency — **detect and remediate only**
 ❌ CANNOT      : write application source, components, or schema
 ❌ CANNOT      : write `docs/ROADMAP.md` (that's `/planner`) or edit hook scripts / agent envelopes
 ❌ CANNOT      : run `--update-snapshots` or bless baselines — that is a human action
@@ -83,22 +89,22 @@ Ask in one small batch, proposing detected defaults so the user can just confirm
   and proceed with Tier 1, noting the upgrade is coming.
 - **Served URL + serve command** — the base URL screenshots are taken against (e.g.
   `http://localhost:3000`) and the command that serves it (e.g. `npm run dev`, or a static
-  `preview`). Tier 1 needs a real URL; this is the only hard requirement.
-- **Pinned image tag** — default to the tag matching the detected Playwright version
-  (`mcr.microsoft.com/playwright:v<version>-noble`). Pinning is mandatory; never `:latest`.
-- **Worker/resource budget** — vCPU allotted to the container (default 2). `PW_WORKERS` = that number;
-  memory ≈ 1.5 GB × workers. Explain the container-core gotcha briefly if asked.
-- **Baseline location** — default `tests/visual` (baselines land in `tests/visual/__screenshots__/`).
-  Confirm or override. Baselines are **committed** (the approval record); run artifacts go to
-  `test-results/visual/` and the report to `playwright-report/`, both already gitignored — never
-  commit those.
+  `preview`). Playwright's `webServer` runs it in-project. Tier 1 needs a real URL; this is the only
+  hard requirement.
+- **CI OS** — the operating system the visual job runs on (e.g. `ubuntu-latest`). Baselines carry a
+  per-OS `{platform}` suffix, so they must be **blessed on this same OS** — that's what replaces the
+  pinned container for local == CI. Default to the current OS and note the CI must match.
 
-Stop as soon as tier + served URL + pinned tag + worker budget are known.
+The footprint is fixed: everything lands under **`visual-review/`** (`specs/` + `baselines/` committed;
+`results/` + `uat/` gitignored). No baseline-location question — it's `visual-review/baselines/`.
+
+Stop as soon as tier + served URL + serve command + CI OS are known.
 
 ### 3 — Verify prerequisites (detect-only, never install)
 
-Run `.claude/skills/visual-setup/verify-prereqs.sh`. It checks `node`, `npx`, and `docker` (the Tier 1
-default set) and, for anything missing, prints a concrete remediation line — then exits non-zero.
+Run `.claude/skills/visual-setup/verify-prereqs.sh`. It checks `node` and `npx` (the Tier 1 set — no
+Docker, since capture runs in-project) and, for anything missing, prints a concrete remediation line —
+then exits non-zero.
 
 - **If it exits non-zero** → relay the missing items + remediation to the user and **stop**. Do not
   attempt any install. The user sets the runtime up themselves and re-runs `/visual-setup`.
@@ -114,13 +120,16 @@ to the project root (skip any file that already exists — report it instead of 
 
 | Template | Written to | Substitutions |
 |---|---|---|
-| `docker-compose.visual.yml` | `docker-compose.visual.yml` | `{{PLAYWRIGHT_TAG}}` · `{{PW_WORKERS}}` · `{{CPUS}}` · `{{MEMORY}}` · `{{BASE_URL}}` · `{{VISUAL_CONFIG}}` |
-| `playwright.visual.config.ts` | `playwright.visual.config.ts` | `{{VISUAL_TEST_DIR}}` · `{{BASE_URL}}` · `{{SERVE_COMMAND}}` |
-| `example.visual.spec.ts` | `<VISUAL_TEST_DIR>/example.visual.spec.ts` | — |
-| `visual-testing.md` | `docs/visual-testing.md` | `{{VISUAL_CONFIG}}` |
+| `playwright.visual.config.ts` | `visual-review/playwright.visual.config.ts` | `{{BASE_URL}}` · `{{SERVE_COMMAND}}` |
+| `example.visual.spec.ts` | `visual-review/specs/example.visual.spec.ts` | — |
+| `visual-testing.md` | `docs/visual-testing.md` | — |
 
-Defaults: `VISUAL_TEST_DIR = tests/visual`, `VISUAL_CONFIG = playwright.visual.config.ts`,
-`PW_WORKERS = CPUS` (both default 2), `MEMORY = 3g`. Keep `PW_WORKERS` and `CPUS` equal.
+The config resolves `specs/`, `baselines/`, and `results/` **relative to itself**, so the whole
+Tier-1 footprint stays inside `visual-review/`. No container file is scaffolded.
+
+Fixed paths (config-relative): specs → `visual-review/specs/`, baselines →
+`visual-review/baselines/`, run artifacts + HTML report → `visual-review/results/` (gitignored).
+Run with `npx playwright test -c visual-review/playwright.visual.config.ts`.
 
 ### 4b — Scaffold Tier 2 (Storybook) — only if chosen and the framework is supported
 
@@ -132,39 +141,41 @@ If supported:
 
 | Template | Written to | Substitutions |
 |---|---|---|
-| `storybook/main.ts` | `.storybook/main.ts` | `{{STORYBOOK_FRAMEWORK}}` · `{{STORYBOOK_FRAMEWORK_PKG}}` · `{{VISUAL_TEST_DIR}}` |
-| `storybook/preview.ts` | `.storybook/preview.ts` | `{{STORYBOOK_RENDERER_PKG}}` |
-| `example.stories.tsx` | `<VISUAL_TEST_DIR>/example.stories.tsx` | `{{STORYBOOK_RENDERER_PKG}}` |
-| `example.story.visual.spec.ts` | `<VISUAL_TEST_DIR>/example.story.visual.spec.ts` | — |
+| `storybook/main.ts` | `visual-review/storybook/.storybook/main.ts` | `{{STORYBOOK_FRAMEWORK}}` · `{{STORYBOOK_FRAMEWORK_PKG}}` |
+| `storybook/preview.ts` | `visual-review/storybook/.storybook/preview.ts` | `{{STORYBOOK_RENDERER_PKG}}` |
+| `example.stories.tsx` | `visual-review/storybook/example.stories.tsx` | `{{STORYBOOK_RENDERER_PKG}}` |
+| `example.story.visual.spec.ts` | `visual-review/specs/example.story.visual.spec.ts` | — |
 
 Then rewire capture to a **static** Storybook build (no live dev server in CI):
-- Set the config's `{{SERVE_COMMAND}}` to serve the build, e.g. `npx http-server storybook-static -p 6006`, and `{{BASE_URL}}` to `http://localhost:6006`.
-- Story baselines share the pinned image, `{platform}` suffix, and `PW_WORKERS` sizing — determinism is identical to Tier 1.
-- Tell the user to run `npx storybook build` before the visual run (do not run it yourself), and that `@storybook/*` are dev deps they add (not you). `storybook-static/` should be gitignored.
+- Set the config's `{{SERVE_COMMAND}}` to serve the build, e.g. `npx http-server visual-review/storybook/static -p 6006`, and `{{BASE_URL}}` to `http://localhost:6006`.
+- Story baselines share the `{platform}` per-OS suffix and pixel tolerance — determinism is identical to Tier 1 (same in-project rules, no container).
+- Tell the user to run `npx storybook build -o visual-review/storybook/static` before the visual run (do not run it yourself), and that `@storybook/*` are dev deps they add (not you). `visual-review/storybook/static/` is gitignored.
 
-Both tiers can coexist: full-route specs (Tier 1) + story specs (Tier 2) run under the same config.
+Both tiers can coexist: full-route specs + story specs live in `visual-review/specs/` under the same config.
 
 ### 4c — Scaffold Tier 3 (local review app) — only if chosen
 
 A thin, dependency-free local web app giving a clickable **Approve / Reject** UI over the
 baseline-vs-candidate side-by-side. Requires Tier 1 (or 2) already scaffolded.
 
-Copy the whole `review-app/` template dir to a scaffold location (default `.visual-review-app/`):
+Copy the whole `review-app/` template dir to `visual-review/review-app/`:
 
 | Template | Written to |
 |---|---|
-| `review-app/lib.mjs` · `server.mjs` · `index.html` · `test.mjs` · `README.md` | `.visual-review-app/…` |
+| `review-app/lib.mjs` · `server.mjs` · `index.html` · `test.mjs` · `README.md` | `visual-review/review-app/…` |
 
 Key properties to preserve (they're already built into the templates — just don't undo them):
-- **Parity:** the app reads candidates from the Playwright **output dir** (`test-results/visual/`),
-  i.e. container-rendered pixels — so a human approves exactly what CI will produce.
+- **Parity:** the app reads candidates from the Playwright **output dir**
+  (`visual-review/results/output/`) — so a human approves exactly what CI will produce.
 - **Guard-compatible:** Approve re-baselines by a **file copy** (not `--update-snapshots`), so the
   `guard-visual-update` hook never blocks the human-run app while still blocking agents.
-- **Writes the record:** Approve/Reject update `visual-approvals.json`, which `/visual-review` reads.
+- **Writes the record:** Approve/Reject update `visual-review/visual-approvals.json`, which
+  `/visual-review` reads.
 
-Tell the user to run it themselves: produce candidates in the container, then `node
-.visual-review-app/server.mjs` → open `http://localhost:4444`. Verify with `node
-.visual-review-app/test.mjs` (10 assertions). Do not launch it or approve anything yourself.
+Tell the user to run it themselves: produce candidates (`npx playwright test -c
+visual-review/playwright.visual.config.ts`), then `node visual-review/review-app/server.mjs` → open
+`http://localhost:4444`. Verify with `node visual-review/review-app/test.mjs`. Do not launch it or
+approve anything yourself.
 
 ### 5 — Write the flag to `.claude/context.md`
 
@@ -176,36 +187,35 @@ append a duplicate):
 
 - **enabled:** true
 - **tier:** 1
-- **pinned image:** mcr.microsoft.com/playwright:v<version>-noble
+- **root:** visual-review/
 - **base URL:** http://localhost:3000
 - **serve command:** npm run dev
-- **config:** playwright.visual.config.ts
-- **baselines:** tests/visual/__screenshots__/
-- **workers (PW_WORKERS):** 2   # sized to container cpus: 2 · mem 3g
+- **config:** visual-review/playwright.visual.config.ts
+- **baselines:** visual-review/baselines/
+- **CI OS:** ubuntu-latest   # baselines are blessed on this OS (per-OS {platform} suffix)
 ```
 
 For **Tier 2**, set `tier: 2` and add the Storybook fields:
 ```markdown
 - **storybook framework:** @storybook/nextjs
-- **storybook build:** npx storybook build       # produces storybook-static/ (gitignored)
+- **storybook build:** npx storybook build -o visual-review/storybook/static   # gitignored
 - **storybook served at:** http://localhost:6006
 ```
 
 For **Tier 3**, set `tier: 3` and add the review-app field:
 ```markdown
-- **review app:** .visual-review-app/  (run: node .visual-review-app/server.mjs → http://localhost:4444)
+- **review app:** visual-review/review-app/  (run: node visual-review/review-app/server.mjs → http://localhost:4444)
 ```
 
 ### 6 — Handoff
 
 ```
-✅ Visual testing enabled — Tier 1 (Playwright full-route)
-🐳 Pinned image : mcr.microsoft.com/playwright:v<version>-noble  (local == CI)
+✅ Visual testing enabled — Tier 1 (Playwright full-route, in-project)
+📁 Home         : visual-review/  (specs/ baselines/ committed · results/ uat/ gitignored)
 🌐 Target       : <base URL> via <serve command>
-🧵 Workers      : PW_WORKERS=<n>  (cpus <n> · mem <mem>)
-📁 Baselines    : tests/visual/__screenshots__/
-▶️  First run    : docker compose -f docker-compose.visual.yml run --rm visual
-                  → writes baselines; review with `npx playwright show-report`, commit the PNGs
+🖥️  CI OS        : <os> — bless baselines on this OS (per-OS {platform} suffix = local == CI)
+▶️  First run    : npx playwright test -c visual-review/playwright.visual.config.ts
+                  → writes baselines to visual-review/baselines/; commit the PNGs
 ➡️  Next         : add specs per route; approve changes with --update-snapshots (human-only)
 ```
 

@@ -1,6 +1,6 @@
 // server.mjs — thin local review app for Tier 3 visual approval. Node built-ins only.
 //
-// Run (HUMAN, not an agent):  node .visual-review-app/server.mjs   (path per your scaffold)
+// Run (HUMAN, not an agent):  node visual-review/review-app/server.mjs
 // Then open http://localhost:4444 and Approve / Reject each changed screenshot.
 //
 // Config via env (defaults match the /visual-setup scaffold):
@@ -16,9 +16,9 @@ import { findDiffs, approve, reject } from './lib.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const PORT = Number(process.env.PORT || 4444);
-const baselinesDir = join(ROOT, process.env.VISUAL_BASELINES_DIR || 'tests/visual/__screenshots__');
-const outputDir = join(ROOT, process.env.VISUAL_OUTPUT_DIR || 'test-results/visual');
-const approvalsFile = join(ROOT, process.env.VISUAL_APPROVALS || 'visual-approvals.json');
+const baselinesDir = join(ROOT, process.env.VISUAL_BASELINES_DIR || 'visual-review/baselines');
+const outputDir = join(ROOT, process.env.VISUAL_OUTPUT_DIR || 'visual-review/results/output');
+const approvalsFile = join(ROOT, process.env.VISUAL_APPROVALS || 'visual-review/visual-approvals.json');
 
 function currentTask() {
   const f = join(ROOT, '.current-task');

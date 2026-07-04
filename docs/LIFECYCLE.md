@@ -111,7 +111,7 @@ Deliver each card as a reviewed, tested increment. Orchestrated end-to-end by **
 
 **UAT — two distinct things:**
 - `/qa-tester` performs **automated acceptance verification** in a browser (`/webapp-testing`
-  Playwright), screenshots to `.scratch/uat/`. It explicitly does **not** claim UAT passed — only
+  Playwright), screenshots to `visual-review/uat/`. It explicitly does **not** claim UAT passed — only
   "acceptance criteria verified."
 - **True UAT is a human** accepting the feature at the PR (`/pr-reviewer` → Human UAT). Visual
   baseline changes are parked as *pending* until a human approves them.

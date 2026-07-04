@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 /**
  * Component-isolation visual baselines (Tier 2).
  *
- * Screenshots a STATIC Storybook build (`storybook-static`, produced by `storybook build`)
- * served by the visual config's webServer — no live dev server needed in CI. Baselines are
- * captured in the same pinned container as Tier 1, so determinism + the {platform} suffix
- * carry over unchanged.
+ * Screenshots a STATIC Storybook build (`visual-review/storybook/static`, produced by
+ * `storybook build -o visual-review/storybook/static`) served by the visual config's webServer —
+ * no live dev server needed in CI. Same in-project rules as Tier 1, so the {platform} per-OS
+ * suffix and pixel tolerance carry over unchanged.
  *
  * Story id = "<title-kebab>--<export-name>", e.g. title 'Example/Button' + export
  * `Primary` → 'example-button--primary'. A component diff points at the exact story.

@@ -10,17 +10,17 @@
 #   1  at least one required command missing (listed with remediation)
 #
 # The required set is injectable via VISUAL_REQUIRED_CMDS (space-separated) so this
-# script is testable in isolation; the default matches Tier 1 (containerised Playwright).
+# script is testable in isolation; the default matches Tier 1 (in-project Playwright —
+# no container, so no Docker requirement).
 
 set -uo pipefail
 
-REQUIRED="${VISUAL_REQUIRED_CMDS:-node npx docker}"
+REQUIRED="${VISUAL_REQUIRED_CMDS:-node npx}"
 
 remediation_for() {
   case "$1" in
     node)       echo "Install Node.js 20+ from https://nodejs.org or a version manager (nvm/fnm/volta). Do NOT let an agent install it." ;;
     npx)        echo "npx ships with Node.js — installing Node provides it." ;;
-    docker)     echo "Install Docker Desktop / Engine — the pinned visual container runs here so local == CI. https://docs.docker.com/get-docker/" ;;
     playwright) echo "Add Playwright to the project yourself, once: 'npm i -D @playwright/test' then 'npx playwright install --with-deps'." ;;
     *)          echo "Install '$1' and ensure it is on PATH." ;;
   esac
