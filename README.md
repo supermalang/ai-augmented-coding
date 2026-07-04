@@ -51,7 +51,7 @@ also use **`jq`** + standard coreutils — install `jq` so they don't degrade. T
 **Fastest path from zero to your first agent-built PR:**
 
 1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-details) below).
-2. **Run `/setup`** — detects your stack, interviews for the gaps, and fills the operational config (`.claude/context.md`, the `[CONFIGURE]` blocks in `CLAUDE.md`, `.claude/hooks/stack-profile.sh`, `package.json` scripts, coverage). **Nothing works until this is done** — every agent reads `context.md` each run.
+2. **Run `/setup`** — detects your stack, interviews for the gaps, and fills the operational config (`.claude/context.md`, the `[CONFIGURE]` blocks in `CLAUDE.md`, `.claude/hooks/stack-profile.sh`, `package.json` scripts, coverage). **Nothing works until this is done** — every agent reads `context.md` each run. **No stack yet?** Run `/discovery` first, then `/setup` recommends one — a shortlist with rationale drawn from your PRD's constraints — and you pick; it records the choice (and the "why" as an ADR). It configures the stack; it doesn't scaffold the app.
 3. **Seed one task** — let `/planner` write it (or add it by hand to `docs/ROADMAP.md`).
 4. **Ship it** — `/ship-task <ID>` runs tests → code → reviews → PR autonomously.
 5. **Review the PR** — the pipeline opens it; you run human UAT and merge.
@@ -161,6 +161,12 @@ mode a blocking task is recorded and the run continues, returning a summary.
 `/perf-review`, `/perf-measure`, `/security-audit`, `/dep-audit`, `/qa-tester`, `/visual-review`) →
 `/docs`, `/diagram` → `/commit` → `/pr-reviewer`. `/refactor` and `/usability-test` on demand;
 `/webapp-testing` to drive the live app.
+
+> **Performance runs after GREEN**, in the review lane before the PR (steps 8–11b above), and **only on
+> tasks that touch ORM queries or async fetching**: `/perf-review` reads the diff statically (N+1,
+> unbounded queries, over-fetching), `/perf-measure` runs the app and checks real numbers — bundle,
+> Web Vitals, query `EXPLAIN` — against the budgets in `.claude/context.md`. `/perf-measure` is also
+> the go-to Maintenance regression check.
 
 **You can:** watch the whole loop or drive it stepwise; verify acceptance criteria with `/qa-tester`
 (automated) and then do **true UAT yourself at the PR** before merging.
