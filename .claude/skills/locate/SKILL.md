@@ -6,9 +6,11 @@ description: Scout the codebase for a change before editing it. Given a tweak, f
 # /locate — Change-Set Scout
 
 Before starting, read `.claude/context.md` for project-specific conventions (file structure,
-isolation key, naming). If [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) exists, read its
-**Code map (navigation)** section **first** — it is the fastest route from a request to the right
-module, and it tells you what depends on what.
+isolation key, naming). Then read [`.claude/code-map.md`](../../code-map.md) **first if it exists** —
+the machine-generated router index (areas → key files → dependency edges) is the fastest route from
+a request to the right module. For the *semantics* it can't carry (responsibility, public-API entry
+points), fall back to the hand-curated **Code map (navigation)** table in
+[`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) if present.
 
 ## Role
 
@@ -52,10 +54,11 @@ If the active task block in `docs/ROADMAP.md` already has a **Change-set (locate
 
 ### 1 — Anchor on the code map
 
-If `docs/ARCHITECTURE.md` has a code map, match the request to a module row first — that gives you
-the key files and dependency edges without searching. Treat it as a hint, not gospel: verify
-against the actual tree (it can drift). If there's no code map, fall back to `.claude/context.md`
-file-structure conventions and search from there.
+Match the request to a row in `.claude/code-map.md` (or the `docs/ARCHITECTURE.md` code-map table)
+first — that gives you the key files and dependency edges without searching. Treat it as a hint,
+not gospel: the generated edges are heuristic and can drift, so verify against the actual tree. If
+there's no code map, fall back to `.claude/context.md` file-structure conventions and search from
+there.
 
 ### 2 — Find the entry point, then follow the edges
 

@@ -42,7 +42,7 @@ Read the task block in `docs/ROADMAP.md`. Extract:
 
 For each UAT item in the roadmap, verify it is satisfied. Start the app if needed using the dev command from `.claude/context.md`.
 
-Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode). Use `/webapp-testing` to drive the live app, reproduce each scenario, and capture screenshots of the result. Save these review shots to **`.scratch/uat/`** (throwaway, gitignored — see *Generated files & artifacts* in `.claude/context.md`); they are review aids, never committed, and the real UAT is the human at the PR.
+Then open the browser on the relevant route and reproduce each UAT scenario manually (or via E2E test runner in headed mode). Use `/webapp-testing` to drive the live app, reproduce each scenario, and capture screenshots of the result. Save these review shots to **`visual-review/uat/`** (throwaway, gitignored — see *Generated files & artifacts* in `.claude/context.md`); they are review aids, never committed, and the real UAT is the human at the PR.
 
 For each UAT item:
 
@@ -68,7 +68,7 @@ For each screenshot in the E2E test output directory:
 
 Read the `Visual testing` block in `.claude/context.md`. If absent or `enabled: false`, **skip this step** (Tier 0 — nothing changes). If enabled:
 
-1. Run the visual suite in the pinned container (command from `docs/visual-testing.md` / the `Visual testing` block), e.g. `docker compose -f docker-compose.visual.yml run --rm visual`.
+1. Run the visual suite in-project (command from `docs/visual-testing.md` / the `Visual testing` block), e.g. `npx playwright test -c visual-review/playwright.visual.config.ts`.
 2. **Classify the outcome — a visual diff is NOT a failure:**
    - A **functional / assertion** failure (the spec errors, a locator is missing, the app won't serve) → **blocks**. Hand off to `/coder`, exactly like any failing test.
    - A pure **screenshot diff** (pixels changed, spec otherwise fine) → **not a failure**. It means the UI changed and a human must decide. Do **not** re-baseline and do **not** block on it.

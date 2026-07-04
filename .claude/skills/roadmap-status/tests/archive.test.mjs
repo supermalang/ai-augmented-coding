@@ -115,5 +115,20 @@ function fixture() {
   rmSync(root, { recursive: true, force: true });
 }
 
+// 5 — CRLF roadmap (Windows): parsing must not silently no-op; EOL preserved on write
+{
+  const root = mkdtempSync(join(tmpdir(), 'rb-'));
+  const roadmapPath = join(root, 'ROADMAP.md');
+  const archiveDir = join(root, 'archive');
+  const crlf = (HEADER + DONE + '\n---\n\n' + OPEN + '\n').replace(/\n/g, '\r\n');
+  writeFileSync(roadmapPath, crlf);
+  const res = archiveRoadmap({ roadmapPath, archiveDir });
+  const live = readFileSync(roadmapPath, 'utf8');
+  ok(res.archived.length === 1 && res.archived[0] === 'RB-9', 'CRLF: delivered task archived (not a silent no-op)');
+  ok(!live.includes('### RB-9 —'), 'CRLF: delivered block removed from live');
+  ok(live.includes('\r\n') && !/[^\r]\n/.test(live), 'CRLF: original CRLF line endings preserved on write');
+  rmSync(root, { recursive: true, force: true });
+}
+
 console.log(`\narchive.test.mjs — ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

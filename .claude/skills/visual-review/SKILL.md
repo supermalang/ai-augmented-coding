@@ -34,7 +34,7 @@ committed alongside the re-baselined PNGs:
   "example.visual.spec.ts/home-desktop-linux.png": {
     "decision": "approved",
     "task": "PUX-11",
-    "capturedImage": "test-results/visual/…/home-desktop-actual.png",
+    "capturedImage": "visual-review/results/output/…/home-desktop-actual.png",
     "at": "2026-07-03T15:44:03Z"
   },
   "example.visual.spec.ts/home-mobile-linux.png": {

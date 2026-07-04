@@ -69,7 +69,11 @@ function stripSeparator(text) {
 export function archiveRoadmap({ roadmapPath, archiveDir }) {
   if (!existsSync(roadmapPath)) return { archived: [], reason: 'no roadmap file' };
   const original = readFileSync(roadmapPath, 'utf8');
-  const lines = original.split('\n');
+  // Normalize line endings for parsing (Windows roadmaps are CRLF; JS `.`/`$` won't cross `\r`),
+  // then restore the file's original EOL on write so we don't churn every line.
+  const eol = original.includes('\r\n') ? '\r\n' : '\n';
+  const toEol = (s) => s.split('\n').join(eol);
+  const lines = original.split(/\r?\n/);
   const blocks = parseBlocks(lines);
 
   const archivable = blocks.filter((b) => DATE_RE.test(fieldOf(b.text, 'Completion date')));
@@ -89,8 +93,8 @@ export function archiveRoadmap({ roadmapPath, archiveDir }) {
     mkdirSync(archiveDir, { recursive: true });
     const existing = existsSync(archiveFile) ? readFileSync(archiveFile, 'utf8') : '';
     if (!existing.includes(`### ${b.id} —`)) {
-      if (!existing) appendFileSync(archiveFile, `# Sprint ${sprint} — archived (delivered) tasks\n\n> Full history also in git. Live roadmap keeps only the ledger row.\n\n`);
-      appendFileSync(archiveFile, stripSeparator(b.text) + '\n---\n\n');
+      if (!existing) appendFileSync(archiveFile, toEol(`# Sprint ${sprint} — archived (delivered) tasks\n\n> Full history also in git. Live roadmap keeps only the ledger row.\n\n`));
+      appendFileSync(archiveFile, toEol(stripSeparator(b.text) + '\n---\n\n'));
     }
     liveLines.splice(b.startLine, b.endLine - b.startLine);
   }
@@ -111,7 +115,7 @@ export function archiveRoadmap({ roadmapPath, archiveDir }) {
     }
   }
 
-  writeFileSync(roadmapPath, live.replace(/\n{3,}/g, '\n\n'));
+  writeFileSync(roadmapPath, toEol(live.replace(/\n{3,}/g, '\n\n')));
   return { archived: ledger.map((e) => e.id) };
 }
 

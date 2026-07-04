@@ -18,8 +18,8 @@ denied() { echo "$1" | grep -q '"permissionDecision":"deny"'; }
 out="$(run 'npx playwright test --update-snapshots')"
 denied "$out" && ok "blocks: playwright test --update-snapshots" || bad "did NOT block --update-snapshots"
 
-out="$(run 'docker compose -f docker-compose.visual.yml run --rm visual npx playwright test -c playwright.visual.config.ts --update-snapshots')"
-denied "$out" && ok "blocks: containerised --update-snapshots" || bad "did NOT block containerised update"
+out="$(run 'npx playwright test -c visual-review/playwright.visual.config.ts --update-snapshots')"
+denied "$out" && ok "blocks: visual-config --update-snapshots" || bad "did NOT block visual-config update"
 
 out="$(run 'npx playwright test -u')"
 denied "$out" && ok "blocks: playwright -u alias" || bad "did NOT block -u alias"

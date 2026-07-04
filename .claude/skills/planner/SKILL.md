@@ -39,7 +39,7 @@ Before asking the user anything, gather context autonomously:
 
 1. **Read `docs/ROADMAP.md`** — identify the current sprint, next available task ID, open dependencies, and whether a similar task already exists under a different name.
    - If [`PRODUCT.md`](../../../PRODUCT.md) exists, read its goals and **non-goals** — verify the task advances a stated goal and violates no non-goal. If it contradicts a non-goal, stop and raise it with the user before writing the task.
-2. **Read the affected source files** — if the user's request mentions a page, feature, or module, read it to determine: which source paths are involved, whether a schema change is needed, which API routes exist or would need to be created.
+2. **Consult the code map, then read the affected source files** — if [`.claude/code-map.md`](../../code-map.md) exists, match the request to an area first (its key files + dependency edges point you straight at the code without grepping). Then read the affected source to determine: which source paths are involved, whether a schema change is needed, which API routes exist or would need to be created.
    - **For change-type tasks** (the task modifies *existing* behaviour — a tweak, fix, or improvement), run `/locate` to scope the impact precisely. Use its **coarse** output (target areas, call path, ripples) to fill **Components**, **API**, **Schema impact**, **Risk**, and the **Code tasks** breakdown accurately, and record it in the task's **Change-set (locate)** field so `/coder` reuses it instead of re-discovering the structure. **Skip `/locate` for greenfield tasks** (new feature, little existing code to locate) — set the field to `N/A — greenfield`. Planning needs *breadth* (what it touches, how risky); leave the *precise line ranges* to the implementation-time scout.
 3. **Infer all fields you can** — domain, sprint, components, API routes, schema impact, risk level, code tasks. Most of these are determinable from the codebase without asking.
 4. **Draft the full task block** with your best inference for every field.
@@ -51,6 +51,7 @@ Examples of fields the Planner can almost always infer without asking:
 - Schema impact → read the schema file and check if new fields/models are needed
 - Components → from the source files the change would touch
 - Risk → `Low` unless migration or auth is involved
+- Journey → match the task to a `docs/story-map.md` step (a `⚠️ GAP` you're filling names its own coordinate); `N/A` for infra/tooling/refactor
 
 Examples of fields that genuinely require the user:
 - Acceptance criteria (business intent — what does "done" look like from the user's perspective?)
@@ -85,8 +86,9 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
 | **Priority** | `P0` must ship this sprint / blocks other work or core value · `P1` important, not blocking · `P2` nice to have. Sequencing aid for sprint selection — *not* a DoR gate; infer from the request, ask only if genuinely ambiguous |
 | **Dependencies** | Task IDs this work blocks on (comma-separated) or `None`. Required by DoR. The batch orchestrator (`/ship-task open`) skips a task until every dependency is delivered `[x]`, so name them precisely |
+| **Journey** | The story-map coordinate `<backbone activity> / <step>`, or `N/A — <reason>` for non-journey work (infra/tooling/refactor). Infer from `docs/story-map.md` (a flagged `⚠️ GAP` you're now filling names its own activity/step), the discovery brief's journey, or `PRODUCT.md`. This is what makes story-map traceability bidirectional — set it so the task doesn't surface as an `ORPHAN` |
 | **Description** | What the task does, not how |
-| **User value** | Format: *As a [persona], I want [action] so that [benefit].* [PROJECT CONVENTION — see .claude/context.md for valid personas] |
+| **User value** | Format: *As a [persona], I want [action] so that [benefit].* The persona **must be one listed in `PRODUCT.md`** (the persona table / `docs/personas/` index). If the request needs a persona that doesn't exist yet, stop and send it to `/discovery` rather than inventing one here |
 | **Acceptance criteria** | At least 3 concrete and verifiable criteria. Lead with nominal cases, then edge cases |
 | **Schema impact** | `Migration — [detail]` or `None` |
 | **Components** | Affected source paths |
@@ -110,6 +112,8 @@ Before writing to the file, check every DoR item (section at the top of the road
 - [ ] Story is Independent and Small — deliverable in a single sprint with no hidden dependency on unplanned work; if not, split it into separate tasks (INVEST I + S)
 - [ ] Schema impact declared
 - [ ] Dependencies identified
+- [ ] Journey coordinate set (`<activity> / <step>`) or `N/A — <reason>` for non-journey work
+- [ ] User-value persona exists in `PRODUCT.md` (else route to `/discovery`)
 - [ ] Wireframe or mockup mentioned (or N/A with justification)
 - [ ] Risk declared
 

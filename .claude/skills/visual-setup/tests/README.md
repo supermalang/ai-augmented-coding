@@ -20,11 +20,11 @@ repo, verified by walking these scenarios:
 
 | # | Initial state | Action | Expected |
 |---|---|---|---|
-| 1 | Fresh project, no flag, prereqs present | `/visual-setup` → choose Tier 1 | `## Visual testing` block written to `.claude/context.md` (`enabled: true`, `tier: 1`, pinned tag, paths); `docker-compose.visual.yml` + `playwright.visual.config.ts` + `tests/visual/example.visual.spec.ts` + `docs/visual-testing.md` present with `{{…}}` markers substituted; example spec runs in the pinned image and writes a baseline PNG |
-| 2 | Node/npx/Docker absent | `/visual-setup` | Reports each missing prereq with remediation; **no install attempted**; exits without scaffolding |
+| 1 | Fresh project, no flag, prereqs present | `/visual-setup` → choose Tier 1 | `## Visual testing` block written to `.claude/context.md` (`enabled: true`, `tier: 1`, `root: visual-review/`, `CI OS`, paths); `visual-review/playwright.visual.config.ts` + `visual-review/specs/example.visual.spec.ts` + `docs/visual-testing.md` present with `{{…}}` markers substituted; **no** `docker-compose.visual.yml`; example spec runs in-project (`npx playwright test -c visual-review/playwright.visual.config.ts`) and writes a baseline PNG to `visual-review/baselines/` |
+| 2 | Node/npx absent | `/visual-setup` | Reports each missing prereq with remediation; **no install attempted**; exits without scaffolding |
 | 3 | Already enabled (`enabled: true`) | `/visual-setup` | Detects the existing flag; offers to change tier / re-verify; does **not** duplicate the block or overwrite files silently |
 | 4 | Flag absent (Tier 0) | run any pipeline agent | No behaviour change — visual testing is fully inert |
 
-**Determinism check (scenario 1):** the baseline filename carries the `{platform}` suffix, and the
-scaffolded config sets `workers` explicitly via `PW_WORKERS` (never auto-detected) with
-`fullyParallel: true`.
+**Determinism check (scenario 1):** the baseline filename carries the `{platform}` per-OS suffix,
+the config sets a small `maxDiffPixelRatio`, and the `Visual testing` block records the `CI OS` on
+which baselines must be blessed (local == CI without a container).

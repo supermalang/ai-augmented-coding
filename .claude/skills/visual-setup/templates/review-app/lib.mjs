@@ -2,8 +2,8 @@
 // so it runs in any project with Node and needs no install.
 //
 // Approval-environment parity: candidates come from the Playwright OUTPUT dir
-// (`test-results/visual/…-actual.png`) — i.e. the pinned-container run's pixels — so a human
-// approves exactly what CI will produce, never a local host render.
+// (`visual-review/results/output/…-actual.png`). Approve on the same OS your CI runs on
+// (baselines carry a per-OS {platform} suffix) so approved pixels match what CI produces.
 //
 // Re-baselining here is a file copy (fs.copyFileSync), NOT a `playwright --update-snapshots`
 // shell call — so the guard-visual-update hook (which blocks agents' Bash update commands)

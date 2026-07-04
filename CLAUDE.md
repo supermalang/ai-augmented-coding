@@ -68,7 +68,7 @@ if it's absent.
 
 | File | Holds | Indexes | Read by |
 |---|---|---|---|
-| [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md` | `/discovery`, `/planner` |
+| [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md`, `docs/personas/<slug>.md` | `/discovery`, `/planner` |
 | [`DESIGN.md`](DESIGN.md) | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
 
@@ -109,7 +109,7 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 | Step | Skill | Run when |
 |---|---|---|
-| −1 | `/discovery` | Requirements are unclear — interviews the user, writes a product brief, then feeds `/planner` |
+| −1 | `/discovery` | Requirements are unclear — interviews the user, writes a PRD, then feeds `/planner` |
 | 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists; runs `/locate` on change-type tasks to scope impact and save a reusable change-set) |
 | 1 | `/start-task <ID>` | Always — validates DoR, sets `.current-task`, creates branch |
 | 2 | `/schema-agent` | Schema impact = `Migration` |
@@ -128,7 +128,7 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 A design can be imported up front with `/design-import` (Google Stitch MCP) before `/planner`, and `/diagram` can be used at any point to add Mermaid ERDs, architecture, sequence, or workflow diagrams to the docs.
 
-**Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a product brief to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
+**Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a PRD to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
 
 ---
 
@@ -178,7 +178,7 @@ Skills are slash commands in `.claude/skills/`.
 
 | Skill | Role |
 |---|---|
-| `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a product brief that feeds `/planner` |
+| `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a PRD that feeds `/planner` |
 | `ship-task` | Autonomous orchestrator — chains all pipeline agents with skip logic, ships to a PR |
 | `sprint-start` | Sprint kickoff — verify all planned tasks satisfy DoR |
 | `planner` | Write a new task in the roadmap using the full template (runs `/locate` on change-type tasks to scope impact + save a reusable change-set) |
@@ -213,7 +213,7 @@ Skills are slash commands in `.claude/skills/`.
 | `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
-| `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds a **pinned Playwright container** + config + example route specs. Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
+| `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds **in-project Playwright** config + example route specs under a single `visual-review/` folder (no container). Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
 | `visual-review` | Read-only reporter of visual-approval state — compares baseline PNGs vs the integration branch, reads `visual-approvals.json`, and reports each changed baseline as approved / rejected / pending. Consumed by `/qa-tester` and `/pr-reviewer`; never re-baselines |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
@@ -235,7 +235,7 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
-- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`; `visual-setup` writes only the visual-testing config (the `Visual testing` block in `context.md` + scaffolded root files) and **never installs runtimes**. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
+- **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source; plus, on a greenfield repo, the stack-choice ADR in `docs/ARCHITECTURE.md`); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`; `visual-setup` writes only the visual-testing config (the `Visual testing` block in `context.md` + scaffolded root files) and **never installs runtimes**. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
 - **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers + `setup`/`report`; Haiku for `commit`/`diagram`/`locate`).
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.

@@ -46,6 +46,13 @@ export STACK_DOCS_GENERATE_CMD='npm run docs:generate'
 export STACK_MIGRATIONS_REGEX='^prisma/migrations/'
 export STACK_DOCKER_REBUILD_CMD='docker compose up -d --build app'
 
+# Code-map generator command (/code-map, remind-code-map). The default is the portable,
+# zero-dependency generator — works on any stack with no toolchain. Override to plug in a
+# real import-graph tool for exact edges, e.g.:
+#   JS/TS  → 'npx --yes dependency-cruiser --output-type json src | node .claude/skills/code-map/generate.mjs --edges-from-stdin'
+#   Python → 'pydeps --show-deps --no-output . > .scratch/deps.json && node .claude/skills/code-map/generate.mjs'
+export STACK_CODE_MAP_CMD='node .claude/skills/code-map/generate.mjs'
+
 # Visual re-baseline guard (guard-visual-update). Blocks AGENTS from blessing screenshot
 # baselines — only a human or the Tier 3 review app may re-baseline. Two parts:
 #   TOOL   — the command must be the actual capture INVOCATION (`playwright test`), not a
