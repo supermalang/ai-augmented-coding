@@ -110,6 +110,12 @@
           },
           {
             "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-code-map.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking if code map needs a refresh…"
+          },
+          {
+            "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-soft-delete.sh\"",
             "timeout": 5,
             "statusMessage": "Checking soft-delete rule…"
@@ -154,6 +160,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-docker-rebuild.sh\"",
             "timeout": 5,
             "statusMessage": "Checking if Docker rebuild needed…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/remind-code-map.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking if code map needs a refresh…"
           },
           {
             "type": "command",
