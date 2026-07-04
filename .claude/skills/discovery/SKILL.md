@@ -21,7 +21,7 @@ It is **conversational and iterative**: it asks focused questions in small batch
 ## Permissions
 
 ✅ CAN read    : all project files · any document or text the user provides for context
-✅ CAN write   : `docs/discovery/<slug>.md` (the product brief) · the **index table** in `PRODUCT.md` (add a row for the new brief; create `PRODUCT.md` from the template if it is missing)
+✅ CAN write   : `docs/discovery/<slug>.md` (the product brief) · `docs/personas/<slug>.md` (persona profiles) · the **index tables** in `PRODUCT.md` (brief + persona rows; create `PRODUCT.md` from the template if it is missing)
 ✅ CAN run     : read-only git commands (`git log`, `git branch`) for context
 ❌ CANNOT      : write to source, tests, schema, or `docs/ROADMAP.md` (roadmap belongs to `/planner`)
 ❌ CANNOT      : create branches, run migrations, builds, or tests
@@ -194,6 +194,51 @@ Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative
 Each user story must be **INVEST**-shaped: Independent, Negotiable, Valuable, Estimable, Small, Testable. Lead acceptance criteria with the nominal case, then edge cases — the same shape `/planner` expects.
 
 After writing the brief, keep the vision index current: add a row to the **Feature briefs (index)** table in `PRODUCT.md` linking the new `docs/discovery/<slug>.md` (status `Draft`). If `PRODUCT.md` does not exist, create it from the template and seed the vision sections from what you learned — then add the row. Do not touch any other section of `PRODUCT.md`.
+
+### 5b — Persona profiles
+
+The brief's §1 captures *this initiative's* user. A **persona is bigger than one initiative** — it's a
+standing HCD artifact reused across many briefs and every task's User-value line. So when discovery
+surfaces a persona that isn't already profiled, give it its own doc.
+
+For each **new or materially-changed** persona, write `docs/personas/<slug>.md` (slug = kebab-case of
+the persona name) using this structure — a real HCD profile, not just a job label:
+
+```markdown
+# Persona — <Name / role>
+
+**Type:** Primary | Secondary   **Author:** /discovery   **Updated:** <today>
+
+## Snapshot
+<One or two sentences — who they are in the product's world, in their own vernacular.>
+
+## Jobs-to-be-done
+- **Main job:** When <situation>, I want to <motivation>, so I can <expected outcome>.
+- <Secondary job(s)>
+
+## Goals
+- <What success looks like for them>
+
+## Pains (today)
+- <Friction, blocker, or cost they live with now>
+
+## Gains (desired)
+- <What would make this meaningfully better>
+
+## Context & behaviours
+- Environment / devices / frequency / constraints (accessibility, connectivity, expertise level).
+
+## Scenario
+<A short narrative of them hitting the problem — the story a designer/dev can picture.>
+```
+
+Then keep `PRODUCT.md`'s **personas index** current: ensure the persona is a row in the *Who it's for*
+table with its one-line JTBD and a link to `docs/personas/<slug>.md`. The table stays the lean summary;
+the doc holds the depth. Keep both in sync with the roles in `.claude/context.md`. Don't touch other
+sections of `PRODUCT.md`.
+
+Lightweight escape hatch: for a throwaway or single-use persona, a JTBD row in the `PRODUCT.md` table is
+enough — a full profile doc is for personas the product will keep designing for.
 
 ### 6 — Confirm with the user
 

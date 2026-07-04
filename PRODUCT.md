@@ -17,12 +17,17 @@
 
 ## Who it's for
 
-| Persona | Job-to-be-done | Why they care |
-|---|---|---|
-| [Primary persona] | [What they're trying to accomplish] | [The pain it removes] |
-| [Secondary persona] | … | … |
+This table is the **persona index** — the lean summary. Each persona the product will keep designing
+for gets a full HCD profile under `docs/personas/<slug>.md` (jobs, goals, pains/gains, context,
+scenario), written by `/discovery`; link it from the last column.
 
-> Keep personas in sync with the roles in `.claude/context.md`.
+| Persona | Job-to-be-done | Why they care | Profile |
+|---|---|---|---|
+| [Primary persona] | [What they're trying to accomplish] | [The pain it removes] | [docs/personas/&lt;slug&gt;.md](docs/personas/) |
+| [Secondary persona] | … | … | — (JTBD-only) |
+
+> Keep personas in sync with the roles in `.claude/context.md`. `/planner` validates every task's
+> User-value persona against this table — a persona must exist here before a task can reference it.
 
 ## Problem
 

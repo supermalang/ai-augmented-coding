@@ -15,6 +15,8 @@ A task must satisfy **all** of the following before any code is written. The pip
 - [ ] Dependencies identified (or explicitly `None`)
 - [ ] Wireframe or mockup referenced (or `N/A` with justification for non-UI tasks)
 - [ ] Risk level declared (`Low` / `Medium` / `High`)
+- [ ] Journey coordinate set — a `<activity> / <step>` on the story map, or `N/A` for non-journey work (infra/tooling/refactor). Keeps story-map traceability honest both ways
+- [ ] User-value persona is one listed in `PRODUCT.md`
 
 > **Hard stop:** the `guard-roadmap-gate.sh` hook blocks all edits to `src/`, `tests/`, and the schema file if `.current-task` is not set or the task ID is not found in this file.
 
@@ -74,12 +76,13 @@ Copy this block when creating a new task via `/planner`.
 **Risk:** Low | Medium | High
 **Priority:** P0 | P1 | P2  *(P0 = must ship this sprint / blocking · P1 = important, not blocking · P2 = nice to have)*
 **Dependencies:** <task IDs this blocks on, comma-separated> | None  *(batch `/ship-task open` skips a task until every dependency is delivered `[x]`)*
+**Journey:** <backbone activity> / <step>  |  N/A — <non-journey reason, e.g. infra/tooling/refactor>  *(the story-map coordinate; `/story-map` reconciles this both ways — a task with no valid coordinate is an ORPHAN, a journey step with no task is a GAP)*
 
 **Description**
 One paragraph — what this task does, not how.
 
 **User value**
-As a [persona], I want [action] so that [benefit].
+As a [persona], I want [action] so that [benefit].  *(persona must be one listed in `PRODUCT.md`)*
 
 **Acceptance criteria**
 - [ ] Criterion 1 — concrete and verifiable

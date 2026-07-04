@@ -59,10 +59,11 @@ backlog exists.
 | `/discovery` | Iterative requirements / PRD / HCD interview → product brief with INVEST stories | `PRODUCT.md`, `docs/discovery/<slug>.md` |
 | `/design-import` | Design → spec via Google Stitch (tokens, layout, typography) | `DESIGN.md`, `docs/design/<slug>.md` |
 
-**Personas (HCD):** `PRODUCT.md` holds a **Persona | Job-to-be-done | Why they care** table, kept in
-sync with the roles in `context.md`. `/discovery` uses them; the discovery DoR requires the
-persona + job-to-be-done to be explicit. These are JTBD-style personas — lightweight, not full
-empathy-map profiles.
+**Personas (HCD):** `PRODUCT.md` holds the **persona index** (Persona · JTBD · why · profile link),
+and each persona the product keeps designing for gets a full profile under `docs/personas/<slug>.md`
+— jobs-to-be-done, goals, pains/gains, context, and a scenario — written by `/discovery`. The index
+stays lean; the doc holds the depth. `/planner` validates every task's User-value persona against the
+index (a persona must exist before a task can reference it).
 
 **Enforcement:** soft (skill-guided). Definition quality is convention, not machine-checked.
 
@@ -77,10 +78,12 @@ Turn the brief into a shaped, ready backlog — the **solution space**.
 | `/locate` | Coarse impact scoping for change-type tasks (saved into the card) | change-set in the card |
 | `/sprint-start` | Sprint kickoff — hard DoR gate on every planned task | — |
 
-**Story map ↔ sprint ↔ task:** the story map is a **read-only view onto** the roadmap — it maps
-existing task IDs into a backbone grid, pulling each story's sprint / priority / status from
-`ROADMAP.md`, cut into horizontal **release slices** (a release slice ≠ a sprint). It flags gaps
-for `/planner` but cannot create or edit tasks.
+**Story map ↔ sprint ↔ task (bidirectional):** every task carries a **`Journey:` coordinate**
+(`<activity> / <step>`, or `N/A` for infra/tooling). `/story-map` reconciles the map against the
+roadmap **both ways** and emits a coverage matrix — a journey step with no task is a `⚠️ GAP`, a task
+whose coordinate matches no step (or is missing) is a `⚠️ ORPHAN`/`UNMAPPED`. It still cannot create
+or edit tasks — GAPS and orphans are handed to `/planner`. Release slices ≠ sprints (a slice is a
+journey cut). The `Journey` coordinate and a known persona are both **DoR items**.
 
 **Task dependencies:** first-class. `/planner`'s **Dependencies** field (task IDs) is required by
 DoR. `/ship-task open` is dependency-gated + priority-ordered (P0→P1→P2, then ID): it skips a task

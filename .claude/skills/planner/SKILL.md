@@ -51,6 +51,7 @@ Examples of fields the Planner can almost always infer without asking:
 - Schema impact → read the schema file and check if new fields/models are needed
 - Components → from the source files the change would touch
 - Risk → `Low` unless migration or auth is involved
+- Journey → match the task to a `docs/story-map.md` step (a `⚠️ GAP` you're filling names its own coordinate); `N/A` for infra/tooling/refactor
 
 Examples of fields that genuinely require the user:
 - Acceptance criteria (business intent — what does "done" look like from the user's perspective?)
@@ -85,8 +86,9 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
 | **Priority** | `P0` must ship this sprint / blocks other work or core value · `P1` important, not blocking · `P2` nice to have. Sequencing aid for sprint selection — *not* a DoR gate; infer from the request, ask only if genuinely ambiguous |
 | **Dependencies** | Task IDs this work blocks on (comma-separated) or `None`. Required by DoR. The batch orchestrator (`/ship-task open`) skips a task until every dependency is delivered `[x]`, so name them precisely |
+| **Journey** | The story-map coordinate `<backbone activity> / <step>`, or `N/A — <reason>` for non-journey work (infra/tooling/refactor). Infer from `docs/story-map.md` (a flagged `⚠️ GAP` you're now filling names its own activity/step), the discovery brief's journey, or `PRODUCT.md`. This is what makes story-map traceability bidirectional — set it so the task doesn't surface as an `ORPHAN` |
 | **Description** | What the task does, not how |
-| **User value** | Format: *As a [persona], I want [action] so that [benefit].* [PROJECT CONVENTION — see .claude/context.md for valid personas] |
+| **User value** | Format: *As a [persona], I want [action] so that [benefit].* The persona **must be one listed in `PRODUCT.md`** (the persona table / `docs/personas/` index). If the request needs a persona that doesn't exist yet, stop and send it to `/discovery` rather than inventing one here |
 | **Acceptance criteria** | At least 3 concrete and verifiable criteria. Lead with nominal cases, then edge cases |
 | **Schema impact** | `Migration — [detail]` or `None` |
 | **Components** | Affected source paths |
@@ -110,6 +112,8 @@ Before writing to the file, check every DoR item (section at the top of the road
 - [ ] Story is Independent and Small — deliverable in a single sprint with no hidden dependency on unplanned work; if not, split it into separate tasks (INVEST I + S)
 - [ ] Schema impact declared
 - [ ] Dependencies identified
+- [ ] Journey coordinate set (`<activity> / <step>`) or `N/A — <reason>` for non-journey work
+- [ ] User-value persona exists in `PRODUCT.md` (else route to `/discovery`)
 - [ ] Wireframe or mockup mentioned (or N/A with justification)
 - [ ] Risk declared
 

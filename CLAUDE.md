@@ -68,7 +68,7 @@ if it's absent.
 
 | File | Holds | Indexes | Read by |
 |---|---|---|---|
-| [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md` | `/discovery`, `/planner` |
+| [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md`, `docs/personas/<slug>.md` | `/discovery`, `/planner` |
 | [`DESIGN.md`](DESIGN.md) | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
 
