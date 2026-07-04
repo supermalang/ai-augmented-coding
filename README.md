@@ -72,14 +72,17 @@ downstream gate reads. Get them right once.
 
 **Run.**
 ```
-/setup           # detect stack, interview, fill .claude/context.md + CLAUDE.md + stack-profile.sh + scripts
+/setup           # detect stack (or recommend one on greenfield), interview, fill context.md + CLAUDE.md + stack-profile.sh + scripts
 /code-map        # generate .claude/code-map.md — the router index /planner & /locate read
 /visual-setup    # OPT-IN — scaffold visual baseline review (off by default)
 ```
 
 **You can:** retarget any stack by editing one file (`stack-profile.sh`, examples for
 Laravel/Django/FastAPI included — see [Adapting to another stack](#adapting-to-another-stack)); skip
-`/visual-setup` entirely unless you want screenshot review.
+`/visual-setup` entirely unless you want screenshot review. **Starting from scratch with no stack?**
+`/setup` recommends one — a shortlist with rationale drawn from your PRD's constraints — for you to
+choose, and records the "why" as an ADR. (It configures and records the stack; it still doesn't
+scaffold the app skeleton — that's a framework initializer or a first roadmap task.)
 
 **Enforcement:** soft — skills fill config; downstream gates surface gaps later.
 

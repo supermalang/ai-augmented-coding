@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Technical stack kickoff — the engineering counterpart to /discovery. Detects what it can from the repo, then iteratively interviews the user about the stack, commands, absolute rules, and isolation model until the picture is clear, and fills the template's operational config — .claude/context.md, the [CONFIGURE] blocks in CLAUDE.md, the patterns in .claude/hooks/stack-profile.sh, the package.json test/lint/build scripts, and a starter coverage config. Run once when adopting the template, before /discovery or /planner. Defines the stack; does not scaffold the app.
+description: Technical stack kickoff — the engineering counterpart to /discovery. Detects what it can from the repo, then iteratively interviews the user about the stack, commands, absolute rules, and isolation model until the picture is clear, and fills the template's operational config — .claude/context.md, the [CONFIGURE] blocks in CLAUDE.md, the patterns in .claude/hooks/stack-profile.sh, the package.json test/lint/build scripts, and a starter coverage config. On a fresh project with no stack, it recommends one — a shortlist with rationale grounded in the PRD's constraints — for the user to choose, and records the choice as a short ADR. Run once when adopting the template, before /discovery or /planner. Defines the stack; does not scaffold the app.
 ---
 
 # /setup — Technical Stack & Foundation Agent
@@ -28,7 +28,9 @@ skill is what makes that agnostic design real by populating the abstraction boun
 ✅ CAN read    : all project files · any manifest, lockfile, or config the repo already contains
 ✅ CAN write   : `.claude/context.md` · the `[CONFIGURE]` blocks in `CLAUDE.md` (Project, Tech stack,
                  Commands, Absolute rules) · `.claude/hooks/stack-profile.sh` · the `scripts` block in
-                 `package.json` (or the stack's task-runner equivalent) · a starter coverage config
+                 `package.json` (or the stack's task-runner equivalent) · a starter coverage config ·
+                 **on greenfield only**, the stack-choice ADR in the *Key technical decisions* section
+                 of `docs/ARCHITECTURE.md` (that one entry — not the rest of the doc)
 ✅ CAN run     : read-only detection (`git log`, `git branch`, reading manifests) · the configured
                  `test`/`lint` command **once** to verify it executes
 ❌ CANNOT      : scaffold app source, components, schema, or framework boilerplate
@@ -70,6 +72,10 @@ Note every field you can already fill and every field still unknown.
 
 Do not ask the user about anything a manifest already answers.
 
+**If detection finds no stack** — no manifest, lockfile, or framework config; an empty or docs-only
+repo — this is a **greenfield** project. Don't interrogate the user field-by-field about a stack that
+doesn't exist yet; go to **step 2a** first to help them choose one, then resume the normal interview.
+
 ### 2 — Iterative interview (only the gaps)
 
 Ask in **small, focused batches** — prefer `AskUserQuestion` for closed choices, plain questions for
@@ -103,11 +109,42 @@ Stop as soon as the picture is clear. If the user says "you decide," record a st
 on rather than pressing. Forge, brand, and image-gen are **optional** — skip them cleanly if the project
 won't push via an agent or won't generate decks.
 
+### 2a — Greenfield: recommend a stack (fresh projects only)
+
+Skip this entirely if detection already found a stack — you configure what exists, you don't
+second-guess it. Run it **only** when step 1 found no stack. The goal is a *confident recommendation
+the user chooses from*, not an exhaustive framework survey — **advise, don't decide.**
+
+1. **Ground the recommendation in what's already known.** Read the PRD(s) in `docs/discovery/` and
+   `PRODUCT.md` — especially the **constraints & NFRs** (§8: performance/scale, accessibility,
+   security/compliance, platforms), **assumptions**, and **success metrics**. Most of what should
+   drive a stack choice is already there. If no PRD exists yet, say so and suggest running
+   `/discovery` first — a stack chosen before the problem is a guess.
+2. **Ask only the few things the PRD can't settle** (`AskUserQuestion`, closed choices):
+   - App shape — web app · API/service · CLI · mobile · desktop.
+   - The team's existing language/skills or any house standard (the single biggest real-world factor).
+   - Deploy target / hosting constraint (serverless, a specific cloud, on-prem, edge).
+   - Any hard requirement that narrows the field — offline-first, realtime, heavy SEO, strict
+     compliance, data residency.
+3. **Propose a shortlist of one or two stacks**, each with a **one-line rationale tied to the
+   constraints above** (e.g. "Next.js + Prisma + Postgres — SSR covers the SEO NFR, the team already
+   knows React, Prisma matches the soft-delete/audit rules"). Name the language, framework, ORM/data
+   layer, and test runner. Note the trade-off you're accepting. Don't rank ten options — offer the
+   best fit and at most one alternative.
+4. **Let the user choose.** If they say "you decide," pick the best-fit, state the one-line why, and
+   proceed — don't stall. Record the decision (step 4 writes it to `context.md` + a short ADR).
+
+You still **do not scaffold, install, or generate boilerplate** — you've helped *decide* the stack;
+laying down the skeleton is the user's next move (a framework initializer, or a first `Type: Feature`
+roadmap task). Fold the chosen stack into the normal interview from here (its commands, ORM pattern,
+migrations dir, etc.).
+
 ### 3 — Definition of Configured (gate before writing)
 
 Do not write config until every item holds:
 
 - [ ] Project name and purpose are stated
+- [ ] A stack is settled — detected from the repo, or (greenfield) chosen by the user in step 2a
 - [ ] Language, package manager, and test runner are known
 - [ ] All five commands (dev/build/lint/test/test:coverage) map to a real invocation
 - [ ] Coverage scope and threshold targets are decided
@@ -143,8 +180,15 @@ Fill, and only, these files — keep each lean (agents read `context.md` every r
    (e.g. `vitest.config.ts` `coverage.thresholds`, or `--cov-fail-under` for pytest). This is the
    technical equivalent of acceptance criteria: the `test:coverage` gate the DoD assumes must exist.
 
+6. **Stack-choice ADR (greenfield only)** — if you recommended the stack in step 2a, record *why* as a
+   short entry in the **Key technical decisions** section of `docs/ARCHITECTURE.md`: the choice, the
+   PRD constraints that drove it, the alternative considered, and the trade-off accepted. A few lines —
+   the durable answer to "why this stack?" This is the one exception to leaving `ARCHITECTURE.md` to
+   `/docs`; write nothing else in that file.
+
 Respect the two-tier rule: exact tokens/commands/classes → `context.md` and config files; rationale
-and deep architecture → `docs/ARCHITECTURE.md` (leave a pointer, don't fill it here).
+and deep architecture → `docs/ARCHITECTURE.md`. Beyond the greenfield stack ADR above, leave a
+pointer there rather than filling it — `/docs` keeps it current.
 
 ### 5 — Verify the command runs
 
@@ -156,7 +200,7 @@ attempt to fix application code.
 
 ```
 ✅ Setup complete — the template is configured for <stack>
-🧱 Stack            : <language · framework · ORM · test runner>
+🧱 Stack            : <language · framework · ORM · test runner>  <(recommended & chosen | detected)>
 ⚙️  Commands wired   : dev · build · lint · test · test:coverage
 📊 Coverage gate    : <thresholds> scoped to <path>
 🔒 Isolation        : <key + source, or single-tenant>
@@ -169,7 +213,8 @@ attempt to fix application code.
 ## What setup does NOT do
 
 - Does not scaffold the app, install dependencies, or generate framework/ORM boilerplate — it
-  configures the *pipeline*, not the application.
+  configures the *pipeline*, not the application. On greenfield it *recommends* a stack and *records*
+  the choice; laying down the skeleton is still the user's next move.
 - Does not write roadmap tasks (`/planner`) or product briefs (`/discovery`).
 - Does not edit the workflow, skill tables, agent envelopes, or hook scripts — only the
   `[CONFIGURE]` content and `stack-profile.sh` patterns.
