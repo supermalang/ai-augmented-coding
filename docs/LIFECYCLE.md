@@ -56,7 +56,7 @@ backlog exists.
 
 | Skill | Role | Produces |
 |---|---|---|
-| `/discovery` | Iterative requirements / PRD / HCD interview → product brief with INVEST stories | `PRODUCT.md`, `docs/discovery/<slug>.md` |
+| `/discovery` | Iterative requirements / PRD / HCD interview → **PRD** with INVEST stories | `PRODUCT.md`, `docs/discovery/<slug>.md` |
 | `/design-import` | Design → spec via Google Stitch (tokens, layout, typography) | `DESIGN.md`, `docs/design/<slug>.md` |
 
 **Personas (HCD):** `PRODUCT.md` holds the **persona index** (Persona · JTBD · why · profile link),
@@ -69,7 +69,7 @@ index (a persona must exist before a task can reference it).
 
 ## 3 · Planning — *Agile backlog shaping*
 
-Turn the brief into a shaped, ready backlog — the **solution space**.
+Turn the PRD into a shaped, ready backlog — the **solution space**.
 
 | Skill | Role | Produces |
 |---|---|---|

@@ -50,13 +50,14 @@ scenario), written by `/discovery`; link it from the last column.
 
 ---
 
-## Feature briefs (index)
+## PRDs (index)
 
-Each initiative gets a detailed product brief under `docs/discovery/<slug>.md`, written by
-`/discovery`. This table is the map from the vision above to those per-feature briefs.
+Each initiative gets a detailed **Product Requirements Document (PRD)** under
+`docs/discovery/<slug>.md`, written by `/discovery`. This table is the map from the vision above to
+those per-initiative PRDs.
 
-| Initiative | Brief | Status |
+| Initiative | PRD | Status |
 |---|---|---|
 | [Feature name] | [docs/discovery/&lt;slug&gt;.md](docs/discovery/) | Draft / Planned / Shipped |
 
-> `/discovery` appends a row here each time it writes a new brief.
+> `/discovery` appends a row here each time it writes a new PRD.

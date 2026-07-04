@@ -1,6 +1,6 @@
 ---
 name: discovery
-description: Product discovery and requirements kickoff. Iteratively interviews the user — blending requirements gathering, PRD writing, Agile story slicing, Design Thinking and Human-Centred Design — until the problem, user, and solution are clearly understood, then writes a product brief that /planner turns into roadmap tasks. Use at the very start, before any task exists.
+description: Product discovery and requirements kickoff. Iteratively interviews the user — blending requirements gathering, PRD writing, Agile story slicing, Design Thinking and Human-Centred Design — until the problem, user, and solution are clearly understood, then writes a Product Requirements Document (PRD) that /planner turns into roadmap tasks. Use at the very start, before any task exists.
 ---
 
 # /discovery — Product Discovery & Requirements Agent
@@ -16,12 +16,12 @@ The front door of the pipeline. Runs **before** `/planner`. Its job is to make s
 - **Agile / Scrum** — slice the work into INVEST user stories with testable acceptance criteria.
 - **Design Thinking / HCD** — start from the user's job-to-be-done and pain, not the feature.
 
-It is **conversational and iterative**: it asks focused questions in small batches, absorbs any document or text the user provides, and keeps going until the picture is clear. It does **not** write code, tests, schema, or roadmap entries — it produces a **product brief** that `/planner` consumes.
+It is **conversational and iterative**: it asks focused questions in small batches, absorbs any document or text the user provides, and keeps going until the picture is clear. It does **not** write code, tests, schema, or roadmap entries — it produces a **Product Requirements Document (PRD)** that `/planner` consumes.
 
 ## Permissions
 
 ✅ CAN read    : all project files · any document or text the user provides for context
-✅ CAN write   : `docs/discovery/<slug>.md` (the product brief) · `docs/personas/<slug>.md` (persona profiles) · the **index tables** in `PRODUCT.md` (brief + persona rows; create `PRODUCT.md` from the template if it is missing)
+✅ CAN write   : `docs/discovery/<slug>.md` (the PRD) · `docs/personas/<slug>.md` (persona profiles) · the **index tables** in `PRODUCT.md` (PRD + persona rows; create `PRODUCT.md` from the template if it is missing)
 ✅ CAN run     : read-only git commands (`git log`, `git branch`) for context
 ❌ CANNOT      : write to source, tests, schema, or `docs/ROADMAP.md` (roadmap belongs to `/planner`)
 ❌ CANNOT      : create branches, run migrations, builds, or tests
@@ -90,7 +90,7 @@ earlier · change who does it). Sketch each in a sentence or two.
 Then **converge**: score the concepts against the goals, constraints, non-functional needs, and rough
 feasibility/risk, and pick one — recording *why* it won and *why the others didn't*. If the user already
 has a fixed solution in mind, still name one or two alternatives and the reason the chosen one is better;
-a one-option "decision" isn't a decision. Capture this in the brief's **Options considered** section so
+a one-option "decision" isn't a decision. Capture this in the PRD's **Options considered** section so
 the rationale survives, and feed the winner into the Solution overview.
 
 For a genuinely simple or pre-decided request, keep this light — two lines naming the alternative you
@@ -98,7 +98,7 @@ ruled out is enough; don't manufacture options theatre.
 
 ### 3b — Threat model (shift security left)
 
-Before the brief is final, do a lightweight threat pass — security is far cheaper to design in than to review out later. For the proposed solution, identify:
+Before the PRD is final, do a lightweight threat pass — security is far cheaper to design in than to review out later. For the proposed solution, identify:
 
 - **Assets & data sensitivity** — what data does this touch (PII, credentials, financial, tenant-scoped)? What's the blast radius if it leaks?
 - **Trust boundaries** — where does untrusted input enter (user input, uploads, third-party webhooks, inter-service calls)?
@@ -106,11 +106,11 @@ Before the brief is final, do a lightweight threat pass — security is far chea
 - **AuthN/AuthZ needs** — who may do what; does any action need re-verification or an audit-log entry?
 - **Relevant absolute rules** — which project rules in `.claude/context.md` (isolation key, soft delete, audit log, no secret exposure) apply here?
 
-Capture the findings in the brief's threat-model section (below). These become explicit acceptance criteria and feed `/security-audit` later, instead of being discovered at review time.
+Capture the findings in the PRD's threat-model section (below). These become explicit acceptance criteria and feed `/security-audit` later, instead of being discovered at review time.
 
-### 4 — Definition of Clear (gate before writing the brief)
+### 4 — Definition of Clear (gate before writing the PRD)
 
-Do not write the brief until every item holds:
+Do not write the PRD until every item holds:
 
 - [ ] The user/persona and their job-to-be-done are explicit
 - [ ] The problem and its impact are stated (why it matters now)
@@ -123,12 +123,12 @@ Do not write the brief until every item holds:
 
 If any item is unmet → return to step 3 and ask. State which items are still open so the user knows why you're continuing.
 
-### 5 — Synthesise the product brief
+### 5 — Synthesise the PRD
 
-Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative) using this structure. For a multi-step user journey or workflow, use `/diagram flow` to embed a Mermaid flowchart in the brief — a picture of the flow surfaces gaps prose hides.
+Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative) using this structure. For a multi-step user journey or workflow, use `/diagram flow` to embed a Mermaid flowchart in the PRD — a picture of the flow surfaces gaps prose hides.
 
 ```markdown
-# Product Brief — <Title>
+# Product Requirements Document (PRD) — <Title>
 
 **Date:** <today>   **Status:** Draft   **Author:** /discovery
 
@@ -193,7 +193,7 @@ Write `docs/discovery/<slug>.md` (slug = short kebab-case name of the initiative
 
 Each user story must be **INVEST**-shaped: Independent, Negotiable, Valuable, Estimable, Small, Testable. Lead acceptance criteria with the nominal case, then edge cases — the same shape `/planner` expects.
 
-After writing the brief, keep the vision index current: add a row to the **Feature briefs (index)** table in `PRODUCT.md` linking the new `docs/discovery/<slug>.md` (status `Draft`). If `PRODUCT.md` does not exist, create it from the template and seed the vision sections from what you learned — then add the row. Do not touch any other section of `PRODUCT.md`.
+After writing the PRD, keep the vision index current: add a row to the **PRDs (index)** table in `PRODUCT.md` linking the new `docs/discovery/<slug>.md` (status `Draft`). If `PRODUCT.md` does not exist, create it from the template and seed the vision sections from what you learned — then add the row. Do not touch any other section of `PRODUCT.md`.
 
 ### 5b — Persona profiles
 
@@ -242,12 +242,12 @@ enough — a full profile doc is for personas the product will keep designing fo
 
 ### 6 — Confirm with the user
 
-Present a tight summary of the brief (problem, goals, non-goals, the sliced stories). Ask for explicit confirmation or corrections before handing off. Apply any final edits.
+Present a tight summary of the PRD (problem, goals, non-goals, the sliced stories). Ask for explicit confirmation or corrections before handing off. Apply any final edits.
 
 ### 7 — Handoff
 
 ```
-✅ Discovery complete — brief written to docs/discovery/<slug>.md
+✅ Discovery complete — PRD written to docs/discovery/<slug>.md
 🎯 Problem & user   : clear
 📐 Stories drafted  : N (INVEST, with acceptance criteria)
 ⚠️  Open risks      : <count, or none>

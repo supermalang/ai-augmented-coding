@@ -90,11 +90,11 @@ user, the job, and the solution shape before a backlog exists.
 
 **Run.**
 ```
-/discovery       # iterative requirements/PRD/HCD interview → product brief + INVEST stories + threat model
+/discovery       # iterative requirements/PRD/HCD interview → PRD (docs/discovery/<slug>.md) + INVEST stories + threat model
 /design-import   # OPTIONAL — pull a design into a spec via Google Stitch MCP
 ```
 
-**You can:** turn a fuzzy idea into a `docs/discovery/<slug>.md` brief; capture **personas** as full
+**You can:** turn a fuzzy idea into a `docs/discovery/<slug>.md` **PRD**; capture **personas** as full
 HCD profiles in `docs/personas/<slug>.md` (jobs, goals, pains/gains, context, scenario), indexed from
 `PRODUCT.md`; seed the standing vision (`PRODUCT.md`) and design language (`DESIGN.md`).
 
@@ -103,7 +103,7 @@ explicit before it hands off.
 
 ### 3 · Planning — *Agile backlog shaping*
 
-**Why.** The solution space. Turn the brief into small, independent, **traceable** cards that satisfy a
+**Why.** The solution space. Turn the PRD into small, independent, **traceable** cards that satisfy a
 Definition of Ready — so Execution has only well-formed work to pull.
 
 **Run.**
@@ -340,7 +340,7 @@ docs/
   ROADMAP.md          ← DoR / DoD / task template + sprint planning  (Tier-1)
   LIFECYCLE.md        ← the phase view of the pipeline (this README's companion)
   ARCHITECTURE.md     ← system shape, decisions, deep specs  (Tier-2, optional)
-  discovery/          ← per-feature product briefs (/discovery)
+  discovery/          ← per-initiative PRDs (/discovery)
   personas/           ← full HCD persona profiles (/discovery)
   design/             ← per-screen design specs (/design-import)
 CLAUDE.md             ← project instructions for Claude Code  (Tier-1)

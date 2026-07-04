@@ -109,7 +109,7 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 | Step | Skill | Run when |
 |---|---|---|
-| −1 | `/discovery` | Requirements are unclear — interviews the user, writes a product brief, then feeds `/planner` |
+| −1 | `/discovery` | Requirements are unclear — interviews the user, writes a PRD, then feeds `/planner` |
 | 0 | `/planner` | Task does not exist in roadmap yet (consumes the discovery brief if one exists; runs `/locate` on change-type tasks to scope impact and save a reusable change-set) |
 | 1 | `/start-task <ID>` | Always — validates DoR, sets `.current-task`, creates branch |
 | 2 | `/schema-agent` | Schema impact = `Migration` |
@@ -128,7 +128,7 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 
 A design can be imported up front with `/design-import` (Google Stitch MCP) before `/planner`, and `/diagram` can be used at any point to add Mermaid ERDs, architecture, sequence, or workflow diagrams to the docs.
 
-**Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a product brief to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
+**Discovery → planning flow:** when a request arrives without a clear problem definition, start at `/discovery`. It runs an iterative requirements/PRD/HCD interview and writes a PRD to `docs/discovery/<slug>.md` with INVEST-shaped user stories. `/planner` then turns those stories into roadmap tasks. Skip `/discovery` when the task is already well understood and goes straight to `/planner`.
 
 ---
 
@@ -178,7 +178,7 @@ Skills are slash commands in `.claude/skills/`.
 
 | Skill | Role |
 |---|---|
-| `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a product brief that feeds `/planner` |
+| `discovery` | Product discovery kickoff — iterative requirements/PRD/HCD interview; writes a PRD that feeds `/planner` |
 | `ship-task` | Autonomous orchestrator — chains all pipeline agents with skip logic, ships to a PR |
 | `sprint-start` | Sprint kickoff — verify all planned tasks satisfy DoR |
 | `planner` | Write a new task in the roadmap using the full template (runs `/locate` on change-type tasks to scope impact + save a reusable change-set) |
