@@ -158,7 +158,13 @@ Record both in ISO 8601 UTC and the cycle time between them (compute with `date`
 - Started   : <ISO 8601 UTC — from .current-task line 3, or "unknown" if absent>
 - Delivered : <ISO 8601 UTC — date -u +%Y-%m-%dT%H:%M:%SZ>
 - Cycle time : <Delivered − Started, e.g. 3h 38m — or "—" if Started unknown>
+- Estimate  : <story points from the task's Estimate field — copied here so /retro can trend velocity + cycle-time-per-point>
+- Perf      : <perf blockers / budget breaches raised for this task, e.g. "1 breach: LCP over budget" — or "none">
 ```
+
+> **Why record these:** `/retro` aggregates velocity, cycle-time-per-point, and the perf trend from
+> the Delivery blocks across a sprint. A result that isn't written to the task can't be trended — so
+> copy the Estimate and note any perf blocker here at delivery, not just in the transient review output.
 
 Also set the task block's **Completion date** field to today's date (`YYYY-MM-DD`) — this is the
 marker `/roadmap-status archive` uses to sweep a delivered block out of the live roadmap later:

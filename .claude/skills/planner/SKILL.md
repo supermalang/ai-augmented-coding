@@ -82,6 +82,7 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Sprint** | Sprint N where the task will be delivered |
 | **Write date** | Today |
 | **Planned date** | Estimated from sprint cadence (typically 1–2 weeks after write date) |
+| **Estimate** | Story points (Fibonacci `1 \| 2 \| 3 \| 5 \| 8 \| 13`) — **relative size, not hours**. Propose a value from the scope (a task ≥ 8 usually should be split — INVEST *Small*), confirm with the user. Feeds sprint velocity (`.claude/context.md` → *Sprint configuration*), not a delivery date |
 | **Completion date** | `—` (filled at delivery) |
 | **Type** | `Feature` (new behaviour) or `Fix` (bug on already-shipped behaviour). `Fix` tasks make the orchestrator route the build to `/debugger` (root-cause + minimal fix) instead of `/coder`. For a `Fix`, frame acceptance criteria as the regression contract: *given <repro>, when <action>, then <correct behaviour>* + *existing behaviour X unaffected* |
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
@@ -115,6 +116,7 @@ Before writing to the file, check every DoR item (section at the top of the road
 - [ ] Dependencies identified
 - [ ] Journey coordinate set (`<activity> / <step>`) or `N/A — <reason>` for non-journey work
 - [ ] User-value persona exists in `PRODUCT.md` (else route to `/discovery`)
+- [ ] Estimate set (story points; split anything ≳ 8)
 - [ ] Wireframe or mockup mentioned (or N/A with justification)
 - [ ] Risk declared
 

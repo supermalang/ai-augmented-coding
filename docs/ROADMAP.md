@@ -13,6 +13,7 @@ A task must satisfy **all** of the following before any code is written. The pip
 - [ ] Story is **Independent and Small** — deliverable in a single sprint with no hidden dependency on unplanned work; if not, split it (INVEST I + S)
 - [ ] Schema impact declared (`Migration` or `None`)
 - [ ] Dependencies identified (or explicitly `None`)
+- [ ] Estimate set (story points)
 - [ ] Wireframe or mockup referenced (or `N/A` with justification for non-UI tasks)
 - [ ] Risk level declared (`Low` / `Medium` / `High`)
 - [ ] Journey coordinate set — a `<activity> / <step>` on the story map, or `N/A` for non-journey work (infra/tooling/refactor). Keeps story-map traceability honest both ways
@@ -71,6 +72,7 @@ Copy this block when creating a new task via `/planner`.
 **Sprint:** Sprint N
 **Write date:** YYYY-MM-DD
 **Planned date:** YYYY-MM-DD
+**Estimate:** <story points — 1 | 2 | 3 | 5 | 8 | 13>   *(relative size; drives sprint velocity, not a time promise)*
 **Completion date:** —
 **Type:** Feature | Fix  *(Fix = bug on already-shipped behaviour → orchestrator routes the build to `/debugger`)*
 **Risk:** Low | Medium | High

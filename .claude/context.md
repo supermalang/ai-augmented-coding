@@ -58,6 +58,17 @@ of "today" is unreliable).
 
 ---
 
+## Sprint configuration
+
+How work is sized and how much fits in a sprint. Capacity is by *velocity* (points delivered), not a
+fixed task count.
+
+- **Sprint length (timebox):** [CONFIGURE — e.g. 2 weeks]
+- **Capacity:** estimate-weighted velocity — plan a sprint to ≈ the story points delivered last sprint. No fixed task count.
+- **Estimation scale:** story points (Fibonacci 1–13); points measure **size, not hours**.
+
+---
+
 ## Version control & forge
 
 How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.
@@ -71,6 +82,30 @@ How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the age
   - GitHub → `GH_TOKEN` (read automatically by `gh`); the git remote must use a credential helper or token URL for `git push`.
   - GitLab → `GITLAB_TOKEN` (read by `glab`); same for push.
   - **Never commit the token** — env var only (respects `guard-secret-scan`).
+
+---
+
+## Test execution
+
+How the e2e/visual suite runs, and how it scales across machines. The **core is CI-agnostic** — a
+portable script defaults to running the whole suite with no CI; a thin per-vendor adapter (in
+`ci-adapters/`, one kept per project) only maps shard indices.
+
+- **CI provider:** [CONFIGURE — `github` | `gitlab` | `container` | `none`]
+- **Shard count:** [CONFIGURE — `N` | `auto` (by test count) | `1` (no shard)]   *(don't shard under ~2 min serial)*
+- **Playwright image:** [CONFIGURE — `mcr.microsoft.com/playwright:vX.Y.Z-jammy`]   *(pinned; used for CI **and** local baseline-blessing so screenshots are byte-identical)*
+- **Visual gate mode:** [CONFIGURE — `inline` | `ci`]   *(`inline` = run the visual suite inside `/ship-task`; `ci` = `/ship-task` opens the PR and a required CI check enforces visual)*
+
+**Portable scripts** (`/setup` adds these to `package.json`; default `1/1` = whole suite, no CI):
+
+```jsonc
+"test:e2e:ci":    "playwright test --shard=${SHARD_INDEX:-1}/${SHARD_TOTAL:-1} -c visual-review/playwright.visual.config.ts",
+"test:e2e:merge": "playwright merge-reports --reporter html ./all-blob-reports"
+```
+
+Each shard emits a **blob** report (the visual config sets `blob` under `CI`); `test:e2e:merge`
+stitches one HTML report. Baselines carry a per-OS `{platform}` suffix — bless them in the pinned
+image (see `docs/visual-testing.md`) so local == CI.
 
 ---
 

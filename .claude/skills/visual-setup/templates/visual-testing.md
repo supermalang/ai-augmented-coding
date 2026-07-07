@@ -37,14 +37,25 @@ Only `visual-review/results/` and `visual-review/uat/` are gitignored; everythin
 throwaway output inside a gitignored path). Full-route screenshots are the whole surface — there is
 no Storybook or review-app tier.
 
-## Determinism — without a container
+## Determinism
 
 Screenshots differ across OSes on fonts and anti-aliasing, so baseline filenames carry a
 `{platform}` suffix (`…-linux.png` / `…-darwin.png` / `…-win32.png`) — per-OS captures never clash.
-The one rule that replaces the pinned container: **bless baselines on the same OS your CI runs on**
-(run the visual job on a matching runner — the `CI OS` field in `context.md`). A small
-`maxDiffPixelRatio` absorbs sub-pixel noise. Approve on the CI OS, or approved pixels may re-fail in
-CI. Split a large suite across CI runners with `--shard=<i>/<n>`.
+A small `maxDiffPixelRatio` absorbs sub-pixel noise. Two levels of parity:
+
+- **Day-to-day (in-project):** run and inspect locally with `/visual-report` — no container needed.
+- **Blessing + CI (byte-identical):** bless baselines in the **pinned Playwright image** (the
+  `Playwright image` key in `.claude/context.md`), which CI also uses — so approved pixels can't
+  re-fail in CI on font/anti-aliasing drift. Run the whole suite locally in that image before
+  blessing:
+
+  ```bash
+  docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/playwright:vX.Y.Z-jammy \
+    sh -c 'npm ci && npx playwright test -c visual-review/playwright.visual.config.ts --update-snapshots'
+  # then review the changed PNGs and commit them
+  ```
+
+Split a large suite across CI runners with `--shard=<i>/<n>` (see `ci-adapters/`).
 
 ## Who may re-baseline
 

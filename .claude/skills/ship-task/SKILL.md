@@ -647,11 +647,20 @@ All other steps — branch creation, schema migration, implementation, doc updat
 
 When the `Visual testing` block in `.claude/context.md` has `enabled: true`, a UI change produces
 screenshot diffs that **a human must approve** — and that approval is the **final gate before the PR**.
-This gate is **non-blocking**:
+This gate is **non-blocking**.
 
-- **Flag, don't fail.** In the Review phase, `/qa-tester` runs the visual suite. A *functional* failure
-  blocks like any test; a pure *visual diff* is recorded as **pending** (via `/visual-review`) and is
-  **not** a blocker — the pipeline does not treat "the UI looks different" as an error.
+**Where the visual suite runs depends on `Visual gate mode` (`.claude/context.md` → *Test execution*):**
+- **`inline`** (default) — `/qa-tester` runs the visual suite inside this pipeline, as below.
+- **`ci`** — the heavy visual suite is **not** run inline. `/ship-task` finishes the fast local
+  reviews (unit/integration/lint/security/etc. always stay local) and opens the PR; a **required CI
+  check** runs the sharded visual suite (see `ci-adapters/`). The async park then keys off the **CI
+  result** rather than an inline run — still human-blessed, same `/visual-review` gate, just enforced
+  by CI. Everything below applies with "CI check" substituted for "inline `/qa-tester` run".
+
+- **Flag, don't fail.** In the Review phase (mode `inline`), `/qa-tester` runs the visual suite. A
+  *functional* failure blocks like any test; a pure *visual diff* is recorded as **pending** (via
+  `/visual-review`) and is **not** a blocker — the pipeline does not treat "the UI looks different" as
+  an error.
 - **Park at Ship.** In the Ship phase, `/pr-reviewer` calls `/visual-review`. If the gate is
   `pending`, it **parks** the task — no PR is opened — and returns "pending visual approval". The task
   is **not** marked done and stays open in the roadmap. In batch mode the orchestrator records it and

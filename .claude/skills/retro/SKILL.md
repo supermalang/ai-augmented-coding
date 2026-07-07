@@ -44,6 +44,15 @@ so each sprint runs a little better than the last.
 - **Friction** — the blockers/warnings reviews raised (UX, perf, QA, security, dep), and any pipeline
   stops (DoR failures, RED-gate blocks, tests failing after auto-fix). Recurring blockers are the
   highest-value signal.
+- **Metrics** — aggregate from each delivered task's **Delivery block** (recorded by `/pr-reviewer`):
+  - **Velocity** — story points delivered this sprint vs planned (the capacity signal for next sprint).
+  - **Cycle-time trend** — per-task `Cycle time` (Delivered − Started), and **cycle time per point**
+    as the calibration metric. Be honest that cycle time is elapsed **wall-clock**, not effort.
+  - **Carryover** — points/tasks taken into the sprint but not delivered.
+  - **Perf trend** — count of perf blockers / budget breaches raised this sprint (from recorded task
+    outcomes); recurring hotspots become action items.
+  > These are only aggregatable if the outcomes were **recorded on the task at delivery** — a
+  > transient result can't be trended. If a field is missing, note it and make "record it" an action.
 
 ### 1b — Sprint-exit checklist (cadence ritual)
 
@@ -71,6 +80,14 @@ Write `docs/retros/<date>-sprint-N.md`:
 ```markdown
 # Retrospective — Sprint N
 **Period:** <start> → <end>   ·   Delivered: <n> · Slipped: <n> · Blocked: <n> · Fixes: <n>
+
+## Metrics
+| Signal | This sprint | Prior | Note |
+|---|---|---|---|
+| Velocity (points delivered / planned) | <d>/<p> | <prior> | capacity signal for next sprint |
+| Cycle time per point (wall-clock) | <avg> | <prior> | elapsed, not effort |
+| Carryover (points / tasks) | <n> | — | taken in, not delivered |
+| Perf blockers / budget breaches | <n> | <prior> | recurring hotspots → action items |
 
 ## What went well
 - <Specific thing that worked — keep doing it>
