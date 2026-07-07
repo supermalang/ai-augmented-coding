@@ -554,7 +554,8 @@ await agent(
   'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n\n' +
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Verify all DoD criteria are met. Mark the task [x] in docs/ROADMAP.md (update sprint table and global status). ' +
-  'Run lint and tests. Open a PR to the integration branch with a clear summary. Return the PR URL.',
+  'Run lint and tests. Open a PR against the PR target branch (`.claude/context.md` → Version control & forge), ' +
+  'filling the fixed PR template in order. Never merge — the human validates each PR on `develop`, then promotes develop → main. Return the PR URL.',
   { phase: 'Ship', agentType: 'pr-reviewer' }
 )
 

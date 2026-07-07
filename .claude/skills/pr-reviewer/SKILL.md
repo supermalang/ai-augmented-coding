@@ -187,60 +187,76 @@ Run `/commit` to create a clean commit in Conventional Commits format with stage
 
 ### 6 — Open the PR / MR
 
-Read the **forge** and the **open-PR command** from `.claude/context.md` → *Version control & forge*.
-Use `gh` for GitHub or `glab` for GitLab — same body, same base/target branch. For unattended runs
-(batch `/ship-task open`, CI, cron), the token (`GH_TOKEN` / `GITLAB_TOKEN`) must already be in the
+Read the **forge**, the **PR target branch**, and the **open-PR command** from `.claude/context.md` →
+*Version control & forge*. Open the PR/MR against the **PR target branch** (`develop`) — never `main`.
+Use `gh` for GitHub or `glab` for GitLab — same body, same target. For unattended runs (batch
+`/ship-task open`, CI, cron), the token (`GH_TOKEN` / `GITLAB_TOKEN`) must already be in the
 environment so `git push` and the create command work without an interactive login.
+
+**Fill the PR body in the fixed template order** (`docs/pr-template.md`; the host also auto-loads it
+from `.github/PULL_REQUEST_TEMPLATE.md` / `.gitlab/merge_request_templates/Default.md`). The order is
+deliberate — the reviewer decides top-down in ~30s and only reaches the diff last. **Fill every
+section; if one is empty, write `None` — never leave a blank the reviewer must interpret.**
 
 ```bash
 git push -u origin <branch>
 
-# GitHub (forge = github):
+# GitHub (forge = github). GitLab: glab mr create --target-branch <pr-target> … (same body).
 gh pr create \
-  --base <integration-branch> \
+  --base <pr-target> \
   --title "<type>(<scope>): <short description>" \
   --body "$(cat <<'EOF'
-## Task
-
-<ID> — <title> (Sprint N)
-
 ## Summary
+<one line: what changed and why> · Task: <ROADMAP task link>
 
-- <bullet points of main changes>
+## Acceptance criteria
+<the task's criteria, each ticked when met — an UNTICKED box (with a note) is the reviewer's stop sign>
+- [ ] <criterion>
 
-## Automated checks (done by the pipeline)
+## Visual changes
+<UI work: preview link + link to the visual expected/actual/diff report. "None" if no UI change.
+ NEVER paste raw gitignored result PNGs — link the report/preview.>
+- Preview: <preview URL from context.md "Preview URL source", or "none">
+- Visual report: <CI visual-report artifact link when Visual gate mode = ci, else /visual-report output>
 
-- [x] DoR satisfied before development
-- [x] Implementation complete
-- [x] Unit tests passing
-- [x] E2E tests passing
-- [x] UX review done
-- [x] Acceptance criteria verified by QA agent
-- [x] Security audit + dependency scan done
-- [x] Roadmap updated
-<!-- If visual testing is enabled, add: "- [x] Visual baselines approved: <N> (see visual-approvals.json)" -->
+## Checks & facts
+- CI: <green / red — link>
+- Estimate: <story points>   ·   Cycle time: <Delivered − Started>   ·   Perf: <blockers/breaches or "none">
 
-## ✋ Human UAT — required before merge
+## Risk flags
+<one line each, ONLY if present — omit the line otherwise; write "None" if no flags at all>
+- ⚠️ Schema migration   ·   ⚠️ Auth/permissions   ·   ⚠️ Dependency change
 
-Verify the feature does what you actually need, not just what the criteria said. **Do not merge until every box is ticked by a human.**
-
-- [ ] Walked through each acceptance criterion in the running app / preview
-  <!-- paste the task's acceptance criteria here as individual checkboxes -->
-- [ ] Reviewed the E2E screenshots — the UI matches intent (not just "renders")
-- [ ] Edge cases and error states behave acceptably
-- [ ] No regression in adjacent features
-- [ ] **I accept this for merge** — signed: __________
-
-🤖 Agents: Planner · Schema · Coder · Test Writer · UX · QA · Security · Dep · PR Reviewer
+## Details
+<leave to the platform — the diff renders automatically; kept last on purpose>
 EOF
 )"
-
-# GitLab (forge = gitlab): same branch + body, MR instead of PR:
-#   glab mr create --target-branch <integration-branch> \
-#     --title "<type>(<scope>): <short description>" --description "<same body as above>"
 ```
 
-When generating the PR body, expand the first UAT checkbox into one unchecked box **per acceptance criterion** from the task block, so the human verifies each explicitly. Leave the entire **Human UAT** section unchecked — it is the reviewer's job, not the agent's.
+**How to fill each section (data you already have from earlier steps):**
+- **Acceptance criteria** — copy the task's criteria as a checklist; tick the ones QA verified, leave
+  any unmet one **unticked with a one-line note**. That unticked box is the reviewer's stop sign.
+- **Checks & facts** — CI status link, and the **Estimate / Cycle time / Perf** you recorded in the
+  task's Delivery block (step 4).
+- **Visual changes** — the preview URL from `Preview URL source` (or `none`), plus a **link** to the
+  visual report (CI artifact when `Visual gate mode = ci`, else the `/visual-report` output). Do
+  **not** embed the gitignored `visual-review/results/` PNGs.
+- **Risk flags** — detect from the diff: schema/migration files touched → *Schema migration*;
+  auth/permission/session code touched → *Auth/permissions*; dependency manifest or lockfile changed →
+  *Dependency change*. None present → write `None`.
+
+> **Screenshot boundary:** a screenshot/preview here is for the **human to look at and decide** — the
+> pipeline never blesses its own visual baselines. Showing a screenshot and approving a baseline are
+> different acts; only the human does the second (`guard-visual-update` enforces it, and the visual
+> gate parks the PR until they do — see the *Visual approval gate* above).
+
+GitLab (forge = gitlab): identical body, MR instead of PR —
+`glab mr create --target-branch <pr-target> --title "<type>(<scope>): <short description>" --description "<same body as above>"`.
+
+The **Acceptance criteria** checklist is the reviewer's verification list — one box per criterion,
+ticked only where QA verified it. Unticked boxes are deliberate stop signs, not oversights; the human
+walks the running app / preview against them and merges only when satisfied (merging *is* the
+acceptance in the per-task `develop` PR flow). The pipeline never merges.
 
 [PROJECT CONVENTION — see .claude/context.md for commit message language, Co-Authored-By trailer requirements, and PR title format]
 
