@@ -125,42 +125,20 @@ accessibility checks and survive refactors). Reach authenticated state the *same
 does — a shared logged-in session (e.g. a saved storage state from a one-time setup), never
 credentials hardcoded in specs; read secrets from env. Keep the count low on purpose.
 
-**Visual — Tier 1, thin, deterministic.** Full-route screenshot baselines for a handful of key
+**Visual — thin, deterministic, full-route.** Full-route screenshot baselines for a handful of key
 screens. Determinism rule: baselines carry a per-OS suffix, so **capture and bless on the same OS
-your CI runs on**. Screenshots are *inspection* (the diff report shows expected/actual/diff);
-*approval* is a deliberate human re-baseline + commit — never automated. See `/visual-setup`,
-`/visual-report`, and the `guard-visual-update` gate. Add component-isolation (Storybook, Tier 2) or
-a click-through review app (Tier 3) **only** when a component library or non-technical approver
-concretely justifies the extra machinery — not by default.
+your CI runs on**. Screenshots are *inspection* (the diff report shows expected/actual/diff, served
+by `/visual-report`); *approval* is a deliberate human re-baseline + commit — never automated. See
+`/visual-setup`, `/visual-report`, and the `guard-visual-update` gate. There is deliberately no
+component-isolation (Storybook) or click-through review-app tier — full-route screenshots are the
+whole surface.
 
-**Accessibility — an assertion, not a suite.** Run an a11y engine against the rendered page inside
-your existing e2e specs and assert **zero** WCAG 2.1 A/AA violations per key route. It adds *no new
-folder*. Attach the violation list to the report on failure so it's actionable (rule id, node, fix
-url). Allow a small per-call rule-disable list **only** for known, ticketed issues — each entry
-needs a tracking reference, or the list quietly becomes where accessibility goes to die. For many
+**Accessibility — an assertion, not a suite.** Owned by **`/test-writer`**: it derives an **axe**
+assertion of **zero** WCAG 2.1 A/AA violations from the task's acceptance criteria and puts it
+*inside* the existing e2e/component specs — no new folder, no standalone a11y suite. Any per-call
+rule-disable must reference a ticket, or the list becomes where accessibility quietly dies. For many
 enterprise and public-sector buyers this is a procurement requirement, so treat it as first-class.
-
-Reference sketch (adapt to the project's e2e tool and a11y engine — do **not** commit a
-stack-specific copy as a separate file):
-
-```ts
-// Inside an existing e2e spec — pseudo-generic shape.
-// 1. Navigate to the route and wait for the page to settle (network idle).
-// 2. Run the a11y engine scoped to main content, with WCAG 2.1 A + AA tags.
-// 3. Assert the violations array is empty; on failure, log rule id + node + help url.
-// 4. Optionally disable specific rule ids ONLY for known, ticketed issues.
-for (const route of KEY_ROUTES) {
-  test(`no WCAG A/AA violations on ${route}`, async ({ page }) => {
-    await page.goto(route)
-    await page.waitForLoadState('networkidle')
-    const results = await a11yEngine({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .include('main, [role="main"], body')
-      .analyze()
-    expect(results.violations).toEqual([]) // log details on failure for actionability
-  })
-}
-```
+(The mechanics — tags, scoping, the assertion shape — live in `/test-writer`, not here.)
 
 **Security & performance — already wired.** These are continuous in this template via agents and
 guards, not something you bolt on per feature. Keep secrets in env (the secret-scan guard enforces

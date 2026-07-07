@@ -155,8 +155,8 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 | **Knowledge / deliverables** | `docs/<category>/` | `docs/discovery/` · `docs/personas/` · `docs/design/` · `docs/reports/*.md` · `docs/retros/` · `docs/usability/` · `docs/story-map.md` · `docs/ARCHITECTURE.md` | **committed** |
 | Roadmap archive | `docs/roadmap/archive/sprint-<N>.md` | full blocks of delivered tasks swept out of the live roadmap by `/roadmap-status archive` (lossless; git also holds them) — keeps `ROADMAP.md` proportional to active work | **committed** |
 | Non-reproducible images | `docs/reports/assets/<date>/` | `/report` illustrated-style images (can't be regenerated identically) | **committed** |
-| Visual review (committed) | `visual-review/` | `specs/` · `baselines/` (blessed `toHaveScreenshot` PNGs — the approval record) · `storybook/` config+stories · `review-app/` · `visual-approvals.json` | **committed** |
-| Visual review (generated) | `visual-review/` | `results/` (actual/diff/report) · `uat/` (`/qa-tester` review shots) · `storybook/static/` | ignored |
+| Visual review (committed) | `visual-review/` | `specs/` · `baselines/` (blessed `toHaveScreenshot` PNGs — the approval record) · `visual-approvals.json` | **committed** |
+| Visual review (generated) | `visual-review/` | `results/` (actual/diff/report) · `uat/` (`/qa-tester` review shots) | ignored |
 | **Generated deliverables** | `out/<type>/` | `out/reports/` PDF + PPTX (regenerable from the committed `.md`) | ignored |
 | **Throwaway verification** | `.scratch/<purpose>/` | `.scratch/webapp-testing/` · `.scratch/perf-measure/` | ignored |
 | Tool-native output | tool defaults | `coverage/` · `test-results/` · `playwright-report/` — leave where the tools write them | ignored |
@@ -176,8 +176,7 @@ task commit. New subfolders are fine **within** a bucket; don't invent new top-l
 > suffix, so capture/bless baselines on the **same OS your CI runs on** (local == CI).
 
 - **enabled:** false
-- **tier:** —              # 1 = Playwright full-route · 2 = + Storybook · 3 = + review app
-- **root:** visual-review/ # single home: specs/ baselines/ results/ storybook/ review-app/ uat/
+- **root:** visual-review/ # single home: specs/ baselines/ (committed) · results/ uat/ (gitignored)
 - **base URL:** —          # served app URL screenshots are taken against
 - **serve command:** —     # command that serves the base URL (e.g. npm run dev)
 - **config:** —            # e.g. visual-review/playwright.visual.config.ts

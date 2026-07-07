@@ -44,7 +44,7 @@ Stand up the engineering environment. One-time.
 |---|---|---|
 | `/setup` | Detect stack (or **recommend one on greenfield** from the PRD's constraints), interview for gaps, fill operational config | `.claude/context.md`, `stack-profile.sh`, scripts, greenfield stack ADR |
 | `/code-map` | Generate the router index read by `/planner` & `/locate` | `.claude/code-map.md` |
-| `/visual-setup` | *Opt-in* — scaffold visual baseline review (Tier 1 Playwright · Tier 2 + Storybook · Tier 3 + review app) | visual config |
+| `/visual-setup` | *Opt-in* — scaffold in-project visual baseline review (full-route Playwright screenshots) | visual config |
 
 **Enforcement:** soft. Skills fill the config; nothing blocks an incomplete setup, but downstream
 gates read this config, so gaps surface later.

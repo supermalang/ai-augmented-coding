@@ -53,7 +53,7 @@ Read the DoD at the top of `docs/ROADMAP.md`. Check each item for the active tas
 
 **Visual approval gate (only if visual testing is enabled** — `Visual testing` block in `.claude/context.md`, `enabled: true`**).** Invoke `/visual-review` and read its gate verdict:
 - `gate: clear` (nothing pending or rejected) → ✅, proceed.
-- `gate: blocked — pending` → **⏸ park, do not open the PR.** A human hasn't approved the changed baselines yet. Report the pending list and stop *without* error — this is an async checkpoint, not a failure (see `/ship-task` → *Visual approval — async park*). The human approves (terminal `--update-snapshots` + commit, or the Tier 3 review app), then re-runs `/pr-reviewer` (or `/ship-task`) to resume.
+- `gate: blocked — pending` → **⏸ park, do not open the PR.** A human hasn't approved the changed baselines yet. Report the pending list and stop *without* error — this is an async checkpoint, not a failure (see `/ship-task` → *Visual approval — async park*). The human approves (inspect diffs with `/visual-report`, then terminal `--update-snapshots` + commit), then re-runs `/pr-reviewer` (or `/ship-task`) to resume.
 - `gate: blocked — rejected` → ❌ stop: a baseline was explicitly rejected. Hand back to `/coder` to change the UI.
 
 If any DoD item is ❌ → stop and hand off to the relevant agent. If visual approval is ⏸ → park (above), don't treat it as a hard failure.

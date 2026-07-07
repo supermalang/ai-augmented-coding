@@ -21,12 +21,12 @@ report "visual testing disabled — nothing to review" and exit clean. It is ine
 ✅ CAN read    : `.claude/context.md` · `visual-approvals.json` · baseline PNGs · `docs/ROADMAP.md`
 ✅ CAN run     : read-only git (`git diff --name-only`, `git status`, `git merge-base`)
 ❌ CANNOT      : write, edit, or delete any file — it is a reporter
-❌ CANNOT      : run `--update-snapshots` or re-baseline (human/review-app only)
+❌ CANNOT      : run `--update-snapshots` or re-baseline (human-only, at the terminal)
 
 ## The approval record — `visual-approvals.json`
 
 A repo-root JSON file, keyed by **baseline id** = the snapshot path relative to the baselines dir
-(e.g. `example.visual.spec.ts/home-desktop-linux.png`). Written by a human (or the Tier 3 review app),
+(e.g. `example.visual.spec.ts/home-desktop-linux.png`). Written by a human at the terminal,
 committed alongside the re-baselined PNGs:
 
 ```json

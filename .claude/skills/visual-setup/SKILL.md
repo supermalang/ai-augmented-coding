@@ -1,6 +1,6 @@
 ---
 name: visual-setup
-description: Opt-in enabler for visual baseline review. Runs a short interview, verifies (never installs) prerequisites, records a Visual testing flag in .claude/context.md, and scaffolds in-project Playwright config + example route specs under a single visual-review/ folder — no container. Disabled by default — absent the flag, no pipeline agent changes behaviour. Tier 1 = Playwright full-route screenshots (default); Tier 2 adds Storybook; Tier 3 adds a local review app.
+description: Opt-in enabler for visual baseline review. Runs a short interview, verifies (never installs) prerequisites, records a Visual testing flag in .claude/context.md, and scaffolds in-project Playwright config + example route specs under a single visual-review/ folder — no container. Disabled by default — absent the flag, no pipeline agent changes behaviour. Full-route Playwright screenshot baselines; inspect diffs with /visual-report, gate with /visual-review.
 ---
 
 # /visual-setup — Visual Baseline Review Enabler
@@ -15,30 +15,29 @@ Like `/setup`, it **defines and scaffolds configuration** — it does **not** in
 **not** write application code. Its job is to make deterministic screenshot baselines *possible* with
 one guided command, then hand the review loop to a human.
 
-Everything it scaffolds lives under **one `visual-review/` folder**, each tool in its own subfolder —
-`specs/` and `baselines/` (committed), `results/` and `uat/` (gitignored), plus `storybook/` (Tier 2)
-and `review-app/` (Tier 3). It runs **in-project — no container**. Determinism comes from Playwright's
-per-OS `{platform}` snapshot names plus a small pixel tolerance; the one rule is **capture/bless
-baselines on the same OS your CI runs on** (local == CI without Docker).
+Everything it scaffolds lives under **one `visual-review/` folder**: `specs/` and `baselines/`
+(committed), `results/` and `uat/` (gitignored). It runs **in-project — no container**. Determinism
+comes from Playwright's per-OS `{platform}` snapshot names plus a small pixel tolerance; the one rule
+is **capture/bless baselines on the same OS your CI runs on** (local == CI without Docker).
 
-### Tiers (chosen in the interview)
+### Scope — one tier, on purpose
 
-| Tier | Adds | Stack-agnostic | Delivered by |
-|---|---|---|---|
-| 0 | (disabled) | — | default |
-| **1** | Playwright full-route screenshots — needs only a served URL | ✅ high | **this skill** |
-| 2 | + Storybook component-isolation stories | ⚠️ framework-coupled | `/visual-setup` (VBR-4) |
-| 3 | + a local clickable Approve/Reject review app | Node app | `/visual-setup` (VBR-5) |
+| Tier | Behaviour |
+|---|---|
+| 0 | disabled (default) — the pipeline is fully inert |
+| **1** | Playwright **full-route** screenshot baselines — needs only a served URL |
 
-**This skill fully implements Tier 1.** Tiers 2 and 3 are added by later tasks; if the user picks one
-before it's available, record the intent, scaffold Tier 1, and say the higher tier is coming.
+There is deliberately **no Storybook (component-isolation) or click-through review-app tier** — that
+extra machinery isn't worth its maintenance for most projects. Inspect diffs with `/visual-report`
+(Playwright's own expected/actual/diff HTML report); approval stays a human `--update-snapshots` +
+commit.
 
 ## Permissions
 
 ✅ CAN read    : all project files · manifests · `.claude/context.md` · `docs/ROADMAP.md`
 ✅ CAN write   : `.claude/context.md` (the `Visual testing` block only) · scaffolded visual-testing
-                 files under `visual-review/` (the Playwright config, `specs/*.visual.spec.ts`, and —
-                 by tier — `storybook/` and `review-app/`) · `docs/visual-testing.md`
+                 files under `visual-review/` (the Playwright config, `specs/*.visual.spec.ts`) ·
+                 `docs/visual-testing.md`
 ✅ CAN run     : read-only detection (`node --version`, `npx playwright --version`, `command -v …`) and
                  `verify-prereqs.sh`
 ❌ CANNOT      : install Node, browsers, or any dependency — **detect and remediate only**
@@ -50,7 +49,6 @@ before it's available, record the intent, scaffold Tier 1, and say the higher ti
 
 ```
 /visual-setup            # detect state, interview, scaffold
-/visual-setup 1          # start from a tier hint (1 | 2 | 3)
 ```
 
 ---
@@ -62,61 +60,46 @@ before it's available, record the intent, scaffold Tier 1, and say the higher ti
 Read `.claude/context.md` and look for a `## Visual testing` block.
 
 - **If `enabled: true`** → visual testing is already set up. Do **not** duplicate config. Report the
-  current tier + paths and offer to **change tier** (e.g. 1 → 2) or re-verify prerequisites. Only
-  scaffold the delta for a tier change; never re-write existing files without saying so.
+  current paths and offer to re-verify prerequisites. Never re-write existing files without saying so.
 - **If absent or `enabled: false`** → this is a fresh enable. Continue.
 
-Also detect, without asking: the UI framework and package manager (from `package.json` / lockfile),
-the installed Playwright version (`npx playwright --version`, if present), and how the app is served
-(a `dev`/`start`/`preview` script) — you'll propose these as defaults in the interview.
-
-**Framework → Storybook mapping (needed only for Tier 2).** Detect the UI framework and map it to a
-Storybook framework package:
-
-| Detected | `STORYBOOK_FRAMEWORK` | `STORYBOOK_FRAMEWORK_PKG` | `STORYBOOK_RENDERER_PKG` |
-|---|---|---|---|
-| Next.js | `@storybook/nextjs` | `@storybook/nextjs` | `@storybook/react` |
-| React + Vite | `@storybook/react-vite` | `@storybook/react-vite` | `@storybook/react` |
-| Vue 3 + Vite | `@storybook/vue3-vite` | `@storybook/vue3-vite` | `@storybook/vue3` |
-| Svelte + Vite | `@storybook/svelte-vite` | `@storybook/svelte-vite` | `@storybook/svelte` |
-| (none of these) | — unsupported — Tier 2 is not offered; stay on Tier 1 | | |
+Also detect, without asking: the package manager (from `package.json` / lockfile), the installed
+Playwright version (`npx playwright --version`, if present), and how the app is served (a
+`dev`/`start`/`preview` script) — you'll propose these as defaults in the interview.
 
 ### 2 — Interview (only the gaps)
 
 Ask in one small batch, proposing detected defaults so the user can just confirm:
 
-- **Tier** — 1 (default), 2, or 3. If they pick 2/3 and it isn't implemented yet, record the intent
-  and proceed with Tier 1, noting the upgrade is coming.
 - **Served URL + serve command** — the base URL screenshots are taken against (e.g.
-  `http://localhost:3000`) and the command that serves it (e.g. `npm run dev`, or a static
-  `preview`). Playwright's `webServer` runs it in-project. Tier 1 needs a real URL; this is the only
-  hard requirement.
+  `http://localhost:3000`) and the command that serves it (e.g. a `dev`/`preview` script). Playwright's
+  `webServer` runs it in-project. This is the only hard requirement.
 - **CI OS** — the operating system the visual job runs on (e.g. `ubuntu-latest`). Baselines carry a
-  per-OS `{platform}` suffix, so they must be **blessed on this same OS** — that's what replaces the
-  pinned container for local == CI. Default to the current OS and note the CI must match.
+  per-OS `{platform}` suffix, so they must be **blessed on this same OS** — that's what keeps local ==
+  CI. Default to the current OS and note the CI must match.
 
 The footprint is fixed: everything lands under **`visual-review/`** (`specs/` + `baselines/` committed;
 `results/` + `uat/` gitignored). No baseline-location question — it's `visual-review/baselines/`.
 
-Stop as soon as tier + served URL + serve command + CI OS are known.
+Stop as soon as served URL + serve command + CI OS are known.
 
 ### 3 — Verify prerequisites (detect-only, never install)
 
-Run `.claude/skills/visual-setup/verify-prereqs.sh`. It checks `node` and `npx` (the Tier 1 set — no
-Docker, since capture runs in-project) and, for anything missing, prints a concrete remediation line —
-then exits non-zero.
+Run `.claude/skills/visual-setup/verify-prereqs.sh`. It checks `node` and `npx` (no Docker — capture
+runs in-project) and, for anything missing, prints a concrete remediation line — then exits non-zero.
 
 - **If it exits non-zero** → relay the missing items + remediation to the user and **stop**. Do not
   attempt any install. The user sets the runtime up themselves and re-runs `/visual-setup`.
 - **If it exits zero** → prerequisites are ready; continue.
 
 > Also confirm `@playwright/test` is a dev dependency. If it isn't, tell the user to add it
-> (`npm i -D @playwright/test`) — do not add it or run `playwright install` yourself.
+> (`npm i -D @playwright/test` then `npx playwright install chromium --with-deps --only-shell`) — do
+> not add it or run `playwright install` yourself.
 
-### 4 — Scaffold Tier 1
+### 4 — Scaffold
 
-Copy the templates from `.claude/skills/visual-setup/templates/`, substituting every `{{…}}` marker,
-to the project root (skip any file that already exists — report it instead of overwriting):
+Copy the templates from `.claude/skills/visual-setup/templates/`, substituting every `{{…}}` marker
+(skip any file that already exists — report it instead of overwriting):
 
 | Template | Written to | Substitutions |
 |---|---|---|
@@ -125,57 +108,10 @@ to the project root (skip any file that already exists — report it instead of 
 | `visual-testing.md` | `docs/visual-testing.md` | — |
 
 The config resolves `specs/`, `baselines/`, and `results/` **relative to itself**, so the whole
-Tier-1 footprint stays inside `visual-review/`. No container file is scaffolded.
+footprint stays inside `visual-review/`. No container file is scaffolded.
 
-Fixed paths (config-relative): specs → `visual-review/specs/`, baselines →
-`visual-review/baselines/`, run artifacts + HTML report → `visual-review/results/` (gitignored).
-Run with `npx playwright test -c visual-review/playwright.visual.config.ts`.
-
-### 4b — Scaffold Tier 2 (Storybook) — only if chosen and the framework is supported
-
-Component-isolation baselines: screenshot deterministic **stories** instead of full routes. Only
-proceed if step 1 mapped the framework to a Storybook package; otherwise **do not half-scaffold** —
-report "Storybook Tier 2 not available for <framework> — staying on Tier 1" and leave Tier 1 intact.
-
-If supported:
-
-| Template | Written to | Substitutions |
-|---|---|---|
-| `storybook/main.ts` | `visual-review/storybook/.storybook/main.ts` | `{{STORYBOOK_FRAMEWORK}}` · `{{STORYBOOK_FRAMEWORK_PKG}}` |
-| `storybook/preview.ts` | `visual-review/storybook/.storybook/preview.ts` | `{{STORYBOOK_RENDERER_PKG}}` |
-| `example.stories.tsx` | `visual-review/storybook/example.stories.tsx` | `{{STORYBOOK_RENDERER_PKG}}` |
-| `example.story.visual.spec.ts` | `visual-review/specs/example.story.visual.spec.ts` | — |
-
-Then rewire capture to a **static** Storybook build (no live dev server in CI):
-- Set the config's `{{SERVE_COMMAND}}` to serve the build, e.g. `npx http-server visual-review/storybook/static -p 6006`, and `{{BASE_URL}}` to `http://localhost:6006`.
-- Story baselines share the `{platform}` per-OS suffix and pixel tolerance — determinism is identical to Tier 1 (same in-project rules, no container).
-- Tell the user to run `npx storybook build -o visual-review/storybook/static` before the visual run (do not run it yourself), and that `@storybook/*` are dev deps they add (not you). `visual-review/storybook/static/` is gitignored.
-
-Both tiers can coexist: full-route specs + story specs live in `visual-review/specs/` under the same config.
-
-### 4c — Scaffold Tier 3 (local review app) — only if chosen
-
-A thin, dependency-free local web app giving a clickable **Approve / Reject** UI over the
-baseline-vs-candidate side-by-side. Requires Tier 1 (or 2) already scaffolded.
-
-Copy the whole `review-app/` template dir to `visual-review/review-app/`:
-
-| Template | Written to |
-|---|---|
-| `review-app/lib.mjs` · `server.mjs` · `index.html` · `test.mjs` · `README.md` | `visual-review/review-app/…` |
-
-Key properties to preserve (they're already built into the templates — just don't undo them):
-- **Parity:** the app reads candidates from the Playwright **output dir**
-  (`visual-review/results/output/`) — so a human approves exactly what CI will produce.
-- **Guard-compatible:** Approve re-baselines by a **file copy** (not `--update-snapshots`), so the
-  `guard-visual-update` hook never blocks the human-run app while still blocking agents.
-- **Writes the record:** Approve/Reject update `visual-review/visual-approvals.json`, which
-  `/visual-review` reads.
-
-Tell the user to run it themselves: produce candidates (`npx playwright test -c
-visual-review/playwright.visual.config.ts`), then `node visual-review/review-app/server.mjs` → open
-`http://localhost:4444`. Verify with `node visual-review/review-app/test.mjs`. Do not launch it or
-approve anything yourself.
+Run with `npx playwright test -c visual-review/playwright.visual.config.ts` (or the `test:e2e:ci`
+script — see `.claude/context.md` → *Test execution*).
 
 ### 5 — Write the flag to `.claude/context.md`
 
@@ -186,36 +122,24 @@ append a duplicate):
 ## Visual testing
 
 - **enabled:** true
-- **tier:** 1
 - **root:** visual-review/
 - **base URL:** http://localhost:3000
-- **serve command:** npm run dev
+- **serve command:** [CONFIGURE — the project's dev/preview command]
 - **config:** visual-review/playwright.visual.config.ts
 - **baselines:** visual-review/baselines/
 - **CI OS:** ubuntu-latest   # baselines are blessed on this OS (per-OS {platform} suffix)
 ```
 
-For **Tier 2**, set `tier: 2` and add the Storybook fields:
-```markdown
-- **storybook framework:** @storybook/nextjs
-- **storybook build:** npx storybook build -o visual-review/storybook/static   # gitignored
-- **storybook served at:** http://localhost:6006
-```
-
-For **Tier 3**, set `tier: 3` and add the review-app field:
-```markdown
-- **review app:** visual-review/review-app/  (run: node visual-review/review-app/server.mjs → http://localhost:4444)
-```
-
 ### 6 — Handoff
 
 ```
-✅ Visual testing enabled — Tier 1 (Playwright full-route, in-project)
+✅ Visual testing enabled — full-route Playwright screenshots, in-project
 📁 Home         : visual-review/  (specs/ baselines/ committed · results/ uat/ gitignored)
 🌐 Target       : <base URL> via <serve command>
 🖥️  CI OS        : <os> — bless baselines on this OS (per-OS {platform} suffix = local == CI)
 ▶️  First run    : npx playwright test -c visual-review/playwright.visual.config.ts
                   → writes baselines to visual-review/baselines/; commit the PNGs
+🔎 Inspect diffs : /visual-report   ·   Gate state: /visual-review
 ➡️  Next         : add specs per route; approve changes with --update-snapshots (human-only)
 ```
 
@@ -223,13 +147,15 @@ For **Tier 3**, set `tier: 3` and add the review-app field:
 
 ## What /visual-setup does NOT do
 
-- Does not install Node, browsers, Docker, or `@playwright/test` — it detects and remediates only.
+- Does not install Node, browsers, or `@playwright/test` — it detects and remediates only.
 - Does not run `--update-snapshots` or bless baselines — approving pixels is a human action.
+- Does not scaffold Storybook or a review app — full-route screenshots are the whole surface.
 - Does not write application source, roadmap tasks, hook scripts, or agent envelopes.
 - Does not change any pipeline behaviour when disabled (Tier 0 = fully inert).
 
 ## Cross-references
 
-- Read approval state (agent-side): `/visual-review`
+- Run & inspect the diff report: `/visual-report`
+- Read approval state (agent-side gate): `/visual-review`
 - The review loop + determinism rules: `docs/visual-testing.md` (scaffolded)
 - Guard that blocks agents from re-baselining: `.claude/hooks/guard-visual-update.sh`

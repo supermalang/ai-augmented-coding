@@ -656,9 +656,10 @@ This gate is **non-blocking**:
   `pending`, it **parks** the task — no PR is opened — and returns "pending visual approval". The task
   is **not** marked done and stays open in the roadmap. In batch mode the orchestrator records it and
   **moves on to the next ready task** — it never idles waiting for a human.
-- **Approve out of band.** You review the diffs (`npx playwright show-report`, or the Tier 3 review
-  app) and approve the intended ones — terminal `--update-snapshots` + commit, or the review app,
-  which writes `visual-approvals.json` and re-baselines. Agents cannot do this (`guard-visual-update`).
+- **Approve out of band.** You review the diffs (`/visual-report`, which serves Playwright's
+  expected/actual/diff HTML report) and approve the intended ones — terminal `--update-snapshots` +
+  commit, which re-baselines and lets you record `visual-approvals.json`. Agents cannot do this
+  (`guard-visual-update`).
 - **Resume.** Once the approval record shows all-approved, re-run to finish. The **cheap** resume is
   `/pr-reviewer` directly on the parked task (tests are already green — no need to re-run the whole
   pipeline); `/ship-task <ID>` also works and will fast-path through the now-passing steps. A

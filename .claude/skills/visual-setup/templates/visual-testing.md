@@ -29,14 +29,13 @@ visual-review/
   baselines/      …-<platform>.png        ✅ committed — they ARE the approval record
   results/        actual/diff + report     ❌ gitignored (regenerable)
   uat/            /qa-tester review shots   ❌ gitignored (throwaway)
-  storybook/      config + stories (Tier 2) ✅ committed · static/ ❌ gitignored
-  review-app/     approve/reject UI (Tier 3) ✅ committed
   visual-approvals.json                     ✅ committed
 ```
 
-Only `visual-review/results/`, `visual-review/uat/`, and `visual-review/storybook/static/` are
-gitignored; everything else under `visual-review/` is committed. Change paths via `snapshotDir` /
-`outputDir` in the config (keep throwaway output inside a gitignored path).
+Only `visual-review/results/` and `visual-review/uat/` are gitignored; everything else under
+`visual-review/` is committed. Change paths via `snapshotDir` / `outputDir` in the config (keep
+throwaway output inside a gitignored path). Full-route screenshots are the whole surface — there is
+no Storybook or review-app tier.
 
 ## Determinism — without a container
 
@@ -49,6 +48,6 @@ CI. Split a large suite across CI runners with `--shard=<i>/<n>`.
 
 ## Who may re-baseline
 
-Only a **human at the terminal** or the **Tier 3 review app**. The `guard-visual-update` hook blocks
-agents from `--update-snapshots`, so an agent can never silently bless a regression. Agents *read*
-approval state (`/visual-review`); they do not create it.
+Only a **human at the terminal**. The `guard-visual-update` hook blocks agents from
+`--update-snapshots`, so an agent can never silently bless a regression. Agents *read* approval state
+(`/visual-review`) and can *inspect* the diff report (`/visual-report`); they do not create approvals.
