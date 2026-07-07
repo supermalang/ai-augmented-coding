@@ -97,7 +97,7 @@ coverage that breaks on every UI change.
 | **Visual** | The UI still *looks* right (pixel regression) | **[CONFIGURE]** — screenshot baselines | **thin** | ✅ baselines |
 | **Accessibility** | No WCAG A/AA violations (an assertion *inside* e2e — not a separate suite) | **[CONFIGURE]** — a11y engine | rides e2e | ✅ |
 | **Security** | No secrets, no obvious vulns, deps are clean | `/security-audit` · `/dep-audit` · guards | continuous | ✅ |
-| **Performance** | Hot paths stay within budget | `/perf-review` · `/perf-measure` | targeted | ✅ |
+| **Performance** | Hot paths stay within budget | `/performance` (review + measure) | targeted | ✅ |
 
 > **[CONFIGURE]** placeholders are filled in `.claude/context.md`, not here. Example fillers a
 > project might choose: a typed language + linter for static; one runner for unit **and**

@@ -158,15 +158,15 @@ mode a blocking task is recorded and the run continues, returning a summary.
 
 **Run — manual (step through it yourself):** `/start-task` → `/schema-agent` → `/test-writer` (RED) →
 `/locate` → `/coder` (or `/debugger`) → `/test-writer` (GREEN) → reviews (`/ux-review`,
-`/perf-review`, `/perf-measure`, `/security-audit`, `/dep-audit`, `/qa-tester`, `/visual-review`) →
+`/performance` (review + measure), `/security-audit`, `/dep-audit`, `/qa-tester`, `/visual-review`) →
 `/docs`, `/diagram` → `/commit` → `/pr-reviewer`. `/refactor` and `/usability-test` on demand;
 `/webapp-testing` to drive the live app.
 
 > **Performance runs after GREEN**, in the review lane before the PR (steps 8–11b above), and **only on
-> tasks that touch ORM queries or async fetching**: `/perf-review` reads the diff statically (N+1,
-> unbounded queries, over-fetching), `/perf-measure` runs the app and checks real numbers — bundle,
-> Web Vitals, query `EXPLAIN` — against the budgets in `.claude/context.md`. `/perf-measure` is also
-> the go-to Maintenance regression check.
+> tasks that touch ORM queries or async fetching**: `/performance review` reads the diff statically
+> (N+1, unbounded queries, over-fetching), `/performance measure` runs the app and checks real
+> numbers — bundle, Web Vitals, query `EXPLAIN` — against the budgets in `.claude/context.md`.
+> `/performance measure` is also the go-to Maintenance regression check.
 
 **You can:** watch the whole loop or drive it stepwise; verify acceptance criteria with `/qa-tester`
 (automated) and then do **true UAT yourself at the PR** before merging.
@@ -185,7 +185,7 @@ side-channel edits.
 /debugger        # a Type: Fix card — reproduce, root-cause, minimal fix (regression test first)
 /dep-audit       # SCA scan for vulnerable / outdated dependencies (OWASP A06)
 /refactor        # behaviour-preserving cleanup, guarded by green tests
-/perf-measure    # bundle / Web Vitals / query EXPLAIN vs budget
+/performance measure # bundle / Web Vitals / query EXPLAIN vs budget
 /roadmap-status  # progress; mark done; archive delivered blocks
 ```
 
@@ -255,7 +255,7 @@ it's needed:
 | `PRODUCT.md` | Vision, users, non-goals | `docs/discovery/`, `docs/personas/` | `/discovery`, `/planner` |
 | `DESIGN.md` | Design language & feeling | `docs/design/` | `/design-import`, `/ux-review` |
 | `docs/TESTING.md` | Testing philosophy (Testing Trophy — what to test where, and why) | — | `/test-writer`, `/qa-tester`, `/coder`, visual skills; kept current by `/docs` |
-| `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
+| `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/performance`, `/security-audit`; kept current by `/docs` |
 
 **The one rule against drift:** a fact lives in exactly one tier. Exact tokens/badge classes →
 `.claude/context.md`, not `DESIGN.md`. The short isolation-key rule → `.claude/context.md`; its
@@ -338,10 +338,10 @@ You'll also swap the JS-specific reference skills (`schema-agent` for your migra
   settings.json       ← hook configuration
   hooks/              ← shell gates (13 guards + 3 reminders)
     stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  agents/             ← 22 agent definitions (tool scope + model per role; ship-task dispatches via these)
-  skills/             ← 33 skills (behaviour; agents reference these) — setup, discovery, planner,
+  agents/             ← 21 agent definitions (tool scope + model per role; ship-task dispatches via these)
+  skills/             ← 32 skills (behaviour; agents reference these) — setup, discovery, planner,
                         ship-task, start-task, coder, debugger, test-writer, locate, schema-agent,
-                        code-map, ux-review, perf-review, perf-measure, qa-tester, security-audit,
+                        code-map, ux-review, performance, qa-tester, security-audit,
                         dep-audit, refactor, docs, diagram, webapp-testing, pr-reviewer, sprint-start,
                         commit, story-map, roadmap-status, design-import, report, retro,
                         usability-test, visual-setup, visual-report, visual-review

@@ -101,7 +101,7 @@ Deliver each card as a reviewed, tested increment. Orchestrated end-to-end by **
 |---|---|
 | Gate | `/start-task` — DoR check, branch, writes `.current-task` |
 | Build (TDD) | `/schema-agent` → `/test-writer` (RED) → `/locate` (precise) → `/coder` → `/test-writer` (GREEN) |
-| Review (report-only) | `/ux-review` · `/perf-review` · `/perf-measure` · `/security-audit` · `/dep-audit` · `/qa-tester` · `/visual-review` |
+| Review (report-only) | `/ux-review` · `/performance` (review + measure) · `/security-audit` · `/dep-audit` · `/qa-tester` · `/visual-review` |
 | Validate (HCD) | `/usability-test` — heuristic eval + real-user protocol + synthesis |
 | Document | `/docs` · `/diagram` |
 | Ship | `/commit` → `/pr-reviewer` (DoD gate, opens PR) |
@@ -130,7 +130,7 @@ Post-delivery: fixes, tech debt, drift. Bugs are first-class roadmap work.
 | `/debugger` | `Type: Fix` cards — reproduce, root-cause, minimal fix |
 | `/dep-audit` | Ongoing SCA — vulnerable / outdated dependencies |
 | `/refactor` | Behaviour-preserving cleanup, guarded by green tests |
-| `/perf-measure` | Regression checks against budgets |
+| `/performance measure` | Regression checks against budgets |
 | `/roadmap-status` | Track progress, archive delivered blocks |
 
 **Enforcement:** strong — a bug fix must exist as a roadmap card (`Type: Fix`) *before* any code,
