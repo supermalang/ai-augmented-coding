@@ -109,6 +109,42 @@ image (see `docs/visual-testing.md`) so local == CI.
 
 ---
 
+## Autonomy
+
+How much the pipeline runs without permission prompts. **Safety comes from rules + hooks, never from
+removing gates** — autonomy only pre-authorizes a *safe surface*; the deny rules and every `guard-*`
+hook stay active in every mode.
+
+- **Mode:** [CONFIGURE — `interactive` | `auto`]
+  - `interactive` (default) — normal permission prompts; nothing pre-authorized beyond the `allow`
+    list in `.claude/settings.json`.
+  - `auto` — run headless: set `permissions.defaultMode` in `.claude/settings.json` to `acceptEdits`
+    (or your runner's non-prompting mode) **and** rely on the scoped `allow` list. Do this per project;
+    it is not committed on by default so the template stays inert.
+- **Always-on, every mode:** the `deny` rules (`git push origin main`, `git push -f:*`, `rm -rf:*`, …)
+  and all `guard-*` hooks. Autonomy pre-authorizes the safe subset; hooks auto-deny the dangerous
+  subset **without prompting**.
+
+**Hard boundaries auto mode must not cross:**
+- **Never auto-bless visual baselines** — `guard-visual-update` stays; blessing is a human action at
+  the terminal (inspect with `/visual-report` first), out of band.
+- **Merge stays gated** — `/ship-task` never merges; auto-merge, if ever enabled, requires at least a
+  green-CI gate (default: off).
+- **Don't depend on a self-granted "auto" permission mode** — a repo can't grant itself elevated
+  modes (version/tier-gated). Base autonomy on `acceptEdits` + the scoped `allow` list, which travels
+  with the repo.
+- **Portability:** the `guard-*` hooks are the runner-independent safety core; the permission mode +
+  `allow` list is the runner adapter (Claude Code `defaultMode`/`allow`, or the Agent SDK's
+  `settingSources`/`allowedTools`). Under headless `-p`, a repeated block **aborts** the run — tune
+  the `allow` list from the first runs. Keep `allow` patterns **scoped** (e.g. `Bash(npm run:*)`),
+  never a blanket `Bash`.
+
+> The `allow` list and hardened `deny` live in `.claude/settings.json`. Editing that permissions block
+> is itself a reviewed change (an agent in auto mode is blocked from silently widening its own
+> permissions) — apply it with a human present.
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.
