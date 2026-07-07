@@ -58,6 +58,17 @@ of "today" is unreliable).
 
 ---
 
+## Sprint configuration
+
+How work is sized and how much fits in a sprint. Capacity is by *velocity* (points delivered), not a
+fixed task count.
+
+- **Sprint length (timebox):** [CONFIGURE — e.g. 2 weeks]
+- **Capacity:** estimate-weighted velocity — plan a sprint to ≈ the story points delivered last sprint. No fixed task count.
+- **Estimation scale:** story points (Fibonacci 1–13); points measure **size, not hours**.
+
+---
+
 ## Version control & forge
 
 How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.
@@ -71,6 +82,66 @@ How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the age
   - GitHub → `GH_TOKEN` (read automatically by `gh`); the git remote must use a credential helper or token URL for `git push`.
   - GitLab → `GITLAB_TOKEN` (read by `glab`); same for push.
   - **Never commit the token** — env var only (respects `guard-secret-scan`).
+
+---
+
+## Test execution
+
+How the e2e/visual suite runs, and how it scales across machines. The **core is CI-agnostic** — a
+portable script defaults to running the whole suite with no CI; a thin per-vendor adapter (in
+`ci-adapters/`, one kept per project) only maps shard indices.
+
+- **CI provider:** [CONFIGURE — `github` | `gitlab` | `container` | `none`]
+- **Shard count:** [CONFIGURE — `N` | `auto` (by test count) | `1` (no shard)]   *(don't shard under ~2 min serial)*
+- **Playwright image:** [CONFIGURE — `mcr.microsoft.com/playwright:vX.Y.Z-jammy`]   *(pinned; used for CI **and** local baseline-blessing so screenshots are byte-identical)*
+- **Visual gate mode:** [CONFIGURE — `inline` | `ci`]   *(`inline` = run the visual suite inside `/ship-task`; `ci` = `/ship-task` opens the PR and a required CI check enforces visual)*
+
+**Portable scripts** (`/setup` adds these to `package.json`; default `1/1` = whole suite, no CI):
+
+```jsonc
+"test:e2e:ci":    "playwright test --shard=${SHARD_INDEX:-1}/${SHARD_TOTAL:-1} -c visual-review/playwright.visual.config.ts",
+"test:e2e:merge": "playwright merge-reports --reporter html ./all-blob-reports"
+```
+
+Each shard emits a **blob** report (the visual config sets `blob` under `CI`); `test:e2e:merge`
+stitches one HTML report. Baselines carry a per-OS `{platform}` suffix — bless them in the pinned
+image (see `docs/visual-testing.md`) so local == CI.
+
+---
+
+## Autonomy
+
+How much the pipeline runs without permission prompts. **Safety comes from rules + hooks, never from
+removing gates** — autonomy only pre-authorizes a *safe surface*; the deny rules and every `guard-*`
+hook stay active in every mode.
+
+- **Mode:** [CONFIGURE — `interactive` | `auto`]
+  - `interactive` (default) — normal permission prompts; nothing pre-authorized beyond the `allow`
+    list in `.claude/settings.json`.
+  - `auto` — run headless: set `permissions.defaultMode` in `.claude/settings.json` to `acceptEdits`
+    (or your runner's non-prompting mode) **and** rely on the scoped `allow` list. Do this per project;
+    it is not committed on by default so the template stays inert.
+- **Always-on, every mode:** the `deny` rules (`git push origin main`, `git push -f:*`, `rm -rf:*`, …)
+  and all `guard-*` hooks. Autonomy pre-authorizes the safe subset; hooks auto-deny the dangerous
+  subset **without prompting**.
+
+**Hard boundaries auto mode must not cross:**
+- **Never auto-bless visual baselines** — `guard-visual-update` stays; blessing is a human action at
+  the terminal (inspect with `/visual-report` first), out of band.
+- **Merge stays gated** — `/ship-task` never merges; auto-merge, if ever enabled, requires at least a
+  green-CI gate (default: off).
+- **Don't depend on a self-granted "auto" permission mode** — a repo can't grant itself elevated
+  modes (version/tier-gated). Base autonomy on `acceptEdits` + the scoped `allow` list, which travels
+  with the repo.
+- **Portability:** the `guard-*` hooks are the runner-independent safety core; the permission mode +
+  `allow` list is the runner adapter (Claude Code `defaultMode`/`allow`, or the Agent SDK's
+  `settingSources`/`allowedTools`). Under headless `-p`, a repeated block **aborts** the run — tune
+  the `allow` list from the first runs. Keep `allow` patterns **scoped** (e.g. `Bash(npm run:*)`),
+  never a blanket `Bash`.
+
+> The `allow` list and hardened `deny` live in `.claude/settings.json`. Editing that permissions block
+> is itself a reviewed change (an agent in auto mode is blocked from silently widening its own
+> permissions) — apply it with a human present.
 
 ---
 
@@ -155,8 +226,8 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 | **Knowledge / deliverables** | `docs/<category>/` | `docs/discovery/` · `docs/personas/` · `docs/design/` · `docs/reports/*.md` · `docs/retros/` · `docs/usability/` · `docs/story-map.md` · `docs/ARCHITECTURE.md` | **committed** |
 | Roadmap archive | `docs/roadmap/archive/sprint-<N>.md` | full blocks of delivered tasks swept out of the live roadmap by `/roadmap-status archive` (lossless; git also holds them) — keeps `ROADMAP.md` proportional to active work | **committed** |
 | Non-reproducible images | `docs/reports/assets/<date>/` | `/report` illustrated-style images (can't be regenerated identically) | **committed** |
-| Visual review (committed) | `visual-review/` | `specs/` · `baselines/` (blessed `toHaveScreenshot` PNGs — the approval record) · `storybook/` config+stories · `review-app/` · `visual-approvals.json` | **committed** |
-| Visual review (generated) | `visual-review/` | `results/` (actual/diff/report) · `uat/` (`/qa-tester` review shots) · `storybook/static/` | ignored |
+| Visual review (committed) | `visual-review/` | `specs/` · `baselines/` (blessed `toHaveScreenshot` PNGs — the approval record) · `visual-approvals.json` | **committed** |
+| Visual review (generated) | `visual-review/` | `results/` (actual/diff/report) · `uat/` (`/qa-tester` review shots) | ignored |
 | **Generated deliverables** | `out/<type>/` | `out/reports/` PDF + PPTX (regenerable from the committed `.md`) | ignored |
 | **Throwaway verification** | `.scratch/<purpose>/` | `.scratch/webapp-testing/` · `.scratch/perf-measure/` | ignored |
 | Tool-native output | tool defaults | `coverage/` · `test-results/` · `playwright-report/` — leave where the tools write them | ignored |
@@ -176,8 +247,7 @@ task commit. New subfolders are fine **within** a bucket; don't invent new top-l
 > suffix, so capture/bless baselines on the **same OS your CI runs on** (local == CI).
 
 - **enabled:** false
-- **tier:** —              # 1 = Playwright full-route · 2 = + Storybook · 3 = + review app
-- **root:** visual-review/ # single home: specs/ baselines/ results/ storybook/ review-app/ uat/
+- **root:** visual-review/ # single home: specs/ baselines/ (committed) · results/ uat/ (gitignored)
 - **base URL:** —          # served app URL screenshots are taken against
 - **serve command:** —     # command that serves the base URL (e.g. npm run dev)
 - **config:** —            # e.g. visual-review/playwright.visual.config.ts

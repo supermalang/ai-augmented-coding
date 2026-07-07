@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Write a new task in docs/ROADMAP.md using the full template. Owns the roadmap — the only agent that creates or modifies task definitions. Use when the user wants to plan new work before coding starts.
+description: Write a new task in docs/ROADMAP.md using the full template. Owns the roadmap — the only agent that creates or modifies task definitions. Use when the user wants to plan new work before coding starts. Challenges vague acceptance criteria and asks the user to make them testable before writing the task.
 ---
 
 # /planner — Planner Agent
@@ -44,6 +44,7 @@ Before asking the user anything, gather context autonomously:
 3. **Infer all fields you can** — domain, sprint, components, API routes, schema impact, risk level, code tasks. Most of these are determinable from the codebase without asking.
 4. **Draft the full task block** with your best inference for every field.
 5. **Ask only for fields you cannot determine** — typically acceptance criteria (requires business intent) and occasionally risk level or wireframe. Phrase as one grouped message with specific, closed questions, not an open checklist.
+6. **Validate acceptance-criteria testability.** Acceptance criteria are not accepted just because the user supplied them — each must be an **observable outcome** you could write a check against (prefer Given / When / Then: a condition, an action, a verifiable result). If a criterion is vague, subjective, or untestable ("works well", "is fast", "handled nicely"), do **not** write it as-is: ask **one targeted, closed question** that would turn it into an observable outcome (e.g. "When login succeeds, which page should the user land on, and what confirms success?"). Only write the task once every acceptance criterion is phrased as something a test could verify. This is the gate that keeps untestable intent out of the pipeline — a criterion that can't be checked can't define a critical journey (see [`docs/TESTING.md`](../../../docs/TESTING.md) → *Defining critical journeys*).
 
 Examples of fields the Planner can almost always infer without asking:
 - Sprint → current open sprint in the roadmap
@@ -81,6 +82,7 @@ Fill **all** fields of the template (copy from the "Task Template" section at th
 | **Sprint** | Sprint N where the task will be delivered |
 | **Write date** | Today |
 | **Planned date** | Estimated from sprint cadence (typically 1–2 weeks after write date) |
+| **Estimate** | Story points (Fibonacci `1 \| 2 \| 3 \| 5 \| 8 \| 13`) — **relative size, not hours**. Propose a value from the scope (a task ≥ 8 usually should be split — INVEST *Small*), confirm with the user. Feeds sprint velocity (`.claude/context.md` → *Sprint configuration*), not a delivery date |
 | **Completion date** | `—` (filled at delivery) |
 | **Type** | `Feature` (new behaviour) or `Fix` (bug on already-shipped behaviour). `Fix` tasks make the orchestrator route the build to `/debugger` (root-cause + minimal fix) instead of `/coder`. For a `Fix`, frame acceptance criteria as the regression contract: *given <repro>, when <action>, then <correct behaviour>* + *existing behaviour X unaffected* |
 | **Risk** | `Low` if no migration or auth change; `Medium` if migration or sensitive logic; `High` if auth, cascade, or production data |
@@ -114,6 +116,7 @@ Before writing to the file, check every DoR item (section at the top of the road
 - [ ] Dependencies identified
 - [ ] Journey coordinate set (`<activity> / <step>`) or `N/A — <reason>` for non-journey work
 - [ ] User-value persona exists in `PRODUCT.md` (else route to `/discovery`)
+- [ ] Estimate set (story points; split anything ≳ 8)
 - [ ] Wireframe or mockup mentioned (or N/A with justification)
 - [ ] Risk declared
 

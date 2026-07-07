@@ -8,7 +8,7 @@
 > Keep the two from overlapping: when in doubt, short operational fact → `context.md`, deep
 > explanation → here.
 >
-> **Read by:** `/coder`, `/schema-agent`, `/perf-review`, `/security-audit` (for system shape,
+> **Read by:** `/coder`, `/schema-agent`, `/performance`, `/security-audit` (for system shape,
 > data model, hot paths, and trust boundaries) and kept current by `/docs`. All treat this file
 > as optional — if it's absent they fall back to `.claude/context.md`.
 
@@ -90,4 +90,4 @@ webhooks, inter-service calls). `/security-audit` uses this to focus its review.
 ## Performance-sensitive paths
 
 **[CONFIGURE]** — the hot paths and scale assumptions (expected row counts, traffic shape) that
-`/perf-review` and `/perf-measure` should weigh changes against.
+`/performance` (review + measure) should weigh changes against.

@@ -1,0 +1,40 @@
+# GitHub Actions adapter for the visual/e2e suite — copy to .github/workflows/ and adjust.
+# Maps strategy.matrix.shard → SHARD_INDEX/SHARD_TOTAL; runs on the pinned Playwright image so
+# screenshots are byte-identical to a local bless; merges blob reports into one HTML report.
+name: visual
+on: pull_request
+jobs:
+  e2e:
+    runs-on: ubuntu-latest                 # must match the `CI OS` baselines are blessed on
+    container: mcr.microsoft.com/playwright:vX.Y.Z-jammy   # [CONFIGURE] pin = .claude/context.md
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]                 # [CONFIGURE] shard count
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Visual/e2e (shard ${{ matrix.shard }})
+        env:
+          CI: "1"
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_TOTAL: ${{ strategy.job-total }}
+        run: npm run test:e2e:ci
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-${{ matrix.shard }}
+          path: blob-report
+          retention-days: 3
+  merge:
+    if: ${{ !cancelled() }}
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with: { path: all-blob-reports, pattern: blob-*, merge-multiple: true }
+      - run: npm run test:e2e:merge
+      - uses: actions/upload-artifact@v4
+        with: { name: html-report, path: playwright-report }

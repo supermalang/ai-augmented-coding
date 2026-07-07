@@ -53,7 +53,7 @@ Read the DoD at the top of `docs/ROADMAP.md`. Check each item for the active tas
 
 **Visual approval gate (only if visual testing is enabled** — `Visual testing` block in `.claude/context.md`, `enabled: true`**).** Invoke `/visual-review` and read its gate verdict:
 - `gate: clear` (nothing pending or rejected) → ✅, proceed.
-- `gate: blocked — pending` → **⏸ park, do not open the PR.** A human hasn't approved the changed baselines yet. Report the pending list and stop *without* error — this is an async checkpoint, not a failure (see `/ship-task` → *Visual approval — async park*). The human approves (terminal `--update-snapshots` + commit, or the Tier 3 review app), then re-runs `/pr-reviewer` (or `/ship-task`) to resume.
+- `gate: blocked — pending` → **⏸ park, do not open the PR.** A human hasn't approved the changed baselines yet. Report the pending list and stop *without* error — this is an async checkpoint, not a failure (see `/ship-task` → *Visual approval — async park*). The human approves (inspect diffs with `/visual-report`, then terminal `--update-snapshots` + commit), then re-runs `/pr-reviewer` (or `/ship-task`) to resume.
 - `gate: blocked — rejected` → ❌ stop: a baseline was explicitly rejected. Hand back to `/coder` to change the UI.
 
 If any DoD item is ❌ → stop and hand off to the relevant agent. If visual approval is ⏸ → park (above), don't treat it as a hard failure.
@@ -158,7 +158,13 @@ Record both in ISO 8601 UTC and the cycle time between them (compute with `date`
 - Started   : <ISO 8601 UTC — from .current-task line 3, or "unknown" if absent>
 - Delivered : <ISO 8601 UTC — date -u +%Y-%m-%dT%H:%M:%SZ>
 - Cycle time : <Delivered − Started, e.g. 3h 38m — or "—" if Started unknown>
+- Estimate  : <story points from the task's Estimate field — copied here so /retro can trend velocity + cycle-time-per-point>
+- Perf      : <perf blockers / budget breaches raised for this task, e.g. "1 breach: LCP over budget" — or "none">
 ```
+
+> **Why record these:** `/retro` aggregates velocity, cycle-time-per-point, and the perf trend from
+> the Delivery blocks across a sprint. A result that isn't written to the task can't be trended — so
+> copy the Estimate and note any perf blocker here at delivery, not just in the transient review output.
 
 Also set the task block's **Completion date** field to today's date (`YYYY-MM-DD`) — this is the
 marker `/roadmap-status archive` uses to sweep a delivered block out of the live roadmap later:

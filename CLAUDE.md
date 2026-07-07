@@ -40,7 +40,7 @@ npm run test:coverage # Vitest + coverage thresholds
 
 The deep technical reference — system shape, components, data model, auth flow, the standard API
 route pattern, trust boundaries, and hot paths — lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-It is read **when a task needs it** (by `/coder`, `/schema-agent`, `/perf-review`,
+It is read **when a task needs it** (by `/coder`, `/schema-agent`, `/performance`,
 `/security-audit`), not on every run. Keep it current via `/docs`.
 
 This split is deliberate (see [Project knowledge — two tiers](#project-knowledge--two-tiers) below):
@@ -70,7 +70,8 @@ if it's absent.
 |---|---|---|---|
 | [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md`, `docs/personas/<slug>.md` | `/discovery`, `/planner` |
 | [`DESIGN.md`](DESIGN.md) | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing philosophy — what to test at which layer, how much, why (Testing Trophy; stack-agnostic) | — | `/test-writer`, `/qa-tester`, `/coder`, `/visual-setup`, `/visual-report`; kept current by `/docs` |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/performance`, `/security-audit`; kept current by `/docs` |
 
 Rule against drift: a fact lives in exactly **one** tier. Exact tokens/classes → `context.md`,
 not `DESIGN.md`. Short isolation-key rule → `context.md`; its rationale and edge cases →
@@ -118,8 +119,8 @@ This gate applies to **all feature and fix work, including bug fixes on already-
 | 4 | `/coder` *(or `/debugger` for `Type: Fix`)* | Always — implements until RED tests pass (from the scout's change-set). `Type: Fix` tasks route the build to `/debugger` (root cause + minimal fix) instead — both get the RED tests + locate change-set |
 | 5 | `/test-writer` (GREEN) | Always — re-runs tests, confirms pass |
 | 6 | `/ux-review` | Task touches UI |
-| 7 | `/perf-review` | Task touches ORM queries or async fetching |
-| 7b | `/perf-measure` | Perf-sensitive task — confirm `/perf-review` findings with real numbers (bundle, Web Vitals, EXPLAIN) |
+| 7 | `/performance review` | Task touches ORM queries or async fetching — static audit |
+| 7b | `/performance measure` | Perf-sensitive task — confirm the review's findings with real numbers (bundle, Web Vitals, EXPLAIN) |
 | 8 | `/qa-tester` | Always |
 | 9 | `/security-audit` | Always |
 | 9b | `/dep-audit` | Always before shipping — SCA scan for vulnerable dependencies (OWASP A06) |
@@ -188,8 +189,7 @@ Skills are slash commands in `.claude/skills/`.
 | `test-writer` | Write Vitest unit tests + E2E specs (RED and GREEN modes) |
 | `locate` | Read-only change-set scout — used twice: coarse at planning (by `/planner`, impact + saved change-set) and precise before `/coder` (exact files/line ranges, call path). Cheap, runs on Haiku |
 | `ux-review` | Review edited UI — visual harmony, conventions, accessibility |
-| `perf-review` | Audit ORM queries — N+1, pagination, over-fetching (static) |
-| `perf-measure` | Measure performance — bundle budget, Web Vitals, query EXPLAIN |
+| `performance` | Two modes — `review` (static: N+1, pagination, over-fetching, async) · `measure` (bundle budget, Web Vitals, query EXPLAIN vs budget) |
 | `qa-tester` | UAT checklist + screenshot review |
 | `security-audit` | OWASP Top 10 + project absolute rules |
 | `dep-audit` | Dependency/SCA scan — vulnerable & outdated packages (OWASP A06) |
@@ -213,7 +213,8 @@ Skills are slash commands in `.claude/skills/`.
 | `retro` | Sprint retrospective — reads the sprint's git history, roadmap outcomes, and review blockers; writes `docs/retros/<date>.md` (went well / didn't / action items). Action items feed `/planner` or become process changes. Read-only on code |
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
-| `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds **in-project Playwright** config + example route specs under a single `visual-review/` folder (no container). Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
+| `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the served URL + CI OS, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds **in-project Playwright** config + example route specs under a single `visual-review/` folder (no container). Full-route screenshots only — no Storybook or review-app tier; inspect diffs with `/visual-report`. Manual-only |
+| `visual-report` | Human-facing run-and-open loop — runs the Tier-1 visual specs (workers=1, never `--update-snapshots`) and serves Playwright's HTML expected/actual/diff report, container-aware for Dev Containers. The Tier-1 review surface in place of a Tier 3 app; inspection only, never blesses |
 | `visual-review` | Read-only reporter of visual-approval state — compares baseline PNGs vs the integration branch, reads `visual-approvals.json`, and reports each changed baseline as approved / rejected / pending. Consumed by `/qa-tester` and `/pr-reviewer`; never re-baselines |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
@@ -229,9 +230,10 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 
 `/ship-task` dispatches every step through these agents via the workflow's `agentType` option. The point is **least privilege as a hard boundary**, not just documentation:
 
-- **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
+- **Report-only reviewers** — `ux-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.) `performance` in autonomous `review` mode is likewise report-only (it *has* a Write tool for `measure` mode's `.scratch/` reports, but under `/ship-task` its `review` prompt forbids source edits — a builder applies fixes).
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
-- **`visual-review`** is read-only (Read/Bash/Glob/Grep, no Edit/Write) — it reports visual-approval state; it cannot bless baselines. Runs on Haiku. (Blessing baselines is a human/review-app action, enforced by the `guard-visual-update` hook.)
+- **`visual-review`** is read-only (Read/Bash/Glob/Grep, no Edit/Write) — it reports visual-approval state; it cannot bless baselines. Runs on Haiku. (Blessing baselines is a human action, enforced by the `guard-visual-update` hook.)
+- **`visual-report`** is read-only too (Read/Bash/Glob/Grep, no Edit/Write) — it runs the visual suite for inspection and serves the HTML diff report, but the runner never passes `--update-snapshots` and the hook blocks it anyway. Runs on Haiku. Inspection surface, not an approval gate.
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
@@ -256,7 +258,7 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 | Bash | `guard-commit-message.sh` | Non-Conventional Commits format |
 | Edit / Write | `guard-roadmap-gate.sh` | Editing `src/`, `tests/`, schema without `.current-task` — **pure-bash, fails closed** |
 | Bash | `guard-bash-write.sh` | Shell writes (`>`/`tee`/`sed -i`) into gated paths without `.current-task` — closes the Edit/Write bypass; **pure-bash** |
-| Bash | `guard-visual-update.sh` | Agents re-baselining screenshots (`playwright … --update-snapshots`/`-u`) — blessing baselines is a human/review-app action; **pure-bash** |
+| Bash | `guard-visual-update.sh` | Agents re-baselining screenshots (`playwright … --update-snapshots`/`-u`) — blessing baselines is a human action; **pure-bash** |
 | Edit / Write | `guard-generated-files.sh` | Hand-editing auto-generated files |
 
 > **Fail-closed & tool independence.** A guard that can't find its tools (missing `jq`/coreutils, or a

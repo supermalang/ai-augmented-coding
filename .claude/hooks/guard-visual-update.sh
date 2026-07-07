@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Block AGENTS from re-baselining visual snapshots.
 #
-# Only a human at the terminal, or the Tier 3 review app, may bless baselines. An agent
+# Only a human at the terminal may bless baselines. An agent
 # that could run `playwright test --update-snapshots` could silently accept a visual
 # regression — so this denies that invocation when issued through the Bash tool. Agents
 # READ approval state via /visual-review; they never create it.
@@ -12,8 +12,7 @@
 #
 # HONEST LIMIT: inspects the command STRING only. A re-baseline performed inside a script
 # file is invisible here (same limit as guard-bash-write). The real boundary for that is
-# least-privilege agent tools — the review app (VBR-5) re-baselines via its own file writes,
-# not by shelling out to --update-snapshots, so this guard never blocks it.
+# least-privilege agent tools — a human blesses at their own terminal, outside the agent's Bash.
 set -uo pipefail
 . "${CLAUDE_PROJECT_DIR:-$PWD}/.claude/hooks/_hooklib.sh"
 
@@ -30,7 +29,7 @@ UPDATE_RE="${STACK_VISUAL_UPDATE_PATTERN:---update-snapshots|(^|[[:space:]])-u([
 # that merely mentions --update-snapshots won't false-trip; and unrelated `-u` usages
 # (sort -u, git push -u) never match.
 if [[ $cmd =~ $TOOL_RE ]] && [[ $cmd =~ $UPDATE_RE ]]; then
-  hook_deny "🚫 VISUAL GATE: re-baselining screenshots (--update-snapshots) is a HUMAN action, not an agent one — it would silently accept whatever the code now renders. Agents read approval state via /visual-review; they do not bless baselines. A human runs --update-snapshots at the terminal, or approves in the Tier 3 review app, then commits the PNGs."
+  hook_deny "🚫 VISUAL GATE: re-baselining screenshots (--update-snapshots) is a HUMAN action, not an agent one — it would silently accept whatever the code now renders. Agents read approval state via /visual-review; they do not bless baselines. A human runs --update-snapshots at the terminal, then commits the PNGs."
 fi
 
 exit 0

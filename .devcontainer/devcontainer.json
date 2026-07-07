@@ -7,8 +7,14 @@
     // [CONFIGURE] add language/runtime features your stack needs, e.g.:
     // "ghcr.io/devcontainers/features/node:1": {}
   },
+  // App port (3000, [CONFIGURE]) + the /visual-report server port (9323) so the HOST browser
+  // reaches the in-container report through a forwarded port.
+  "forwardPorts": [3000, 9323],
   // Guarantee the hooks' toolchain: bash is in the base image; jq is what the
   // non-pure-bash guards need. A guard that can't find jq fails OPEN, so install it.
+  // [CONFIGURE] when visual review is enabled (/visual-setup), also install the Playwright headless
+  // shell for in-project capture (append to the command below):
+  //   && npm i -D @playwright/test && npx playwright install chromium --with-deps --only-shell
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y jq && jq --version",
   "remoteEnv": {
     // [CONFIGURE] forge auth for unattended push/PR (see .claude/context.md):

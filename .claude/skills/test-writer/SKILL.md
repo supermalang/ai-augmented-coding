@@ -233,7 +233,7 @@ If any fail — escalate to `/coder` with the exact failure output. Do NOT modif
 ✅ GREEN phase complete
 🧪 Unit tests : X cases — all passing
 🎭 E2E        : Y scenarios — all passing
-➡️  Next step : /ux-review (if UI) → /perf-review (if DB queries) → /qa-tester
+➡️  Next step : /ux-review (if UI) → /performance review (if DB queries) → /qa-tester
 ```
 
 ---

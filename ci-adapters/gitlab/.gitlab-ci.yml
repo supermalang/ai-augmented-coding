@@ -1,0 +1,27 @@
+# GitLab CI adapter for the visual/e2e suite — copy to .gitlab-ci.yml (or include:) and adjust.
+# GitLab's native `parallel: N` sets CI_NODE_INDEX / CI_NODE_TOTAL; map them onto SHARD_INDEX/TOTAL.
+# `image:` is the pinned Playwright image so screenshots match a local bless byte-for-byte.
+visual:
+  image: mcr.microsoft.com/playwright:vX.Y.Z-jammy   # [CONFIGURE] pin = .claude/context.md
+  parallel: 4                                        # [CONFIGURE] shard count
+  variables:
+    CI: "1"
+    SHARD_INDEX: "$CI_NODE_INDEX"
+    SHARD_TOTAL: "$CI_NODE_TOTAL"
+  script:
+    - npm ci
+    - npm run test:e2e:ci
+  artifacts:
+    when: always
+    paths: [blob-report]
+    expire_in: 3 days
+
+visual-merge:
+  image: mcr.microsoft.com/playwright:vX.Y.Z-jammy
+  needs: [visual]
+  script:
+    - npm ci
+    - 'mkdir -p all-blob-reports && cp -r blob-report/* all-blob-reports/ || true'
+    - npm run test:e2e:merge
+  artifacts:
+    paths: [playwright-report]

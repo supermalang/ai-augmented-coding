@@ -62,7 +62,7 @@ For each screenshot in the E2E test output directory:
 - [ ] Success/error messages appear in the right place
 - [ ] Page is readable at the capture resolution (desktop by default)
 
-**Visual baseline blessing.** This sign-off relates to visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). You may **inspect** baselines and confirm the page is visually correct, but as an agent you **must never re-baseline** — running `--update-snapshots` is blocked by the `guard-visual-update` hook. Blessing a baseline is a **human** action (or the Tier 3 review app). Never try to regenerate a baseline to make a failing visual test pass.
+**Visual baseline blessing.** This sign-off relates to visual snapshot baselines (see `/test-writer` → *Visual snapshot baselines*). You may **inspect** baselines and confirm the page is visually correct, but as an agent you **must never re-baseline** — running `--update-snapshots` is blocked by the `guard-visual-update` hook. Blessing a baseline is a **human** action (inspect diffs with `/visual-report` first). Never try to regenerate a baseline to make a failing visual test pass.
 
 ### 3b — Visual baseline run *(only if visual testing is enabled)*
 

@@ -54,7 +54,7 @@ export STACK_DOCKER_REBUILD_CMD='docker compose up -d --build app'
 export STACK_CODE_MAP_CMD='node .claude/skills/code-map/generate.mjs'
 
 # Visual re-baseline guard (guard-visual-update). Blocks AGENTS from blessing screenshot
-# baselines — only a human or the Tier 3 review app may re-baseline. Two parts:
+# baselines — only a human at the terminal may re-baseline. Two parts:
 #   TOOL   — the command must be the actual capture INVOCATION (`playwright test`), not a
 #            mere mention. Matching the subcommand (not bare `playwright`) means a commit
 #            message or doc that references `--update-snapshots` doesn't false-trip; and

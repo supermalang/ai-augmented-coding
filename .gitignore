@@ -19,10 +19,9 @@ test-results/
 playwright-report/
 coverage/
 
-# Visual review (in-project, under visual-review/). Committed: specs/ baselines/ storybook/
-# config + stories · review-app/ source · visual-approvals.json. Ignored (regenerable/throwaway):
+# Visual review (in-project, under visual-review/). Committed: specs/ baselines/ ·
+# visual-approvals.json. Ignored (regenerable/throwaway):
 visual-review/results/
-visual-review/storybook/static/
 visual-review/uat/
 
 # Throwaway live-verification artefacts (/webapp-testing)

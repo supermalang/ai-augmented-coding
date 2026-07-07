@@ -11,7 +11,7 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 
 ✅ CAN read    : all project files
 ✅ CAN run     : Workflow tool — invoking `/ship-task` is explicit multi-agent opt-in
-✅ CAN delegate: all pipeline agent skills (schema-agent, coder, test-writer, debugger, docs, ux-review, perf-review, perf-measure, qa-tester, security-audit, dep-audit, pr-reviewer)
+✅ CAN delegate: all pipeline agent skills (schema-agent, coder, test-writer, debugger, docs, ux-review, performance, qa-tester, security-audit, dep-audit, pr-reviewer)
 ❌ CANNOT      : implement code directly — delegates to `/coder`
 ❌ CANNOT      : merge PRs — returns PR URL for human review
 ❌ CANNOT      : mark task [x] without all DoD criteria met
@@ -48,8 +48,8 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 | 6 | Docs | Task touches API, schema, or UI — updates README/API/CHANGELOG before the commit |
 | 7 | Commit | Always — lint + commit implementation + tests + docs; recovery checkpoint |
 | 8 | UX Review | Task touches UI components or pages [PROJECT CONVENTION — see .claude/context.md] |
-| 9 | Perf Review (static) | Task touches database queries or async data fetching |
-| 9b | Perf Measure | Perf-sensitive task (UI or DB) — bundle/Web Vitals/EXPLAIN vs budget |
+| 9 | Performance (review) | Task touches database queries or async data fetching — static audit |
+| 9b | Performance (measure) | Perf-sensitive task (UI or DB) — bundle/Web Vitals/EXPLAIN vs budget |
 | 10 | QA Tester | Always — parallel with the other reviews |
 | 11 | Security Audit | Always — parallel |
 | 11b | Dep Audit | Always — SCA scan for vulnerable dependencies (parallel) |
@@ -463,12 +463,12 @@ if (needsUX) {
 if (needsPerf) {
   reviewTasks.push(function() {
     return agent(
-      'Read .claude/skills/perf-review/SKILL.md and follow it exactly.\n' +
+      'Read .claude/skills/performance/SKILL.md and follow it exactly, in `review` mode.\n' +
       'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
       'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
-      'Run the full performance review: N+1 queries, unbounded queries, missing pagination, over-fetching, async patterns.\n' +
-      'Return label="perf-review", blockers (array of must-fix issues), warnings (array of nice-to-fix issues).',
-      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-review', agentType: 'perf-review' }
+      'Run the full static performance review: N+1 queries, unbounded queries, missing pagination, over-fetching, async patterns. Report-only (do not edit source).\n' +
+      'Return label="performance:review", blockers (array of must-fix issues), warnings (array of nice-to-fix issues).',
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'performance:review', agentType: 'performance' }
     )
   })
 }
@@ -513,15 +513,15 @@ reviewTasks.push(function() {
 if (needsPerf || needsUX) {
   reviewTasks.push(function() {
     return agent(
-      'Read .claude/skills/perf-measure/SKILL.md and follow it exactly.\n' +
+      'Read .claude/skills/performance/SKILL.md and follow it exactly, in `measure` mode.\n' +
       'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n' +
       'Files changed: ' + JSON.stringify(coderResult.filesChanged) + '\n' +
       'Measure against the budgets in .claude/context.md: bundle size, Core Web Vitals on affected routes, ' +
       'and query EXPLAIN on hot paths. Treat a budget breach as a blocker; near-budget as a warning. ' +
       'If the app cannot be built or run in this environment, return no blockers and one warning explaining why ' +
       '(so a transient/headless limitation never falsely blocks the PR).\n' +
-      'Return label="perf-measure", blockers (array), warnings (array).',
-      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'perf-measure', agentType: 'perf-measure' }
+      'Return label="performance:measure", blockers (array), warnings (array).',
+      { schema: REVIEW_RESULT_SCHEMA, phase: 'Review', label: 'performance:measure', agentType: 'performance' }
     )
   })
 }
@@ -634,7 +634,7 @@ The pipeline returns control to you only when:
 | DoR not met | Fix the missing fields in `docs/ROADMAP.md` via `/planner`, then re-run `/ship-task <ID>` |
 | RED gate — no failing test | The RED tests passed before any implementation (vacuous, or reverse-engineered from existing code). Rewrite them from the acceptance criteria so they fail first, then re-run |
 | Tests still failing after auto-fix | `/debugger` already tried twice and couldn't make them pass — review the failures, fix manually, then re-run |
-| Review blockers | A review (UX/perf/QA/security/dep/perf-measure) found a must-fix issue — resolve it, then re-run |
+| Review blockers | A review (UX/performance review+measure/QA/security/dep) found a must-fix issue — resolve it, then re-run |
 | PR URL returned | Run **human UAT** against the PR — tick the UAT checklist in the PR body, then merge |
 
 All other steps — branch creation, schema migration, implementation, doc updates, the debugger self-repair loop, and all six parallel reviews — run without prompting.
@@ -647,18 +647,28 @@ All other steps — branch creation, schema migration, implementation, doc updat
 
 When the `Visual testing` block in `.claude/context.md` has `enabled: true`, a UI change produces
 screenshot diffs that **a human must approve** — and that approval is the **final gate before the PR**.
-This gate is **non-blocking**:
+This gate is **non-blocking**.
 
-- **Flag, don't fail.** In the Review phase, `/qa-tester` runs the visual suite. A *functional* failure
-  blocks like any test; a pure *visual diff* is recorded as **pending** (via `/visual-review`) and is
-  **not** a blocker — the pipeline does not treat "the UI looks different" as an error.
+**Where the visual suite runs depends on `Visual gate mode` (`.claude/context.md` → *Test execution*):**
+- **`inline`** (default) — `/qa-tester` runs the visual suite inside this pipeline, as below.
+- **`ci`** — the heavy visual suite is **not** run inline. `/ship-task` finishes the fast local
+  reviews (unit/integration/lint/security/etc. always stay local) and opens the PR; a **required CI
+  check** runs the sharded visual suite (see `ci-adapters/`). The async park then keys off the **CI
+  result** rather than an inline run — still human-blessed, same `/visual-review` gate, just enforced
+  by CI. Everything below applies with "CI check" substituted for "inline `/qa-tester` run".
+
+- **Flag, don't fail.** In the Review phase (mode `inline`), `/qa-tester` runs the visual suite. A
+  *functional* failure blocks like any test; a pure *visual diff* is recorded as **pending** (via
+  `/visual-review`) and is **not** a blocker — the pipeline does not treat "the UI looks different" as
+  an error.
 - **Park at Ship.** In the Ship phase, `/pr-reviewer` calls `/visual-review`. If the gate is
   `pending`, it **parks** the task — no PR is opened — and returns "pending visual approval". The task
   is **not** marked done and stays open in the roadmap. In batch mode the orchestrator records it and
   **moves on to the next ready task** — it never idles waiting for a human.
-- **Approve out of band.** You review the diffs (`npx playwright show-report`, or the Tier 3 review
-  app) and approve the intended ones — terminal `--update-snapshots` + commit, or the review app,
-  which writes `visual-approvals.json` and re-baselines. Agents cannot do this (`guard-visual-update`).
+- **Approve out of band.** You review the diffs (`/visual-report`, which serves Playwright's
+  expected/actual/diff HTML report) and approve the intended ones — terminal `--update-snapshots` +
+  commit, which re-baselines and lets you record `visual-approvals.json`. Agents cannot do this
+  (`guard-visual-update`).
 - **Resume.** Once the approval record shows all-approved, re-run to finish. The **cheap** resume is
   `/pr-reviewer` directly on the parked task (tests are already green — no need to re-run the whole
   pipeline); `/ship-task <ID>` also works and will fast-path through the now-passing steps. A
