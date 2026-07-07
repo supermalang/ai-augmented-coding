@@ -254,6 +254,7 @@ it's needed:
 |---|---|---|---|
 | `PRODUCT.md` | Vision, users, non-goals | `docs/discovery/`, `docs/personas/` | `/discovery`, `/planner` |
 | `DESIGN.md` | Design language & feeling | `docs/design/` | `/design-import`, `/ux-review` |
+| `docs/TESTING.md` | Testing philosophy (Testing Trophy — what to test where, and why) | — | `/test-writer`, `/qa-tester`, `/coder`, visual skills; kept current by `/docs` |
 | `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
 
 **The one rule against drift:** a fact lives in exactly one tier. Exact tokens/badge classes →
@@ -337,17 +338,18 @@ You'll also swap the JS-specific reference skills (`schema-agent` for your migra
   settings.json       ← hook configuration
   hooks/              ← shell gates (13 guards + 3 reminders)
     stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  agents/             ← 21 agent definitions (tool scope + model per role; ship-task dispatches via these)
-  skills/             ← 32 skills (behaviour; agents reference these) — setup, discovery, planner,
+  agents/             ← 22 agent definitions (tool scope + model per role; ship-task dispatches via these)
+  skills/             ← 33 skills (behaviour; agents reference these) — setup, discovery, planner,
                         ship-task, start-task, coder, debugger, test-writer, locate, schema-agent,
                         code-map, ux-review, perf-review, perf-measure, qa-tester, security-audit,
                         dep-audit, refactor, docs, diagram, webapp-testing, pr-reviewer, sprint-start,
                         commit, story-map, roadmap-status, design-import, report, retro,
-                        usability-test, visual-setup, visual-review
+                        usability-test, visual-setup, visual-report, visual-review
 .github/workflows/ci.yml   ← lint + test:coverage + build on every PR
 docs/
   ROADMAP.md          ← DoR / DoD / task template + sprint planning  (Tier-1)
   LIFECYCLE.md        ← the phase view of the pipeline (this README's companion)
+  TESTING.md          ← testing philosophy — what to test where, and why  (Tier-2, optional)
   ARCHITECTURE.md     ← system shape, decisions, deep specs  (Tier-2, optional)
   discovery/          ← per-initiative PRDs (/discovery)
   personas/           ← full HCD persona profiles (/discovery)

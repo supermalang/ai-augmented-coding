@@ -70,6 +70,7 @@ if it's absent.
 |---|---|---|---|
 | [`PRODUCT.md`](PRODUCT.md) | Product vision, users, non-goals | `docs/discovery/<slug>.md`, `docs/personas/<slug>.md` | `/discovery`, `/planner` |
 | [`DESIGN.md`](DESIGN.md) | Design language & feeling | `docs/design/<slug>.md` | `/design-import`, `/ux-review` |
+| [`docs/TESTING.md`](docs/TESTING.md) | Testing philosophy — what to test at which layer, how much, why (Testing Trophy; stack-agnostic) | — | `/test-writer`, `/qa-tester`, `/coder`, `/visual-setup`, `/visual-report`; kept current by `/docs` |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/perf-review`, `/security-audit`; kept current by `/docs` |
 
 Rule against drift: a fact lives in exactly **one** tier. Exact tokens/classes → `context.md`,
@@ -214,6 +215,7 @@ Skills are slash commands in `.claude/skills/`.
 | `usability-test` | Usability testing (Design-Thinking "Test" / HCD) — heuristic eval (Nielsen, via `/webapp-testing`), a real-user test protocol for a human to run, and synthesis of findings into `/planner` improvements. Read-only on code |
 | `story-map` | Story mapping + impact mapping — the journey/outcome view above the flat backlog; maps existing roadmap stories into release slices and flags journey gaps for `/planner`. Read-only on code |
 | `visual-setup` | **Opt-in** enabler for visual baseline review (disabled by default). Interviews for the tier, verifies (never installs) prerequisites, records the `Visual testing` flag in `.claude/context.md`, and scaffolds **in-project Playwright** config + example route specs under a single `visual-review/` folder (no container). Tier 1 = full-route screenshots (default) · Tier 2 = + Storybook · Tier 3 = + local review app. Manual-only |
+| `visual-report` | Human-facing run-and-open loop — runs the Tier-1 visual specs (workers=1, never `--update-snapshots`) and serves Playwright's HTML expected/actual/diff report, container-aware for Dev Containers. The Tier-1 review surface in place of a Tier 3 app; inspection only, never blesses |
 | `visual-review` | Read-only reporter of visual-approval state — compares baseline PNGs vs the integration branch, reads `visual-approvals.json`, and reports each changed baseline as approved / rejected / pending. Consumed by `/qa-tester` and `/pr-reviewer`; never re-baselines |
 | `prisma` | Migrations, seed, Studio |
 | `lint` | Run ESLint and report errors |
@@ -232,6 +234,7 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 - **Report-only reviewers** — `ux-review`, `perf-review`, `security-audit` have **no Edit/Write tools**. They find and report (`blockers`/`warnings`); a builder applies fixes. (An auditor cannot edit the code it audits.)
 - **`locate`** is read-only too (Read/Grep/Glob/Bash, no Edit/Write) — a scout points at the change-set; a builder makes the change. It runs on Haiku to keep the routing step cheap.
 - **`visual-review`** is read-only (Read/Bash/Glob/Grep, no Edit/Write) — it reports visual-approval state; it cannot bless baselines. Runs on Haiku. (Blessing baselines is a human/review-app action, enforced by the `guard-visual-update` hook.)
+- **`visual-report`** is read-only too (Read/Bash/Glob/Grep, no Edit/Write) — it runs the visual suite for inspection and serves the HTML diff report, but the runner never passes `--update-snapshots` and the hook blocks it anyway. Runs on Haiku. Inspection surface, not an approval gate.
 - **`commit`** has no Edit/Write — it only stages and commits.
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).

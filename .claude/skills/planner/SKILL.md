@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Write a new task in docs/ROADMAP.md using the full template. Owns the roadmap — the only agent that creates or modifies task definitions. Use when the user wants to plan new work before coding starts.
+description: Write a new task in docs/ROADMAP.md using the full template. Owns the roadmap — the only agent that creates or modifies task definitions. Use when the user wants to plan new work before coding starts. Challenges vague acceptance criteria and asks the user to make them testable before writing the task.
 ---
 
 # /planner — Planner Agent
@@ -44,6 +44,7 @@ Before asking the user anything, gather context autonomously:
 3. **Infer all fields you can** — domain, sprint, components, API routes, schema impact, risk level, code tasks. Most of these are determinable from the codebase without asking.
 4. **Draft the full task block** with your best inference for every field.
 5. **Ask only for fields you cannot determine** — typically acceptance criteria (requires business intent) and occasionally risk level or wireframe. Phrase as one grouped message with specific, closed questions, not an open checklist.
+6. **Validate acceptance-criteria testability.** Acceptance criteria are not accepted just because the user supplied them — each must be an **observable outcome** you could write a check against (prefer Given / When / Then: a condition, an action, a verifiable result). If a criterion is vague, subjective, or untestable ("works well", "is fast", "handled nicely"), do **not** write it as-is: ask **one targeted, closed question** that would turn it into an observable outcome (e.g. "When login succeeds, which page should the user land on, and what confirms success?"). Only write the task once every acceptance criterion is phrased as something a test could verify. This is the gate that keeps untestable intent out of the pipeline — a criterion that can't be checked can't define a critical journey (see [`docs/TESTING.md`](../../../docs/TESTING.md) → *Defining critical journeys*).
 
 Examples of fields the Planner can almost always infer without asking:
 - Sprint → current open sprint in the roadmap
