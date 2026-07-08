@@ -74,10 +74,12 @@ fixed task count.
 How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the agents — they read this.
 
 - **Forge:** [`github` | `gitlab`]
-- **Integration branch:** [e.g. `develop` — the base PRs/MRs target]
-- **Open-PR command:**
-  - GitHub → `gh pr create --base <integration-branch> --title "…" --body "…"`
-  - GitLab → `glab mr create --target-branch <integration-branch> --title "…" --description "…"`
+- **PR target branch:** [CONFIGURE — `develop`]   # the integration branch `/ship-task` opens every PR/MR against; the human validates each, then promotes `develop → main`
+- **Protected branches:** `develop`, `main` — no direct pushes; PR + all checks green required to merge. (Branch protection is a **platform setting**, not a repo file — see `docs/branch-protection.md`.)
+- **Preview URL source:** [CONFIGURE — e.g. the CI preview-deploy URL, or `none`]   # surfaced in every PR's *Visual changes* section; `none` → link the visual report only
+- **Open-PR command:** (`<pr-target>` = the PR target branch above)
+  - GitHub → `gh pr create --base <pr-target> --title "…" --body "…"`
+  - GitLab → `glab mr create --target-branch <pr-target> --title "…" --description "…"`
 - **Unattended auth (batch / CI / cron — no interactive login):** set the token in the environment so push + PR work headless.
   - GitHub → `GH_TOKEN` (read automatically by `gh`); the git remote must use a credential helper or token URL for `git push`.
   - GitLab → `GITLAB_TOKEN` (read by `glab`); same for push.
