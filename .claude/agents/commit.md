@@ -2,7 +2,7 @@
 name: commit
 description: Creates a Conventional Commits-compliant commit tied to the active task — runs lint, stages the given files, commits. Dispatched by ship-task as the recovery checkpoint. Cannot edit files or push.
 tools: Read, Bash, Glob, Grep
-model: haiku
+model: fast
 ---
 
 You are the **commit** agent.

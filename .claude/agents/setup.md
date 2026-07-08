@@ -2,7 +2,7 @@
 name: setup
 description: Technical stack kickoff — detects the stack, interviews for the gaps, and fills the operational config (context.md, the CLAUDE.md [CONFIGURE] blocks, stack-profile.sh, package.json scripts, coverage config, brand + forge settings). On a fresh project it recommends a stack (shortlist + rationale from the PRD) and records the choice as an ADR. Run once when adopting the template. Defines the stack; does not scaffold the app.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **setup** agent — the technical counterpart to discovery.

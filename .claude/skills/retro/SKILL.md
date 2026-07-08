@@ -44,6 +44,20 @@ so each sprint runs a little better than the last.
 - **Friction** — the blockers/warnings reviews raised (UX, perf, QA, security, dep), and any pipeline
   stops (DoR failures, RED-gate blocks, tests failing after auto-fix). Recurring blockers are the
   highest-value signal.
+- **Run traces** — read the **`### Run trace`** block in each delivered task's Delivery section
+  (written by `/pr-reviewer`, WP1). These record *what happened inside the run*, not just outcomes.
+  Aggregate the **why** across the sprint from the fixed keys:
+  - **Stop reasons** — how many runs ended `PR opened` vs `parked: visual approval` vs `blocked: <gate>`
+    vs `failed: <reason>`. A gate that stops many runs is the top action-item candidate (e.g. "security
+    blocked 3 tasks").
+  - **Debugger retries** — average and max `Debugger retries` per task. A high average means the coder
+    ships tests-failing code (or the tests are flaky) — a process signal, not just a number.
+  - **Review pressure** — which review label carried the most blockers/warnings across tasks (from the
+    `Reviews:` line), i.e. where the pipeline spends its rework.
+  - **Skill path** — recurring `Skills invoked` shapes (e.g. many tasks needing `schema-agent`, or the
+    self-repair `debugger` appearing often).
+  > Traces are only aggregatable if `/pr-reviewer` wrote the block. If a delivered task has none, note
+  > it and make "record the run trace at delivery" an action.
 - **Metrics** — aggregate from each delivered task's **Delivery block** (recorded by `/pr-reviewer`):
   - **Velocity** — story points delivered this sprint vs planned (the capacity signal for next sprint).
   - **Cycle-time trend** — per-task `Cycle time` (Delivered − Started), and **cycle time per point**
@@ -89,11 +103,17 @@ Write `docs/retros/<date>-sprint-N.md`:
 | Carryover (points / tasks) | <n> | — | taken in, not delivered |
 | Perf blockers / budget breaches | <n> | <prior> | recurring hotspots → action items |
 
+## Run-trace patterns (why, not just how much)
+- **Stop reasons:** <n PR opened · n parked: visual · n blocked: <gate> · n failed> — <the dominant one → action?>
+- **Debugger retries:** <avg> avg, <max> max — <what a high rate implies>
+- **Review pressure:** <label with the most blockers/warnings across tasks>
+- <Any recurring skill-path shape worth noting>
+
 ## What went well
 - <Specific thing that worked — keep doing it>
 
 ## What didn't
-- <Specific friction, with the evidence: which task / review / commit showed it>
+- <Specific friction, with the evidence: which task / review / commit / run trace showed it>
 
 ## Patterns & root causes
 - <Recurring theme> — likely cause: <…>

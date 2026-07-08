@@ -42,6 +42,27 @@ npm run test:coverage # Vitest + coverage thresholds
 
 ---
 
+## Model tiers
+
+Centralized model choice. Each agent envelope (`.claude/agents/*.md`) sets `model:` to one of these
+**tier names**, not a concrete model — so re-pointing a tier here re-tiers every agent in it at once.
+Set each tier to a concrete model for your runner.
+
+- **reasoning:** [CONFIGURE — strongest model]   # planning, hard coding, debugging, schema design
+- **standard:**  [CONFIGURE — mid model]          # reviewers (security / perf / qa / ux / dep), pr-reviewer, test-writer, setup
+- **fast:**      [CONFIGURE — cheap/fast model]    # read-only reporters, trace/template work (docs, report, diagram, locate, commit, code-map, visual-*)
+- **Principle:** match the model to **reasoning difficulty and the compounding cost of error — NOT to
+  pipeline phase.** Execution (`coder`/`debugger`/`schema-agent`) is high-reasoning; do **not**
+  under-power it. Reviewers sit at `standard`; read-only reporters and template-fill at `fast`.
+
+> **Resolution.** The tier name in an agent's `model:` is resolved to the concrete model above. Keep
+> the mapping here as the single source of truth. Per-agent overrides (a concrete model on one
+> envelope) are possible but should be **justified by measured cost/latency**, not guessed — don't
+> micro-tune beyond these three tiers. Suggested defaults: `reasoning → opus`, `standard → sonnet`,
+> `fast → haiku`.
+
+---
+
 ## Dates & timestamps
 
 One format everywhere, always from the **system clock** — never guessed by the agent (a model's idea
@@ -76,7 +97,7 @@ How `/pr-reviewer` pushes and opens the PR/MR. Keep the tool name out of the age
 - **Forge:** [`github` | `gitlab`]
 - **PR target branch:** [CONFIGURE — `develop`]   # the integration branch `/ship-task` opens every PR/MR against; the human validates each, then promotes `develop → main`
 - **Protected branches:** `develop`, `main` — no direct pushes; PR + all checks green required to merge. (Branch protection is a **platform setting**, not a repo file — see `docs/branch-protection.md`.)
-- **Preview URL source:** [CONFIGURE — e.g. the CI preview-deploy URL, or `none`]   # surfaced in every PR's *Visual changes* section; `none` → link the visual report only
+- **Preview URL source:** the per-PR preview deploy — see the **Preview deploy** section below (the CI step posts the URL to the PR). `none` → link the visual report only. *(Surfaced in every PR's* Visual changes *section.)*
 - **Open-PR command:** (`<pr-target>` = the PR target branch above)
   - GitHub → `gh pr create --base <pr-target> --title "…" --body "…"`
   - GitLab → `glab mr create --target-branch <pr-target> --title "…" --description "…"`
@@ -133,6 +154,22 @@ for its report port. See [`docs/parallel-work.md`](../docs/parallel-work.md).
 
 ---
 
+## Preview deploy
+
+Give each PR a click-and-see-it-work environment, deployed by CI from the PR branch. Feeds the PR
+template's *Visual changes* → **Preview** link. Kept behind a **portable interface**: the CI adapter
+(`ci-adapters/`) calls the commands below — it never names a vendor. Leave both blank to disable
+(the PR's Preview link is then `None`; nothing else changes — the template stays inert).
+
+- **Preview command:** [CONFIGURE — deploy the PR branch to an ephemeral env; must print the preview URL as its last line of stdout]
+- **Teardown command:** [CONFIGURE — destroy the preview when the PR closes]
+- **Preview URL source:** the CI preview step above (its printed URL is posted back to the PR).
+
+> Merge and visual-bless stay **human** — a preview is for a person to look at and decide; it never
+> auto-merges and never blesses baselines.
+
+---
+
 ## Autonomy
 
 How much the pipeline runs without permission prompts. **Safety comes from rules + hooks, never from
@@ -166,6 +203,25 @@ hook stay active in every mode.
 > The `allow` list and hardened `deny` live in `.claude/settings.json`. Editing that permissions block
 > is itself a reviewed change (an agent in auto mode is blocked from silently widening its own
 > permissions) — apply it with a human present.
+
+---
+
+## Autonomy trigger
+
+How the pipeline *starts*. **Default `manual`** so the template is inert — a project opts into
+`schedule`/`event` deliberately. A triggered run invokes `/ship-task open` (batch) with the caps
+below; it opens PRs only, **never merges, never blesses baselines**, keeps all guard hooks active, and
+appends WP1 run traces so an unattended run is auditable after the fact.
+
+- **Mode:** [CONFIGURE — `manual` | `schedule` | `event`]   # default: manual
+- **Condition:** [CONFIGURE — e.g. cron `"0 8 * * 1-5"` | task labeled `ready` | push to `develop`]
+- **Max tasks per run:** [CONFIGURE — cap, e.g. `5`]   # bounds an unattended run → `/ship-task open <cap>`
+- **Concurrency:** 1   # parallel tasks; keep 1 unless worktrees are added (see docs/parallel-work.md)
+
+The trigger itself is a thin step in the chosen CI adapter (`ci-adapters/`); its guardrails are in
+[`docs/autonomy-trigger.md`](../docs/autonomy-trigger.md). Because a headless run can't answer a
+prompt, a triggered run that hits repeated blocks **stops and records the reason** (the run-trace stop
+reason) rather than hanging.
 
 ---
 

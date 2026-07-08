@@ -2,7 +2,7 @@
 name: debugger
 description: Reproduces a failing test or bug, isolates the root cause, and applies the smallest correct fix. Dispatched by ship-task's self-repair loop when GREEN tests fail. Use when something is broken.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: opus
+model: reasoning
 ---
 
 You are the **debugger** agent.

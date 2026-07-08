@@ -23,6 +23,7 @@ Before starting, read `.claude/context.md` for project-specific rules, constrain
 ```
 /ship-task 10.3        # ship one task by ID
 /ship-task open        # batch: ship every open, DoR-ready task whose dependencies are delivered
+/ship-task open 5      # batch, capped at 5 tasks this run (WP3 "Max tasks per run" — bounds an unattended trigger)
 ```
 
 **Single task** — the ID must match an entry in `docs/ROADMAP.md`. If it does not exist, stop and tell the user to run `/planner` first.
@@ -191,6 +192,14 @@ const REVIEW_RESULT_SCHEMA = {
 // (no workflow nesting, no registry dependency). Returns a status object per task.
 async function shipOne(TASK_ID) {
 
+// ── WP1: event-layer run trace ────────────────────────────────────────────
+// Record WHAT happened inside this run (skills invoked, review outcomes, debugger retries, why it
+// stopped) — not just how long it took. Accumulated as the pipeline runs; handed to /pr-reviewer,
+// which writes the compact "### Run trace" block into the task's Delivery section on delivery.
+// /retro reads those blocks to surface "why" patterns. Keep it compact — no tool-level detail.
+const trace = { skills: [], reviews: {}, debuggerRetries: 0, stopReason: null }
+const note = function(skill) { trace.skills.push(skill); return skill }
+
 // ── Phase 0: Validate DoR ────────────────────────────────────────────────
 phase('Validate')
 log('Reading roadmap and validating DoR for task ' + TASK_ID + '…')
@@ -217,11 +226,12 @@ const taskInfo = await agent(
   { schema: TASK_INFO_SCHEMA, phase: 'Validate' }
 )
 
-if (!taskInfo) return { status: 'error', reason: 'Could not read task ' + TASK_ID + ' from roadmap. Does it exist?' }
+if (!taskInfo) { trace.stopReason = 'failed: task not found in roadmap'; return { status: 'error', reason: 'Could not read task ' + TASK_ID + ' from roadmap. Does it exist?', stopReason: trace.stopReason } }
 
 if (!taskInfo.dorMet) {
+  trace.stopReason = 'blocked: DoR (' + taskInfo.dorMissing.join(', ') + ')'
   log('🚫 DoR not met for task ' + TASK_ID + ': ' + taskInfo.dorMissing.join(', '))
-  return { status: 'blocked', reason: 'Definition of Ready not satisfied', taskId: TASK_ID, missing: taskInfo.dorMissing }
+  return { status: 'blocked', reason: 'Definition of Ready not satisfied', taskId: TASK_ID, missing: taskInfo.dorMissing, stopReason: trace.stopReason }
 }
 
 log('✅ DoR satisfied — "' + taskInfo.taskTitle + '"')
@@ -245,6 +255,7 @@ await agent(
 // ── Phase 2: Schema migration (conditional) ──────────────────────────────
 if (taskInfo.impactSchema === 'Migration') {
   phase('Schema')
+  note('schema-agent')
   log('Schema migration required — running schema-agent…')
   await agent(
     'Read .claude/skills/schema-agent/SKILL.md and follow it exactly.\n' +
@@ -257,6 +268,7 @@ if (taskInfo.impactSchema === 'Migration') {
 
 // ── Phase 3: Tests — RED ─────────────────────────────────────────────────
 phase('Implement')
+note('test-writer(RED)')
 log('Running test-writer (RED phase)…')
 const redResult = await agent(
   'Read .claude/skills/test-writer/SKILL.md and follow it exactly.\n' +
@@ -275,13 +287,14 @@ const redResult = await agent(
   { schema: TEST_RED_SCHEMA, phase: 'Implement', label: 'test-writer (RED)', agentType: 'test-writer' }
 )
 
-if (!redResult) return { status: 'error', reason: 'Test-writer (RED) agent failed for task ' + TASK_ID }
+if (!redResult) { trace.stopReason = 'failed: test-writer (RED) agent'; return { status: 'error', reason: 'Test-writer (RED) agent failed for task ' + TASK_ID, stopReason: trace.stopReason } }
 if (redResult.warning) log('⚠️  ' + redResult.warning)
 // Hard gate: RED tests MUST fail before any implementation. A test that already passes is either
 // vacuous or reverse-engineered from existing code — it proves nothing and would sail through GREEN.
 // Block rather than ship a hollow test. Critical for Fix tasks, where the buggy implementation
 // already exists at RED time, so a code-conforming test would pass and bless the bug.
 if (!redResult.redConfirmed || (redResult.failCount || 0) < 1) {
+  trace.stopReason = 'blocked: RED gate (no failing test)'
   log('🚫 RED gate: no test failed before implementation — tests look vacuous or conform to existing code, not the criteria')
   return {
     status: 'blocked',
@@ -289,6 +302,7 @@ if (!redResult.redConfirmed || (redResult.failCount || 0) < 1) {
     taskId: TASK_ID,
     testFiles: redResult.testFiles,
     warning: redResult.warning,
+    stopReason: trace.stopReason,
   }
 }
 log('🔴 RED phase: ' + redResult.testCount + ' tests written, ' + redResult.failCount + ' failing (expected)')
@@ -296,6 +310,7 @@ log('🔴 RED phase: ' + redResult.testCount + ' tests written, ' + redResult.fa
 // ── Phase 4: Locate (cheap scout) then Implement ──────────────────────────
 // A read-only Haiku scout scopes the change-set first, so the coder loads only
 // what it needs instead of re-discovering the codebase structure itself.
+note('locate')
 log('Running locate scout…')
 const locateResult = await agent(
   'Read .claude/skills/locate/SKILL.md and follow it exactly.\n' +
@@ -323,6 +338,7 @@ const locateHint = locateResult
 // Build routing: Fix tasks go to /debugger (root cause + minimal fix), Feature tasks to /coder.
 // Both receive the same RED tests and the locate scout's change-set.
 const isFix = taskInfo.taskType === 'Fix'
+note(isFix ? 'debugger(fix)' : 'coder')
 log(isFix ? 'Fix task — routing the build to /debugger (root cause + minimal fix)…' : 'Running coder…')
 const coderResult = isFix
   ? await agent(
@@ -354,7 +370,7 @@ const coderResult = isFix
       { schema: CODER_RESULT_SCHEMA, phase: 'Implement', label: 'coder', agentType: 'coder' }
     )
 
-if (!coderResult) return { status: 'error', reason: (isFix ? 'Debugger' : 'Coder') + ' agent failed for task ' + TASK_ID }
+if (!coderResult) { trace.stopReason = 'failed: ' + (isFix ? 'debugger' : 'coder') + ' agent'; return { status: 'error', reason: (isFix ? 'Debugger' : 'Coder') + ' agent failed for task ' + TASK_ID, stopReason: trace.stopReason } }
 
 // ── Phase 5: Tests — GREEN (with /debugger self-repair loop) ──────────────
 async function runGreen() {
@@ -372,6 +388,7 @@ async function runGreen() {
   )
 }
 
+note('test-writer(GREEN)')
 log('Running test-writer (GREEN phase)…')
 let greenResult = await runGreen()
 
@@ -381,6 +398,8 @@ const MAX_FIX_ATTEMPTS = 2
 let fixAttempts = 0
 while ((!greenResult || !greenResult.testsPassed) && fixAttempts < MAX_FIX_ATTEMPTS) {
   fixAttempts++
+  trace.debuggerRetries = fixAttempts
+  note('debugger(retry ' + fixAttempts + ')')
   const failures = greenResult ? greenResult.failures : ['test-writer agent failed']
   log('🔧 GREEN failing — dispatching /debugger (auto-fix ' + fixAttempts + '/' + MAX_FIX_ATTEMPTS + ')…')
   await agent(
@@ -396,8 +415,9 @@ while ((!greenResult || !greenResult.testsPassed) && fixAttempts < MAX_FIX_ATTEM
 
 if (!greenResult || !greenResult.testsPassed) {
   const failures = greenResult ? greenResult.failures : ['agent failed']
+  trace.stopReason = 'blocked: tests failing after ' + MAX_FIX_ATTEMPTS + ' debugger retries'
   log('🚫 Tests still failing after ' + MAX_FIX_ATTEMPTS + ' auto-fix attempt(s) — needs human review')
-  return { status: 'blocked', reason: 'Tests not passing after implementation + ' + MAX_FIX_ATTEMPTS + ' debugger attempts', taskId: TASK_ID, failures: failures }
+  return { status: 'blocked', reason: 'Tests not passing after implementation + ' + MAX_FIX_ATTEMPTS + ' debugger attempts', taskId: TASK_ID, failures: failures, stopReason: trace.stopReason }
 }
 log('✅ GREEN phase: all tests passing' + (fixAttempts > 0 ? ' (after ' + fixAttempts + ' auto-fix)' : ''))
 
@@ -406,6 +426,7 @@ log('✅ GREEN phase: all tests passing' + (fixAttempts > 0 ? ' (after ' + fixAt
 let docFiles = []
 if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI || coderResult.touchesUI || coderResult.structuralChange) {
   phase('Document')
+  note('docs')
   log('Running docs agent…')
   const docsResult = await agent(
     'Read .claude/skills/docs/SKILL.md and follow it exactly.\n' +
@@ -428,6 +449,7 @@ if (taskInfo.touchesPrisma || coderResult.touchesPrisma || taskInfo.touchesUI ||
 
 // ── Commit: checkpoint before reviews ────────────────────────────────────
 phase('Commit')
+note('commit')
 log('Committing implementation + tests…')
 const allFiles = coderResult.filesChanged.concat(redResult.testFiles).concat(docFiles)
 await agent(
@@ -527,9 +549,15 @@ if (needsPerf || needsUX) {
   })
 }
 
+note('reviews')
 const reviewResults = await parallel(reviewTasks)
 const succeeded = reviewResults.filter(Boolean)
 log('Reviews complete — ' + succeeded.length + '/' + reviewTasks.length + ' agents returned results')
+
+// WP1: record each review's blocker/warning counts by label for the run trace.
+succeeded.forEach(function(r) {
+  trace.reviews[r.label] = { blockers: (r.blockers || []).length, warnings: (r.warnings || []).length }
+})
 
 const allBlockers = succeeded.flatMap(function(r) { return r.blockers })
 const allWarnings = succeeded.flatMap(function(r) { return r.warnings })
@@ -537,6 +565,8 @@ const allWarnings = succeeded.flatMap(function(r) { return r.warnings })
 if (allWarnings.length > 0) log('⚠️  Warnings: ' + allWarnings.join(' | '))
 
 if (allBlockers.length > 0) {
+  const blockingLabels = succeeded.filter(function(r) { return (r.blockers || []).length }).map(function(r) { return r.label })
+  trace.stopReason = 'blocked: review blockers (' + blockingLabels.join(', ') + ')'
   log('🚫 ' + allBlockers.length + ' blocker(s) found — pipeline stopped before PR')
   return {
     status: 'blocked',
@@ -544,30 +574,53 @@ if (allBlockers.length > 0) {
     taskId: TASK_ID,
     blockers: allBlockers,
     warnings: allWarnings,
+    stopReason: trace.stopReason,
   }
 }
 log('✅ No blockers — proceeding to Ship')
 
 // ── Phase 9: Ship ────────────────────────────────────────────────────────
 phase('Ship')
+note('pr-reviewer')
+trace.stopReason = 'PR opened'   // pr-reviewer overrides to "parked: visual approval" if it parks on the visual gate
+
+// WP1: hand the accumulated run-trace facts to /pr-reviewer to persist in the Delivery block.
+const reviewsFmt = Object.keys(trace.reviews).map(function(k) {
+  return k + ' ' + trace.reviews[k].blockers + 'b/' + trace.reviews[k].warnings + 'w'
+}).join(' · ')
+const traceHint =
+  '\n\nRun-trace facts (WP1) — write a "### Run trace" block in this task\'s Delivery section, ' +
+  'using the fixed keys in your SKILL.md step 4. Facts from this run:\n' +
+  '- Skills invoked (in order): ' + trace.skills.join(' → ') + '\n' +
+  '- Reviews (blockers/warnings): ' + (reviewsFmt || 'none ran') + '\n' +
+  '- Debugger retries: ' + trace.debuggerRetries + '\n' +
+  '- Stop reason: "PR opened" — unless you PARK on the visual-approval gate, in which case write ' +
+  '"parked: visual approval" instead (and do not open the PR).\n'
+
 await agent(
   'Read .claude/skills/pr-reviewer/SKILL.md and follow it exactly.\n' +
   'Active task: ' + TASK_ID + ' — ' + taskInfo.taskTitle + '\n\n' +
   'Full task block:\n' + taskInfo.taskBlock + '\n\n' +
   'Verify all DoD criteria are met. Mark the task [x] in docs/ROADMAP.md (update sprint table and global status). ' +
   'Run lint and tests. Open a PR against the PR target branch (`.claude/context.md` → Version control & forge), ' +
-  'filling the fixed PR template in order. Never merge — the human validates each PR on `develop`, then promotes develop → main. Return the PR URL.',
+  'filling the fixed PR template in order. Never merge — the human validates each PR on `develop`, then promotes develop → main. Return the PR URL.' +
+  traceHint,
   { phase: 'Ship', agentType: 'pr-reviewer' }
 )
 
 log('🎉 Task ' + TASK_ID + ' — automated pipeline complete, PR opened. Human UAT + merge are yours.')
-return { status: 'done', taskId: TASK_ID, awaiting: 'human UAT + merge on the PR' }
+return { status: 'done', taskId: TASK_ID, awaiting: 'human UAT + merge on the PR', stopReason: trace.stopReason }
 
 } // end shipOne
 
 // ── Dispatch: single task, or batch over the ready backlog ─────────────────
+// INPUT is a task ID ("10.3"), or a batch verb ("open"/"all"/"ready") optionally followed by a
+// numeric cap — the WP3 "Max tasks per run" bound an unattended trigger passes (e.g. "open 5").
 const INPUT = (typeof args === 'string' ? args : '').trim()
-const isBatch = INPUT === '' || /^(open|all|ready)$/i.test(INPUT)
+const INPUT_PARTS = INPUT.split(/\s+/).filter(Boolean)
+const VERB = INPUT_PARTS[0] || ''
+const MAX_TASKS = parseInt(INPUT_PARTS[1], 10)   // NaN when no cap given → no limit
+const isBatch = VERB === '' || /^(open|all|ready)$/i.test(VERB)
 if (!isBatch) return await shipOne(INPUT)
 
 // Batch mode: drain every open, DoR-ready task whose dependencies are already delivered.
@@ -605,8 +658,15 @@ log('Backlog: ' + ready.length + ' ready · ' + blockedByDeps.length + ' waiting
 if (notReady.length) log('⏭️  Not DoR-ready (run /planner): ' + notReady.map(function(t) { return t.id }).join(', '))
 if (blockedByDeps.length) log('⛓️  Waiting on unmerged dependencies: ' + blockedByDeps.map(function(t) { return t.id }).join(', '))
 
+// WP3 "Max tasks per run" — bound an unattended run. Concurrency stays 1 (tasks ship sequentially);
+// a triggered run passes this cap so it can't drain an unexpectedly large backlog in one go.
+const readyToShip = (Number.isInteger(MAX_TASKS) && MAX_TASKS > 0) ? ready.slice(0, MAX_TASKS) : ready
+if (readyToShip.length < ready.length) {
+  log('🔢 Max tasks per run = ' + MAX_TASKS + ' — shipping ' + readyToShip.length + ' of ' + ready.length + ' ready; the rest wait for the next run')
+}
+
 const results = []
-for (const t of ready) {
+for (const t of readyToShip) {
   log('▶ Shipping ' + t.id + (t.title ? ' — ' + t.title : '') + ' [' + (t.taskType || 'Feature') + ']')
   const r = await shipOne(t.id)
   results.push({ id: t.id, status: (r && r.status) || 'error', detail: r })
@@ -614,13 +674,15 @@ for (const t of ready) {
 
 const shipped = results.filter(function(r) { return r.status === 'done' })
 const blocked = results.filter(function(r) { return r.status === 'blocked' })
-log('🏁 Batch complete — ' + shipped.length + ' PR(s) opened, ' + blocked.length + ' blocked')
+const deferred = ready.slice(readyToShip.length)   // ready but beyond the Max-tasks-per-run cap
+log('🏁 Batch complete — ' + shipped.length + ' PR(s) opened, ' + blocked.length + ' blocked' + (deferred.length ? ', ' + deferred.length + ' deferred (over cap)' : ''))
 return {
   status: 'batch-complete',
   shipped: shipped.map(function(r) { return r.id }),
-  blocked: blocked.map(function(r) { return { id: r.id, detail: r.detail } }),
+  blocked: blocked.map(function(r) { return { id: r.id, detail: r.detail, stopReason: r.detail && r.detail.stopReason } }),
   skippedNotReady: notReady.map(function(t) { return t.id }),
   skippedDeps: blockedByDeps.map(function(t) { return t.id }),
+  deferredOverCap: deferred.map(function(t) { return t.id }),
   awaiting: 'human UAT + merge on each opened PR',
 }
 ```

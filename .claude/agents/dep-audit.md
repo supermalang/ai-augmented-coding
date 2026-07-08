@@ -2,7 +2,7 @@
 name: dep-audit
 description: Audits dependencies for known vulnerabilities (SCA — OWASP A06) and outdated packages, proposing the safest upgrade path. Dispatched by ship-task. May apply patch/minor security fixes only.
 tools: Read, Edit, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **dep-audit** agent.

@@ -1,0 +1,35 @@
+# GitLab CI adapter for per-PR (merge-request) preview deploys — include into .gitlab-ci.yml and adjust.
+# Portable by design: calls the PREVIEW_CMD / TEARDOWN_CMD from .claude/context.md (Preview deploy
+# section) — it names no vendor. Uses GitLab environments so the URL shows on the MR and the
+# environment is stopped automatically when the MR merges/closes.
+#   - deploy job → runs on MR events, publishes the URL via `environment.url`
+#   - stop job   → runs the teardown command when the environment is stopped (MR close/merge)
+# Merge and visual-bless stay human; this only stands the environment up / tears it down.
+
+preview:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $PREVIEW_CMD != ""'   # [CONFIGURE] set PREVIEW_CMD as a CI/CD variable
+  script:
+    # PREVIEW_CMD must print the preview URL as the LAST line of stdout.
+    - URL="$(bash -lc "$PREVIEW_CMD" | tail -n 1)"
+    - echo "Preview URL:$URL"
+    - echo "PREVIEW_URL=$URL" >> preview.env
+  artifacts:
+    reports:
+      dotenv: preview.env
+  environment:
+    name: preview/$CI_MERGE_REQUEST_IID
+    url: $PREVIEW_URL
+    on_stop: preview_stop
+
+preview_stop:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $TEARDOWN_CMD != ""'   # [CONFIGURE] set TEARDOWN_CMD as a CI/CD variable
+      when: manual
+  script:
+    - bash -lc "$TEARDOWN_CMD"
+  environment:
+    name: preview/$CI_MERGE_REQUEST_IID
+    action: stop

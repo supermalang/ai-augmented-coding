@@ -1,0 +1,48 @@
+# GitHub Actions adapter for the AUTONOMY TRIGGER (WP3) — copy to .github/workflows/ and adjust.
+# Starts the pipeline on a schedule and/or a manual button, running `/ship-task open <cap>` headless.
+# OPT-IN: keep this file only when .claude/context.md → Autonomy trigger → Mode is `schedule`/`event`.
+# With Mode `manual` (the default), do NOT install this workflow.
+#
+# Guardrails (see docs/autonomy-trigger.md): the run opens PRs into the target branch ONLY — it never
+# merges, never blesses baselines, keeps all guard hooks active, and appends WP1 run traces. A block
+# stops-with-reason (headless can't prompt); it never hangs.
+name: autonomy-trigger
+on:
+  workflow_dispatch:          # manual "Run workflow" button — always available
+    inputs:
+      max_tasks:
+        description: "Max tasks per run (cap)"
+        required: false
+        default: "5"           # [CONFIGURE] .claude/context.md → Autonomy trigger → Max tasks per run
+  schedule:
+    - cron: "0 8 * * 1-5"      # [CONFIGURE] .claude/context.md → Autonomy trigger → Condition (omit for event-only)
+
+# Concurrency 1: never let two triggered runs ship in parallel (matches the Autonomy-trigger key).
+concurrency:
+  group: autonomy-trigger
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    env:
+      # Unattended forge auth (see .claude/context.md → Version control & forge). Never commit tokens.
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      MAX_TASKS: ${{ github.event.inputs.max_tasks || '5' }}   # [CONFIGURE] default cap for scheduled runs
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: npm ci
+      # [CONFIGURE] the project's headless Claude Code invocation. It must run the prompt
+      # "/ship-task open $MAX_TASKS" in the repo, non-interactively, with the forge token in env.
+      # Example shape (replace with your runner's actual headless command):
+      #   npx @anthropic-ai/claude-code -p "/ship-task open $MAX_TASKS"
+      - name: Run the batch pipeline (PRs only — never merges/blesses)
+        env:
+          SHIP_CMD: ${{ vars.HEADLESS_SHIP_CMD }}   # [CONFIGURE] e.g. 'npx @anthropic-ai/claude-code -p'
+        run: |
+          if [ -z "${SHIP_CMD}" ]; then
+            echo "::error::HEADLESS_SHIP_CMD not configured — set it to the project's headless Claude Code command."
+            exit 1
+          fi
+          ${SHIP_CMD} "/ship-task open ${MAX_TASKS}"
