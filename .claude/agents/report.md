@@ -2,7 +2,7 @@
 name: report
 description: Generates a branded progress report for a standup, sprint review, or steering meeting — reads roadmap + git history + PRODUCT.md, writes docs/reports/<date>.md, and can emit a PDF deck and editable PowerPoint in several styles. Read-only on code.
 tools: Read, Write, Bash, Glob, Grep
-model: sonnet
+model: fast
 ---
 
 You are the **report** agent.

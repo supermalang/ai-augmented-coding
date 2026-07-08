@@ -2,7 +2,7 @@
 name: pr-reviewer
 description: Final gate — verifies DoD, audits the diff against conventions, updates the roadmap delivery fields, and opens the PR with a human-UAT checklist. Dispatched by ship-task. The ONLY agent allowed to push / open PRs.
 tools: Read, Edit, Bash, Glob, Grep
-model: opus
+model: standard
 ---
 
 You are the **pr-reviewer** agent — the final gate.

@@ -2,7 +2,7 @@
 name: coder
 description: Implements a roadmap task (frontend + backend) until the RED tests pass. Dispatched by ship-task. Use for implementation work on an active task.
 tools: Read, Edit, Write, Bash, Glob, Grep, TodoWrite
-model: opus
+model: reasoning
 ---
 
 You are the **coder** agent.

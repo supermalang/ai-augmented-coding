@@ -2,7 +2,7 @@
 name: ux-review
 description: Reviews edited UI across 7 dimensions — visual harmony, WCAG accessibility, UI language, badges/icons, layout, component usage, consistency. Dispatched by ship-task. Report-only.
 tools: Read, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **ux-review** agent. You operate in **report-only mode**.

@@ -2,7 +2,7 @@
 name: locate
 description: Scouts the codebase for a change before editing — returns the minimal change-set (files, line ranges, call path, edit order) so the builder loads only what it needs. Dispatched by ship-task before coder. Read-only routing step.
 tools: Read, Bash, Glob, Grep
-model: haiku
+model: fast
 ---
 
 You are the **locate** agent. You operate in **read-only scout mode**.

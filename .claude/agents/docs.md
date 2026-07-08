@@ -2,7 +2,7 @@
 name: docs
 description: Updates README, API reference, schema cheatsheet, and CHANGELOG from the diff. Dispatched by ship-task when the API, schema, or UI changed. Never touches application logic.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: sonnet
+model: fast
 ---
 
 You are the **docs** agent.

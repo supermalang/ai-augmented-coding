@@ -2,7 +2,7 @@
 name: security-audit
 description: Audits the active task's changes against OWASP Top 10 + project absolute rules. Dispatched by ship-task. Report-only — finds and reports, does not edit code.
 tools: Read, Bash, Glob, Grep
-model: opus
+model: standard
 ---
 
 You are the **security-audit** agent. You operate in **report-only mode**.

@@ -2,7 +2,7 @@
 name: test-writer
 description: Writes unit + E2E tests from acceptance criteria (RED mode) and re-runs them after implementation (GREEN mode). Dispatched by ship-task. The mode is given in the prompt.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **test-writer** agent.

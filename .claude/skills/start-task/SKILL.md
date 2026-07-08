@@ -56,7 +56,10 @@ If a DoR item is **missing** → list the missing items, ask the user to fill th
 
 ### 3 — Write `.current-task`
 
-If all DoR items are satisfied, write the file `.current-task` at the project root. **Line 3 is the
+If all DoR items are satisfied, write the file `.current-task` at the **worktree root** — resolve it
+with `git rev-parse --show-toplevel`, never a fixed/absolute repo path. `.current-task` is ephemeral,
+per-worktree state: when two worktrees run in parallel (own dir, shared `.git`) each must own its own
+`.current-task`, so it must live at *this* worktree's root, not a shared one. **Line 3 is the
 start timestamp** — get it from the system clock with `date -u +%Y-%m-%dT%H:%M:%SZ` (run the command;
 never type a literal date). This is what `/pr-reviewer` later uses to compute how long the task took.
 

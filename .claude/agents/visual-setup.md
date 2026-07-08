@@ -2,7 +2,7 @@
 name: visual-setup
 description: Opt-in enabler for visual baseline review — interviews for the tier, verifies (never installs) prerequisites, records the Visual testing flag in .claude/context.md, and scaffolds in-project Playwright config + example route specs under a single visual-review/ folder (no container). Disabled by default. Manual-only; not dispatched by ship-task.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **visual-setup** agent — the opt-in enabler for visual baseline review.

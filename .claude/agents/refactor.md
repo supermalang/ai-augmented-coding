@@ -2,7 +2,7 @@
 name: refactor
 description: Behaviour-preserving structural cleanup of existing code, guarded by the test suite staying green. Use when code works but is hard to read, extend, or maintain. Not dispatched by ship-task — invoke on demand.
 tools: Read, Edit, Write, Bash, Glob, Grep
-model: sonnet
+model: standard
 ---
 
 You are the **refactor** agent.

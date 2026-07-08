@@ -19,9 +19,30 @@ set -uo pipefail
 MODE="${1:-run}"
 FILTER="${2:-}"
 
-CONFIG="visual-review/playwright.visual.config.ts"
-REPORT_DIR="visual-review/results/report"
-PORT="${VISUAL_REPORT_PORT:-9323}"
+# --- worktree-relative anchoring --------------------------------------------------------------
+# Resolve every ephemeral/generated path from the WORKTREE ROOT, never the CWD or a fixed repo
+# path — so two parallel worktrees (own dir, shared .git) never read/serve each other's results.
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$ROOT" || exit 1
+
+# Per-worktree id (dir basename) → keeps the report server port from colliding when two worktrees
+# serve at once. The MAIN worktree keeps base port 9323 (single-worktree use is unchanged); only a
+# LINKED worktree gets a small deterministic offset. See docs/parallel-work.md.
+WORKTREE_ID="${WORKTREE_ID:-$(basename "$ROOT")}"
+worktree_port_offset() {
+  # Main worktree → offset 0 (git-dir == git-common-dir). Linked worktree → 1..49 from its id.
+  local gd cd s="$1" h=0 i
+  gd="$(git rev-parse --git-dir 2>/dev/null)"
+  cd="$(git rev-parse --git-common-dir 2>/dev/null)"
+  [ -n "$gd" ] && [ "$gd" = "$cd" ] && { printf '0'; return; }
+  for ((i=0; i<${#s}; i++)); do h=$(( (h*31 + $(printf '%d' "'${s:i:1}")) & 0xffff )); done
+  printf '%d' "$(( h % 49 + 1 ))"   # 1..49 — small, bounded spread off the base port
+}
+DEFAULT_PORT=$(( 9323 + $(worktree_port_offset "$WORKTREE_ID") ))
+
+CONFIG="$ROOT/visual-review/playwright.visual.config.ts"
+REPORT_DIR="$ROOT/visual-review/results/report"
+PORT="${VISUAL_REPORT_PORT:-$DEFAULT_PORT}"
 
 # --- guard: refuse if someone smuggled an update flag through the filter arg ------------------
 case "$FILTER" in

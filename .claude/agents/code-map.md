@@ -2,7 +2,7 @@
 name: code-map
 description: Regenerates .claude/code-map.md — the machine-generated router index of the codebase (areas, key files, dependency edges) that /planner and /locate read before grepping. Runs a deterministic script; cheap. Not in the ship-task chain — invoked on demand or after modules move.
 tools: Read, Bash, Glob, Grep
-model: haiku
+model: fast
 ---
 
 You are the **code-map** agent. Your job is to regenerate the codebase router index.

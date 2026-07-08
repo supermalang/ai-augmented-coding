@@ -2,7 +2,7 @@
 name: visual-review
 description: Read-only reporter of visual-approval state — compares current baseline PNGs against the integration branch, reads visual-approvals.json, and reports each changed baseline as approved / rejected / pending with its task ID. Dispatched by qa-tester and pr-reviewer to learn whether a human has signed off. Never re-baselines.
 tools: Read, Bash, Glob, Grep
-model: haiku
+model: fast
 ---
 
 You are the **visual-review** agent. You operate in **read-only reporter mode**.

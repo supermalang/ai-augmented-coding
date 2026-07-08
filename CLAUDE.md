@@ -238,7 +238,7 @@ Skills define *behaviour*; **agents** in `.claude/agents/` define the *envelope*
 - **`pr-reviewer`** is the **only** agent that can `git push` / open PRs.
 - **Builders** (`coder`, `debugger`, `schema-agent`, `test-writer`, `refactor`) can edit + run commands; **docs/diagram** write docs only. A few roles have a deliberately **narrow** write scope rather than none: `pr-reviewer` and `qa-tester` edit only roadmap delivery/QA fields, `dep-audit` only the dependency manifest (patch/minor).
 - **Manual-only agents** (not dispatched by `/ship-task`): `setup` writes the operational config files only (`context.md`, the `CLAUDE.md` `[CONFIGURE]` blocks, `stack-profile.sh`, scripts, coverage config — never app source; plus, on a greenfield repo, the stack-choice ADR in `docs/ARCHITECTURE.md`); `report` is read-only on code and writes only under `docs/reports/`, `docs/reports/assets/`, `.claude/reporting/`, and `out/`; `visual-setup` writes only the visual-testing config (the `Visual testing` block in `context.md` + scaffolded root files) and **never installs runtimes**. (`discovery`, `retro`, `usability-test`, `story-map` likewise run as manual skills feeding `/planner`.)
-- **Models** are right-sized per role (Opus for `coder`/`debugger`/`schema-agent`/`security-audit`/`pr-reviewer`; Sonnet for most reviewers + `setup`/`report`; Haiku for `commit`/`diagram`/`locate`).
+- **Models** are chosen by **tier**, not hardcoded per agent. Each envelope's `model:` names one of three tiers — `reasoning` · `standard` · `fast` — resolved to a concrete model in `.claude/context.md` → *Model tiers* (single source of truth; re-point a tier there to re-tier every agent in it). Tiers track **reasoning difficulty and compounding cost of error, not pipeline phase**: `reasoning` = `coder`/`debugger`/`schema-agent` (+`planner`); `standard` = the reviewers (`security-audit`/`performance`/`qa-tester`/`ux-review`/`dep-audit`) + `pr-reviewer`/`test-writer`/`setup`/`refactor`/`visual-setup`; `fast` = read-only reporters & template/trace work (`docs`/`report`/`diagram`/`locate`/`commit`/`code-map`/`visual-report`/`visual-review`). Per-agent concrete overrides are possible but must be justified by measured cost/latency, not guessed.
 
 Note the granularity: agent tools are **tool-level** (no Edit at all, no Bash at all), not path-level. Fine-grained rules ("edit tests but not source", "no push") remain the **hooks'** job — agents and hooks are complementary layers. When invoked **manually** as a skill (e.g. typing `/ux-review`), a role runs in the main loop with full tools and a human present; the report-only restriction applies to **autonomous** dispatch only.
 
@@ -268,6 +268,12 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 > (see README Prerequisites / the dev container). **Hooks are a backstop, not a sandbox:** a write done
 > *inside* a script file (`python build.py`) can't be seen by a command-string guard — the real
 > boundary there is least-privilege agent tools (deny raw shell writes so the only path is Edit/Write).
+
+### PreToolUse (advisory — warns, never blocks)
+
+| Trigger | Hook | What it warns |
+|---|---|---|
+| Edit / Write | `warn-worktree-overlap.sh` | The file being edited is also changed in a **sibling git worktree** (manual parallel work) — names that worktree's branch. **WARN only, never blocks** (overlap is sometimes legitimate); silent when only one worktree exists. See [`docs/parallel-work.md`](docs/parallel-work.md). |
 
 ### PostToolUse (warnings)
 

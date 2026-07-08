@@ -166,6 +166,28 @@ Record both in ISO 8601 UTC and the cycle time between them (compute with `date`
 > the Delivery blocks across a sprint. A result that isn't written to the task can't be trended — so
 > copy the Estimate and note any perf blocker here at delivery, not just in the transient review output.
 
+**Run trace (WP1) — append this block right after Delivery.** Record *what happened inside the run*,
+not just how long it took, so `/retro` can surface *why* patterns (which reviews block, how often the
+debugger retries) rather than only velocity. Use these **fixed keys** so the block stays parseable:
+
+```markdown
+### Run trace
+- **Skills invoked:** <ordered list, e.g. locate → test-writer → coder → debugger×2 → reviews>
+- **Reviews:** security <b/w> · perf <b/w> · qa <b/w> · visual <b/w>
+- **Debugger retries:** <n>
+- **Stop reason:** <PR opened | parked: visual approval | blocked: <gate> | failed: <reason>>
+- **Duration:** <Cycle time from the Delivery block above>
+```
+
+- **When dispatched by `/ship-task`** the facts (skills invoked, per-review blockers/warnings, debugger
+  retries, stop reason) are handed to you in the prompt — transcribe them into the keys above; take
+  **Duration** from the Cycle time you just computed.
+- **When run standalone** (a human ships a task directly), fill what you can determine from the branch
+  and this run, and mark anything unknown `—`. The block is best-effort, never a gate.
+- **If you park on the visual-approval gate** (no PR opened), still write the block with
+  **Stop reason: `parked: visual approval`** — a parked run is exactly what a later retro wants to see.
+- Keep it compact — this is the substrate a later loop analyses; no tool-level detail.
+
 Also set the task block's **Completion date** field to today's date (`YYYY-MM-DD`) — this is the
 marker `/roadmap-status archive` uses to sweep a delivered block out of the live roadmap later:
 ```markdown
@@ -216,7 +238,7 @@ gh pr create \
 ## Visual changes
 <UI work: preview link + link to the visual expected/actual/diff report. "None" if no UI change.
  NEVER paste raw gitignored result PNGs — link the report/preview.>
-- Preview: <preview URL from context.md "Preview URL source", or "none">
+- Preview: <the per-PR preview URL from the CI preview deploy (context.md "Preview deploy"), or "None" if no preview command is configured>
 - Visual report: <CI visual-report artifact link when Visual gate mode = ci, else /visual-report output>
 
 ## Checks & facts
@@ -238,9 +260,11 @@ EOF
   any unmet one **unticked with a one-line note**. That unticked box is the reviewer's stop sign.
 - **Checks & facts** — CI status link, and the **Estimate / Cycle time / Perf** you recorded in the
   task's Delivery block (step 4).
-- **Visual changes** — the preview URL from `Preview URL source` (or `none`), plus a **link** to the
-  visual report (CI artifact when `Visual gate mode = ci`, else the `/visual-report` output). Do
-  **not** embed the gitignored `visual-review/results/` PNGs.
+- **Visual changes** — the **Preview** link from the per-PR preview deploy (`.claude/context.md` →
+  *Preview deploy*; the CI preview step posts the URL to the PR). Use that URL when present; write
+  `None` when no `Preview command` is configured. Plus a **link** to the visual report (CI artifact
+  when `Visual gate mode = ci`, else the `/visual-report` output). Do **not** embed the gitignored
+  `visual-review/results/` PNGs.
 - **Risk flags** — detect from the diff: schema/migration files touched → *Schema migration*;
   auth/permission/session code touched → *Auth/permissions*; dependency manifest or lockfile changed →
   *Dependency change*. None present → write `None`.
