@@ -231,7 +231,8 @@ phase('Setup')
 const branchSlug = TASK_ID.replace(/\./g, '-')
 await agent(
   'You are setting up the dev environment for task ' + TASK_ID + '.\n' +
-  '1. Write .current-task at the project root with THREE lines: line 1 = "' + TASK_ID + '", ' +
+  '1. Write .current-task at the WORKTREE ROOT (resolve it with `git rev-parse --show-toplevel`, ' +
+  'never a fixed path — it is per-worktree ephemeral state) with THREE lines: line 1 = "' + TASK_ID + '", ' +
   'line 2 = the task title "' + taskInfo.taskTitle + '", line 3 = the start timestamp in ISO 8601 UTC ' +
   'obtained by RUNNING `date -u +%Y-%m-%dT%H:%M:%SZ` (do not type a literal date). The start timestamp ' +
   'lets /pr-reviewer compute the task cycle time at delivery.\n' +

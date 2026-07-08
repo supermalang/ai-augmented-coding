@@ -111,6 +111,28 @@ image (see `docs/visual-testing.md`) so local == CI.
 
 ---
 
+## Parallel worktrees (per-worktree ports & test DB)
+
+For **manual** parallel work: the human runs two sessions at once, each in its own git worktree (own
+dir, shared `.git`). Two worktrees booting a dev server or a test DB must not fight over the same
+port or database name. Derive a per-worktree suffix once and reuse it for both.
+
+- **`WORKTREE_ID`** — a short per-worktree token. Default: the worktree dir basename
+  (`basename "$(git rev-parse --show-toplevel)"`), or a short hash of that root. The **main**
+  worktree keeps the base values (offset 0) so single-worktree use is **unchanged**; only *linked*
+  worktrees take a suffix/offset.
+- **[CONFIGURE] — dev-server port:** base `[e.g. 3000]`; per-worktree port = base + a small
+  deterministic offset from `WORKTREE_ID` (main worktree → offset 0).
+- **[CONFIGURE] — test-DB name:** pattern `[e.g. myapp_test_${WORKTREE_ID}]`; the main worktree uses
+  the bare base name.
+
+Keep the scheme deterministic (same worktree → same port/DB) and bounded. A project sets its own base
+port and DB-name pattern here; the defaults leave single-worktree runs exactly as they were. The
+visual-report server (`.claude/skills/visual-report/open-report.sh`) already follows this convention
+for its report port. See [`docs/parallel-work.md`](../docs/parallel-work.md).
+
+---
+
 ## Autonomy
 
 How much the pipeline runs without permission prompts. **Safety comes from rules + hooks, never from
@@ -237,6 +259,14 @@ buckets by lifecycle; agents pick by *what the file is*, not by convenience.
 Rules: a *regenerable* output is gitignored (`out/`, `.scratch/`, tool dirs); only *knowledge* and
 *non-reproducible* artifacts are committed. Never stage `.scratch/`, `out/`, or tool-output dirs in a
 task commit. New subfolders are fine **within** a bucket; don't invent new top-level output roots.
+
+**Worktree-relative (parallel-safe).** Every *ephemeral / generated* path above — `.current-task`,
+`.scratch/**`, `visual-review/results/**`, `out/**`, run traces, any lockfile/marker — must resolve
+from the **worktree root** (`git rev-parse --show-toplevel`; hooks use `$CLAUDE_PROJECT_DIR`, which is
+that root), never a fixed/absolute repo path. Two parallel worktrees share one `.git` but have their
+own working dir; anchoring generated state to the worktree root is what stops them clobbering each
+other. *Committed, shared* inputs (`.claude/**`, `docs/**`, `visual-review/baselines/`) are read from
+the current worktree already and need no change. See [`docs/parallel-work.md`](../docs/parallel-work.md).
 
 ---
 

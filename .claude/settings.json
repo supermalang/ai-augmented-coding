@@ -71,6 +71,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-generated-files.sh\"",
             "timeout": 5,
             "statusMessage": "Checking generated file guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/warn-worktree-overlap.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking cross-worktree overlap…"
           }
         ]
       },
@@ -94,6 +100,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-generated-files.sh\"",
             "timeout": 5,
             "statusMessage": "Checking generated file guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/warn-worktree-overlap.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking cross-worktree overlap…"
           }
         ]
       }

@@ -269,6 +269,12 @@ Configured in `.claude/settings.json`. All stack-specific patterns the hooks mat
 > *inside* a script file (`python build.py`) can't be seen by a command-string guard — the real
 > boundary there is least-privilege agent tools (deny raw shell writes so the only path is Edit/Write).
 
+### PreToolUse (advisory — warns, never blocks)
+
+| Trigger | Hook | What it warns |
+|---|---|---|
+| Edit / Write | `warn-worktree-overlap.sh` | The file being edited is also changed in a **sibling git worktree** (manual parallel work) — names that worktree's branch. **WARN only, never blocks** (overlap is sometimes legitimate); silent when only one worktree exists. See [`docs/parallel-work.md`](docs/parallel-work.md). |
+
 ### PostToolUse (warnings)
 
 | Trigger | Hook | What it warns |
