@@ -54,6 +54,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-hill-climb.sh\"",
             "timeout": 5,
             "statusMessage": "Checking hill-climb propose-only guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-hotfix-test.sh\"",
+            "timeout": 10,
+            "statusMessage": "Checking hotfix regression-test requirement…"
           }
         ]
       },
