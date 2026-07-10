@@ -21,6 +21,9 @@ export STACK_TEST_FILE_REGEX='\.(test|spec)\.(ts|tsx|js|jsx)$'
 # Implementation paths gated behind /start-task (guard-roadmap-gate).
 export STACK_GATED_PATHS_REGEX='^(src/|tests/|prisma/schema\.prisma)'
 
+# Production branch a hotfix branches from and targets (guard-hotfix-test, /hotfix). Default: main.
+export STACK_PRODUCTION_BRANCH='main'
+
 # Auto-generated files that must never be hand-edited (guard-generated-files).
 export STACK_GENERATED_FILES_GLOB='*.generated.md'
 

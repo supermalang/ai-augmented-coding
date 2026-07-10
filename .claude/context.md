@@ -285,6 +285,26 @@ unchanged, and there is **no auto-publish**.
 
 ---
 
+## Hotfix / incident fast-lane
+
+The urgent-fix lane for production emergencies (`/hotfix`). **Fast means skipping *ceremony*, never
+skipping *safety*:** a hotfix bypasses sprint planning / DoR / estimation, but keeps the **regression
+test, all guard hooks, and the human merge gate** — because it patches *live* code, where discipline
+matters most. See [`.claude/skills/hotfix/SKILL.md`](../.claude/skills/hotfix/SKILL.md).
+
+- **Production branch:** [CONFIGURE — default `main`]   # a hotfix branches from AND targets this, never `develop` (also `STACK_PRODUCTION_BRANCH` in `stack-profile.sh` for the hooks)
+- **Relevant reviewers (by bug class):** [CONFIGURE — map the bug class to the reviewer subset that must run, e.g.]
+  - security / authz bug → `security-audit` (+ `dep-audit` if a dependency is implicated)
+  - data / query / perf bug → `performance`
+  - UI / visual bug → `ux-review` (+ `qa-tester`)
+  - everything → at least `qa-tester` (a focused review, never zero)
+- **Non-negotiables (no exemptions):** a hotfix PR **must add a new regression test**
+  (`guard-hotfix-test` enforces it on push/PR); the fix is **never auto-merged** (human merge gate);
+  after merge, **back-merge the production branch → `develop`** (a required PR) so the fix isn't lost;
+  then **backfill** the incident into a roadmap `Type: Fix` task + a run trace so `/retro` sees it.
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.
