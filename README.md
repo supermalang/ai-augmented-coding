@@ -1,24 +1,26 @@
 # claude-pipeline-template
 
 A reusable **Claude Code** pipeline that runs a software project the way a team does — as a
-**lifecycle**, from understanding the problem to a shipped PR — with a chain of least-privilege
-agents and shell-enforced gates that **harden as work approaches code**.
+**lifecycle**, from understanding the problem to a released, monitored increment — with a chain of
+least-privilege agents and shell-enforced gates that **harden as work approaches code**.
 
-You don't memorise 30-odd commands. You move a piece of work through five phases; at each one you run
+You don't memorise 35-odd commands. You move a piece of work through the phases; at each one you run
 a couple of skills, and the pipeline enforces what must be true before the work is allowed forward.
 
-> **See the whole thing on one page:** [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md) · or the
-> [visual lifecycle](https://claude.ai/code/artifact/cdb2f569-94a8-4709-931b-fafd62876bd8).
+> **See the whole thing on one page:** [`docs/LIFECYCLE.md`](docs/LIFECYCLE.md).
 
 ---
 
 ## The idea in one line
 
-**No code ships without a ready card, on the right branch, reviewed.** Upstream phases (understanding
-the problem, shaping the backlog) are *guided* by skills; the moment work touches `src/`, `tests/`, or
-the schema, **hooks make the rules non-negotiable** — you can't edit without an active roadmap task,
-can't commit to `main`, can't push except through the PR agent, and reviewers literally cannot edit the
-code they audit. That gradient — soft upstream, hard at the code boundary — is the core design.
+**No code ships without a ready card, on the right branch, reviewed — and nothing consequential
+happens without a human at the gate.** Upstream phases (understanding the problem, shaping the
+backlog) are *guided* by skills; the moment work touches `src/`, `tests/`, or the schema, **hooks make
+the rules non-negotiable** — you can't edit without an active roadmap task, can't commit to `main`,
+can't push except through the PR agent, and reviewers literally cannot edit the code they audit. That
+gradient — soft upstream, hard at the code boundary — is the core design. Autonomy is bounded by the
+same principle: agents run unattended across the safe surface, hooks auto-deny the dangerous subset,
+and a human keeps the handful of gates that carry real consequence.
 
 ---
 
@@ -26,21 +28,23 @@ code they audit. That gradient — soft upstream, hard at the code boundary — 
 
 | # | Stage | What you do here | Key commands | Enforcement |
 |---|---|---|---|---|
-| 1 | **Setup** | Adopt the template, define your stack | `/setup` · `/code-map` · `/visual-setup` | 🔵 Soft |
+| 1 | **Setup** | Adopt the template, define your stack, tiers, CI | `/setup` · `/code-map` · `/visual-setup` | 🔵 Soft |
 | 2 | **Definition** | Understand the problem, users, solution shape (BA · Design Thinking · HCD) | `/discovery` · `/design-import` | 🔵 Soft |
-| 3 | **Planning** | Shape a ready, traceable backlog (Agile) | `/story-map` · `/planner` · `/sprint-start` | 🟠 Hard DoR gate |
-| 4 | **Execution** | Build, verify, and ship each card | `/ship-task <ID>` · `/ship-task open` | 🟢 Hard, fail-closed |
-| 5 | **Maintenance** | Fix, evolve, keep healthy | `/debugger` · `/dep-audit` · `/refactor` | 🟢 Hard |
+| 3 | **Planning** | Shape a ready, estimated, traceable backlog (Agile) | `/story-map` · `/planner` · `/sprint-start` | 🟠 Hard DoR gate |
+| 4 | **Execution** | Build, verify, and ship each card to a PR on `develop` | `/ship-task <ID>` · `/ship-task open` | 🟢 Hard, fail-closed |
+| 5 | **Release** | Validate PRs, promote `develop → main`, version & tag | *(human validate)* · `/release` | 🟠 Human gates |
+| 6 | **Maintenance** | Fix, evolve, keep healthy — incl. urgent hotfixes | `/debugger` · `/hotfix` · `/dep-audit` · `/refactor` | 🟢 Hard |
+| ⟳ | **Observe & Improve** | Runtime health + self-improvement (both default-off) | *health gate* · `/hill-climb` | 🟠 Human gates |
 | ⟳ | **Governance** | Steer & communicate across all phases | `/report` · `/retro` · `/roadmap-status` · `/diagram` | — |
 
-Phases 3 ⇄ 4 loop every sprint; retro and usability feedback can re-open Definition.
+Phases 3 ⇄ 4 loop every sprint; retro, usability, and self-improvement feedback can re-open earlier phases.
 
 ---
 
 ## Getting started
 
 **Prerequisites:** [Claude Code](https://claude.com/claude-code) installed, a git repository, and a
-**`bash`** shell to run the hooks (on Windows, **Git Bash**). The two write-gating guards
+**`bash`** shell to run the hooks (on Windows, **Git Bash**). The write-gating guards
 (`guard-roadmap-gate`, `guard-bash-write`) are pure-bash and need nothing else; the remaining hooks
 also use **`jq`** + standard coreutils — install `jq` so they don't degrade. The included
 [dev container](.devcontainer/devcontainer.json) provisions `jq` automatically.
@@ -50,11 +54,11 @@ also use **`jq`** + standard coreutils — install `jq` so they don't degrade. T
 
 **Fastest path from zero to your first agent-built PR:**
 
-1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-details) below).
-2. **Run `/setup`** — detects your stack, interviews for the gaps, and fills the operational config (`.claude/context.md`, the `[CONFIGURE]` blocks in `CLAUDE.md`, `.claude/hooks/stack-profile.sh`, `package.json` scripts, coverage). **Nothing works until this is done** — every agent reads `context.md` each run. **No stack yet?** Run `/discovery` first, then `/setup` recommends one — a shortlist with rationale drawn from your PRD's constraints — and you pick; it records the choice (and the "why" as an ADR). It configures the stack; it doesn't scaffold the app.
-3. **Seed one task** — let `/planner` write it (or add it by hand to `docs/ROADMAP.md`).
-4. **Ship it** — `/ship-task <ID>` runs tests → code → reviews → PR autonomously.
-5. **Review the PR** — the pipeline opens it; you run human UAT and merge.
+1. **Add the template** — copy `.claude/`, `CLAUDE.md`, and `docs/ROADMAP.md` into your repo (details in [Setup](#setup-details)).
+2. **Run `/setup`** — detects your stack, interviews for the gaps, and fills the operational config (`.claude/context.md`, the `[CONFIGURE]` blocks in `CLAUDE.md`, `.claude/hooks/stack-profile.sh`, CI, model tiers, PR target). **Nothing works until this is done** — every agent reads `context.md` each run. **No stack yet?** Run `/discovery` first; `/setup` then recommends one from your PRD's constraints and records the choice as an ADR.
+3. **Seed one task** — let `/planner` write it (with a story-point estimate) or add it by hand to `docs/ROADMAP.md`.
+4. **Ship it** — `/ship-task <ID>` runs tests → code → reviews → PR **into `develop`**, autonomously.
+5. **Validate the PR** — the pipeline opens it in the fixed, reviewable shape; you run human UAT, merge to `develop`, and later promote `develop → main`.
 
 > **Tip:** the first time, point it at a tiny task (one field or one endpoint) to watch the whole loop
 > run before trusting it with anything big.
@@ -63,145 +67,137 @@ also use **`jq`** + standard coreutils — install `jq` so they don't degrade. T
 
 ## The lifecycle in detail
 
-Each stage below: **why** it exists, **what to run**, and **what you can do** there.
-
 ### 1 · Setup — *template adoption*
 
-**Why.** The orchestration is stack-agnostic; the stack-specific facts live in config that every
-downstream gate reads. Get them right once.
+**Why.** The orchestration is stack-, CI-, and platform-agnostic; the specifics live in config that
+every downstream gate reads. Get them right once.
 
-**Run.**
 ```
-/setup           # detect stack (or recommend one on greenfield), interview, fill context.md + CLAUDE.md + stack-profile.sh + scripts
+/setup           # detect stack (or recommend one), interview, fill context.md + CLAUDE.md + stack-profile.sh + CI + model tiers
 /code-map        # generate .claude/code-map.md — the router index /planner & /locate read
 /visual-setup    # OPT-IN — scaffold visual baseline review (off by default)
 ```
 
-**You can:** retarget any stack by editing one file (`stack-profile.sh`, examples for
-Laravel/Django/FastAPI included — see [Adapting to another stack](#adapting-to-another-stack)); skip
-`/visual-setup` entirely unless you want screenshot review. **Starting from scratch with no stack?**
-`/setup` recommends one — a shortlist with rationale drawn from your PRD's constraints — for you to
-choose, and records the "why" as an ADR. (It configures and records the stack; it still doesn't
-scaffold the app skeleton — that's a framework initializer or a first roadmap task.)
-
-**Enforcement:** soft — skills fill config; downstream gates surface gaps later.
+**You can:** retarget any stack by editing one file (`stack-profile.sh`); pick your **CI vendor** (a
+`ci-adapters/` reference for GitHub / GitLab / container — keep one); set **model tiers**
+(`reasoning`/`standard`/`fast` → concrete models) in one place; choose the **PR target branch**
+(default `develop`). **Enforcement:** soft.
 
 ### 2 · Definition — *business analysis · Design Thinking · HCD*
 
-**Why.** The problem space. Building the wrong thing correctly is the most expensive mistake — pin the
-user, the job, and the solution shape before a backlog exists.
-
-**Run.**
 ```
-/discovery       # iterative requirements/PRD/HCD interview → PRD (docs/discovery/<slug>.md) + INVEST stories + threat model
+/discovery       # requirements/PRD/HCD interview → PRD + INVEST stories + threat model
 /design-import   # OPTIONAL — pull a design into a spec via Google Stitch MCP
 ```
 
-**You can:** turn a fuzzy idea into a `docs/discovery/<slug>.md` **PRD**; capture **personas** as full
-HCD profiles in `docs/personas/<slug>.md` (jobs, goals, pains/gains, context, scenario), indexed from
-`PRODUCT.md`; seed the standing vision (`PRODUCT.md`) and design language (`DESIGN.md`).
-
-**Enforcement:** soft — skill-guided. Discovery's own DoR requires the persona + job-to-be-done to be
-explicit before it hands off.
+Turns a fuzzy idea into a `docs/discovery/<slug>.md` PRD; captures personas
+(`docs/personas/<slug>.md`); seeds `PRODUCT.md` and `DESIGN.md`. **Enforcement:** soft — discovery's
+own DoR requires persona + job-to-be-done before handoff.
 
 ### 3 · Planning — *Agile backlog shaping*
 
-**Why.** The solution space. Turn the PRD into small, independent, **traceable** cards that satisfy a
-Definition of Ready — so Execution has only well-formed work to pull.
-
-**Run.**
 ```
-/story-map       # user journey × release-slice view; reconciles map ↔ roadmap both ways
-/planner         # write a roadmap task (Feature or Fix) with full DoR; reads the code map first
-/sprint-start    # audit every planned task for DoR before a sprint (hard gate)
+/story-map       # user journey × release-slice view; reconciles map ↔ roadmap
+/planner         # write a roadmap task with full DoR + story-point estimate; challenges vague criteria
+/sprint-start    # time-boxed sprint; capacity = estimate-weighted velocity; audits DoR (hard gate)
 ```
 
-**You can:** see the journey above the flat backlog and find gaps. Every task carries a **`Journey:`
-coordinate**, so `/story-map` flags both **GAPS** (a journey step with no task) and **ORPHANS** (a task
-pointing at no real step) — real bidirectional traceability. Task **dependencies** are first-class:
-`/ship-task open` won't start a task until its dependencies are delivered. `/planner` validates each
-task's persona against `PRODUCT.md`.
-
-**Enforcement:** **hard gate on DoR** (checked by `/sprint-start` and `/start-task`), but by skill
-logic — the fail-closed hook fires at the Execution boundary.
+Every task carries a **`Journey:` coordinate** (`/story-map` flags GAPS and ORPHANS) and a
+**story-point `Estimate`**. `/planner` **challenges untestable acceptance criteria** — a vague
+criterion is a signal to clarify, not something to test around — and validates each task's persona
+against `PRODUCT.md`. Dependencies are first-class; `/ship-task open` won't start a task until its
+dependencies are delivered. **Enforcement:** hard DoR gate at the Execution boundary.
 
 ### 4 · Execution — *build · verify · ship*
 
-**Why.** Deliver each card as a reviewed, tested increment. This is where the hooks bite.
-
 **Run — autonomous (recommended):**
 ```
-/ship-task 1.1        # one task by ID — tests → code → reviews → PR, no input between steps
+/ship-task 1.1        # one task — tests → code → reviews → PR into develop, no input between steps
 /ship-task open       # batch: every ready task whose dependencies are delivered, priority-ordered
 ```
 
 `/ship-task` hands control back on exactly three things: a task that isn't DoR-ready, tests
-`/debugger` couldn't fix after 2 tries, or a review blocker. Otherwise it runs to an open PR. In batch
-mode a blocking task is recorded and the run continues, returning a summary.
-
-**What the pipeline runs per task:**
+`/debugger` couldn't fix after 2 tries, or a review blocker. Otherwise it runs to an open PR on the
+target branch. Each run **records a structured run trace** (skills fired, reviewer blockers, retries,
+stop reason) into the task — the substrate `/retro` and `/hill-climb` later read.
 
 | Step | Agent | Runs when |
 |------|-------|-----------|
 | 0 | Validate | Always — DoR check |
 | 1 | Start | Always — branch + `.current-task` |
 | 2 | Schema | Schema impact = `Migration` |
-| 3 | Test Writer (RED) | Always — tests from criteria; **hard-stops if a RED test passes** (vacuous) |
-| 3b | Locate (scout) | Always — cheap Haiku pass; scopes the change-set |
+| 3 | Test Writer (RED) | Always — tests + axe a11y from criteria; hard-stops if a RED test passes |
+| 3b | Locate (scout) | Always — cheap `fast`-tier pass; scopes the change-set |
 | 4 | Coder **or** Debugger | `/coder` for a Feature, `/debugger` for a `Type: Fix` |
 | 5 | Test Writer (GREEN) | Always — confirms all tests pass |
-| 5b | Debugger (self-repair) | If GREEN fails — auto root-cause + fix, retries up to 2× |
-| 6 | Docs | API/schema/UI changed — or modules moved (refreshes the code map) |
-| 7 | Commit | Always — lint + commit before reviews |
-| 8–11b | UX · Perf (static+measured) · QA · Security · Dep-audit | In parallel; **any blocker stops the pipeline** |
-| 12 | PR Reviewer | Always — marks roadmap done, opens PR/MR |
+| 5b | Debugger (self-repair) | If GREEN fails — auto root-cause + fix, up to 2× |
+| 6 | Docs | API/schema/UI changed — or modules moved |
+| 7 | Commit | Always — lint + Conventional Commit before reviews |
+| 8–11b | UX · Performance (review+measure) · QA · Security · Dep-audit | In parallel; any blocker stops the pipeline |
+| 12 | PR Reviewer | Always — records estimate/cycle-time/perf + run trace, opens the PR in the fixed shape |
 
-**Run — manual (step through it yourself):** `/start-task` → `/schema-agent` → `/test-writer` (RED) →
-`/locate` → `/coder` (or `/debugger`) → `/test-writer` (GREEN) → reviews (`/ux-review`,
-`/performance` (review + measure), `/security-audit`, `/dep-audit`, `/qa-tester`, `/visual-review`) →
-`/docs`, `/diagram` → `/commit` → `/pr-reviewer`. `/refactor` and `/usability-test` on demand;
-`/webapp-testing` to drive the live app.
+**The PR shape** (filled by `/pr-reviewer`, ordered by what you decide first): summary → ticked
+acceptance criteria → visual changes (preview + expected/actual/diff links) → checks & facts
+(estimate, cycle time, perf) → risk flags (schema/auth/deps) → diff last. **Enforcement:** hard,
+fail-closed — no edit to gated paths without an active task on the correct branch; no commit to
+`main`; only `/pr-reviewer` pushes; reviewers have no edit tools; agents **can never bless their own
+visual baselines** (`guard-visual-update`).
 
-> **Performance runs after GREEN**, in the review lane before the PR (steps 8–11b above), and **only on
-> tasks that touch ORM queries or async fetching**: `/performance review` reads the diff statically
-> (N+1, unbounded queries, over-fetching), `/performance measure` runs the app and checks real
-> numbers — bundle, Web Vitals, query `EXPLAIN` — against the budgets in `.claude/context.md`.
-> `/performance measure` is also the go-to Maintenance regression check.
+### 5 · Release — *validate · promote · version*
 
-**You can:** watch the whole loop or drive it stepwise; verify acceptance criteria with `/qa-tester`
-(automated) and then do **true UAT yourself at the PR** before merging.
+**Why.** Execution ends at a PR on `develop`. Release turns validated work into a versioned increment.
 
-**Enforcement:** **hard, fail-closed.** No edit to gated paths without an active, roadmap-listed task
-on the correct branch; no commit to `main`; Conventional Commits required; only `/pr-reviewer` pushes;
-reviewers have no edit tools.
+```
+# You validate each PR on develop (green checks + preview + criteria) and merge, one by one.
+# When a batch is good, you promote develop → main (both branches protected).
+/release         # derive semver bump from conventional commits, bump version, update CHANGELOG, draft notes, tag
+```
 
-### 5 · Maintenance — *run & evolve*
+`/release` derives the version from Conventional Commits (leaning on `guard-commit-message`).
+**Publishing is a separate, `[CONFIGURE]`, default-off step** — unset, it computes the version, writes
+the changelog/notes, tags locally, and publishes nothing. **Enforcement:** human gates on merge,
+promotion, and publish.
 
-**Why.** Post-delivery reality: bugs, tech debt, dependency drift. Fixes are first-class work, not
-side-channel edits.
+### 6 · Maintenance — *run & evolve*
 
-**Run.**
 ```
 /debugger        # a Type: Fix card — reproduce, root-cause, minimal fix (regression test first)
-/dep-audit       # SCA scan for vulnerable / outdated dependencies (OWASP A06)
+/hotfix          # urgent production incident — fast-lane (see below)
+/dep-audit       # SCA scan: vulnerable / outdated deps + risky licenses (OWASP A06)
 /refactor        # behaviour-preserving cleanup, guarded by green tests
 /performance measure # bundle / Web Vitals / query EXPLAIN vs budget
 /roadmap-status  # progress; mark done; archive delivered blocks
 ```
 
-**You can:** fix a bug the right way — but it must exist as a `Type: Fix` card *before* any code, with
-**no exception** in the roadmap gate.
+**`/hotfix`** is the emergency lane: it branches from the **production branch** (not `develop`),
+reproduces the bug as a **failing regression test first**, applies the minimal fix, runs the relevant
+guards + a focused review, and opens a PR into production — **never auto-merging**. Fast means skipping
+*ceremony* (sprint/DoR/estimation), never *safety* (regression test, guards, human merge gate). After
+merge it back-merges production → `develop` and backfills the incident into a roadmap task + run
+trace. **Enforcement:** hard — a hotfix has no guard exemptions; it *adds* the test requirement
+(`guard-hotfix-test`).
 
-**Enforcement:** hard — same gate as Execution.
+### ⟳ Observe & Improve — *both default-off*
+
+```
+# Observability (runtime) — default OFF, inert until enabled:
+#   emit errors/metrics + a post-deploy health gate with auto-rollback (docs/health-gate.md).
+#   The prerequisite for any future auto-deploy; ships as a disabled spec.
+/hill-climb      # self-improvement — reads run traces + retro, PROPOSES harness improvements as a PR
+```
+
+**`/hill-climb`** is the self-improvement loop: it reads accumulated run traces and `/retro` output,
+finds recurring pipeline patterns, and opens a **PR of evidence-linked suggestions** to prompts/skills/
+config. It is **disabled by default** and **propose-only** — there is no auto-apply mode, and
+`guard-hill-climb` makes direct edits to the harness structurally impossible; its only output is a
+proposal PR you review. **Observability** is likewise default-off and fully inert until a project
+wires its backend.
 
 ### ⟳ Governance, Communication & Continuous Improvement
 
-Runs across every phase — this is where reporting and ceremonies live (they *steer and close*, they
-don't shape the backlog).
-
 ```
-/report          # branded progress report + PDF/PPTX deck (classical · notebooklm · sketch · illustrated)
-/retro           # end-of-sprint retrospective → action items feed /planner
+/report          # branded progress report + PDF/PPTX deck
+/retro           # end-of-sprint retro → velocity, cycle-time-per-point, carryover, perf-blocker trend → action items feed /planner
 /usability-test  # heuristic eval + real-user protocol + findings synthesis (HCD)
 /diagram         # Mermaid ERD / architecture / sequence / flow, embedded in docs
 /roadmap-status  # status, done-marking, archiving
@@ -211,88 +207,103 @@ don't shape the backlog).
 
 ## The two enforcement layers
 
-The lifecycle above is *behaviour*. Two layers turn it from a suggestion into a boundary:
-
 - **Agents** ([`.claude/agents/`](.claude/agents/)) — the *envelope*: least-privilege tools + a
-  right-sized model per role. Report-only reviewers have **no Edit/Write**; `/locate`,
-  `/visual-review`, `/code-map` are read-only; only `/pr-reviewer` can push. Opus for hard
-  builders/auditors, Sonnet for reviewers, Haiku for cheap routing. `/ship-task` dispatches every step
-  through these, so least privilege is a hard boundary, not documentation.
+  right-sized **model tier** per role. Report-only reviewers have **no Edit/Write**; `/locate`,
+  `/visual-review`, `/code-map` are read-only; only `/pr-reviewer` (and `/hotfix`/`/release` at their
+  gates) can open PRs. Tiers are `reasoning` (hard builders/auditors — planner, coder, debugger,
+  schema), `standard` (reviewers), `fast` (read-only routing/reporters), mapped to concrete models in
+  `context.md → Model tiers` so you swap models in one place. `/ship-task` dispatches every step
+  through these, so least privilege is a hard boundary.
 - **Hooks** ([`.claude/settings.json`](.claude/settings.json) + [`stack-profile.sh`](.claude/hooks/stack-profile.sh))
-  — the *backstop*: hard PreToolUse blocks (roadmap gate, branch gate, no-commit-to-main, Conventional
-  Commits, destructive-DB, shell-write, visual-update) + PostToolUse warnings (soft-delete, secrets,
-  doc/code-map reminders). Every stack-specific pattern lives in `stack-profile.sh` — retarget a stack
-  by editing one file, never the hook scripts.
-
-Agents are tool-level (no Edit at all); fine-grained path rules stay the hooks' job — the two layers
-are complementary.
+  — the *backstop*: **15 guards** (roadmap gate, branch, no-commit-to-main, Conventional Commits,
+  destructive-DB, shell-write, generated-files, test-files, audit-log, expose-hash, soft-delete,
+  secret-scan, visual-update, **hotfix-test**, **hill-climb**) + **4 reminders/warnings** (code-map,
+  docker-rebuild, docs-generate, **worktree-overlap**). Every stack-specific pattern lives in
+  `stack-profile.sh` — retarget by editing one file, never the hook scripts. Guards fire in **every**
+  mode, including auto-mode — they're what make unattended runs safe.
 
 ---
 
-## Running unattended
+## Running unattended & autonomy
 
-For batch / CI / cron with no interactive login: `/ship-task open` drains the ready backlog
-autonomously, and unattended push + PR work headless once a token is in the environment
-(`GH_TOKEN` for GitHub `gh`, `GITLAB_TOKEN` for GitLab `glab`; set the forge in `.claude/context.md`).
-**Never commit the token** — env var only. Note the pipeline ships *up to the PR, not through merge*:
-a task shipped-but-unmerged doesn't satisfy dependents until you merge, so multi-dependency sprints
-need merges between runs.
+For batch / CI / cron with no interactive login:
+
+- **`/ship-task open`** drains the ready backlog autonomously to PRs on `develop`.
+- **Auto-mode** pre-authorizes a safe surface (an allow-list + `dontAsk`/`acceptEdits` in
+  `context.md → Autonomy`) so agents don't stop to ask permission; the guards still auto-deny the
+  dangerous subset. **Deny rules + guards are always on.**
+- **Event-driven trigger** (`context.md → Autonomy trigger`, default **manual**) can fire
+  `/ship-task open` on a schedule/event, bounded by `Max tasks per run` and `Concurrency`.
+- Unattended push/PR work headless once a forge token is in the environment (`GH_TOKEN` / `GITLAB_TOKEN`;
+  set the forge in `context.md`). **Never commit the token.**
+
+The pipeline ships *up to the PR, not through merge*: merge, visual-bless, `develop → main` promotion,
+publish, and applying a hill-climb proposal all stay **human**. A task shipped-but-unmerged doesn't
+satisfy dependents until you merge.
+
+---
+
+## Parallel work (manual)
+
+Run several tasks at once by hand using **git worktrees** (one directory per branch — see
+[`docs/parallel-work.md`](docs/parallel-work.md)). Branch/staged-diff guards are isolated per worktree
+automatically; ephemeral state resolves from the worktree root, and a per-worktree port/DB convention
+avoids collisions. `warn-worktree-overlap` **warns** (never blocks) if a sibling worktree touches the
+same file. The durable rule: parallel worktrees only on tasks with **disjoint files** (INVEST
+independence). Automatic pipeline parallelism stays off (`Concurrency: 1`).
+
+---
+
+## CI — vendor-agnostic & sharded
+
+The heavy browser suite runs in CI, sharded across machines via a portable `SHARD_INDEX/SHARD_TOTAL`
+contract; a pinned Playwright image keeps local-vs-CI screenshot parity. `ci-adapters/` ships
+reference workflows for **GitHub** (matrix), **GitLab** (`parallel`), and **container** — keep the one
+your project uses; the core names no vendor. Per-PR **preview deploys** and the visual gate are
+`[CONFIGURE]` (default off/inline).
 
 ---
 
 ## Project knowledge — two tiers
 
-The pipeline separates *how the agent works* from *what it knows*, and splits knowledge by how often
-it's needed:
+- **Tier 1 — operational (read every run):** `CLAUDE.md`, `.claude/context.md`, `docs/ROADMAP.md`.
+- **Tier 2 — knowledge (read when relevant):** standing entrypoints indexing per-feature docs.
 
-- **Tier 1 — operational (required, read every run):** `CLAUDE.md`, `.claude/context.md`,
-  `docs/ROADMAP.md`. Kept lean because every agent loads them each task.
-- **Tier 2 — knowledge (optional, read when relevant):** standing entrypoints that index the
-  per-feature docs the pipeline generates. Agents fall back to `.claude/context.md` if absent.
+| Tier-2 doc | Holds | Read by |
+|---|---|---|
+| `PRODUCT.md` | Vision, users, non-goals; indexes discovery/ + personas/ | `/discovery`, `/planner` |
+| `DESIGN.md` | Design language; indexes design/ | `/design-import`, `/ux-review` |
+| `docs/TESTING.md` | Testing philosophy (Testing Trophy) + critical-journeys + a11y | `/test-writer`, `/qa-tester`, `/coder`, visual skills |
+| `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | `/coder`, `/schema-agent`, `/performance`, `/security-audit` |
+| `docs/LIFECYCLE.md` · `docs/health-gate.md` · `docs/parallel-work.md` · `docs/branch-protection.md` · `docs/pr-template.md` · `docs/autonomy-trigger.md` | Lifecycle, health gate spec, worktree/branch/PR/trigger setup | humans + relevant skills |
 
-| Tier-2 doc | Holds | Indexes | Read by |
-|---|---|---|---|
-| `PRODUCT.md` | Vision, users, non-goals | `docs/discovery/`, `docs/personas/` | `/discovery`, `/planner` |
-| `DESIGN.md` | Design language & feeling | `docs/design/` | `/design-import`, `/ux-review` |
-| `docs/TESTING.md` | Testing philosophy (Testing Trophy — what to test where, and why) | — | `/test-writer`, `/qa-tester`, `/coder`, visual skills; kept current by `/docs` |
-| `docs/ARCHITECTURE.md` | System shape, decisions, deep specs | — | `/coder`, `/schema-agent`, `/performance`, `/security-audit`; kept current by `/docs` |
-
-**The one rule against drift:** a fact lives in exactly one tier. Exact tokens/badge classes →
-`.claude/context.md`, not `DESIGN.md`. The short isolation-key rule → `.claude/context.md`; its
-rationale → `docs/ARCHITECTURE.md`.
+**The one rule against drift:** a fact lives in exactly one tier.
 
 ---
 
 ## Setup details
 
-### 1. Copy the template into your project
+### 1. Copy the template
 
 ```bash
-# Option A — use as a GitHub/GitLab template repository (recommended): "Use this template", then clone.
+# Option A — use as a GitHub/GitLab template repository (recommended).
 # Option B — copy into an existing project:
 git clone https://[your-forge]/claude-pipeline-template temp-template
 cp -r temp-template/.claude your-project/
-cp -r temp-template/.github your-project/
+cp -r temp-template/ci-adapters your-project/     # keep the adapter for your CI
 cp temp-template/CLAUDE.md your-project/
 cp temp-template/docs/ROADMAP.md your-project/docs/
-# Optional Tier-2 docs (or let /discovery, /design-import create them on demand):
-cp temp-template/PRODUCT.md temp-template/DESIGN.md your-project/
-cp temp-template/docs/ARCHITECTURE.md your-project/docs/
+cp temp-template/PRODUCT.md temp-template/DESIGN.md your-project/          # optional Tier-2
+cp temp-template/docs/ARCHITECTURE.md temp-template/docs/TESTING.md your-project/docs/
 cp temp-template/.gitignore your-project/   # merge, don't overwrite
 rm -rf temp-template
 ```
 
-### 2. Run `/setup` (or do it by hand)
+### 2. Run `/setup` (or configure by hand)
 
-`/setup` fills what follows; these are the files it writes, for when you'd rather configure by hand:
-
-- **`.claude/context.md`** — the only file that changes per project (read by every agent): project
-  name, stack, commands, absolute rules, isolation key, roles, UI conventions.
-- **`CLAUDE.md`** — the `[CONFIGURE]` blocks (project, stack, commands, absolute rules — keep in sync
-  with `context.md`).
-- **`.claude/hooks/stack-profile.sh`** — stack patterns (only if not React/Next/Prisma).
-- **`.github/workflows/ci.yml`** — ORM generate step, env vars, the `test:coverage` script name.
-- **`docs/ROADMAP.md`** — set the date, add your domains to the status table, plan sprint 1.
+`/setup` fills: `.claude/context.md` (per-project config incl. **Model tiers · Test execution · PR
+target · Autonomy · Observability · Release** blocks), the `CLAUDE.md` `[CONFIGURE]` blocks,
+`.claude/hooks/stack-profile.sh`, the chosen `ci-adapters/` workflow, and `docs/ROADMAP.md` seed.
 
 ---
 
@@ -300,32 +311,23 @@ rm -rf temp-template
 
 | File | What to change |
 |------|---------------|
-| `.claude/context.md` | Everything — this is the per-project configuration |
+| `.claude/context.md` | Everything — per-project config, incl. model tiers, CI/test-execution, PR target, autonomy, observability, release |
 | `CLAUDE.md` | `[CONFIGURE]` sections — stack, commands, absolute rules |
-| `.claude/hooks/stack-profile.sh` | All hook patterns (ORM delete, audit table, sensitive fields, gated paths, migrations, code-map command…) — one file |
-| `.github/workflows/ci.yml` | ORM generate command, env vars, build command |
+| `.claude/hooks/stack-profile.sh` | All stack-bound hook patterns — one file |
+| `ci-adapters/<vendor>/` | Keep the adapter for your CI; delete the rest |
 | `docs/ROADMAP.md` | Domain names in the global status table |
-| `PRODUCT.md` · `DESIGN.md` · `docs/ARCHITECTURE.md` | **Optional** Tier-2 docs — skills create/update them on demand |
-
-Everything else works as-is.
+| `PRODUCT.md` · `DESIGN.md` · `docs/ARCHITECTURE.md` | **Optional** Tier-2 docs — skills create/update on demand |
 
 ---
 
 ## Adapting to another stack
 
-The pipeline ships configured for **React / Next.js · Prisma · TypeScript · Vitest**, but the
-orchestration is language-agnostic — skills, gates, TDD loop, and reviews don't care what stack you
-use. Only two layers carry stack-specifics:
-
-1. **`.claude/context.md`** — your commands, ORM, validation library, UI conventions. The biggest lever.
-2. **`.claude/hooks/stack-profile.sh`** — every stack-bound pattern the guard hooks match. The hook
-   scripts are generic; they read these variables.
-
-So retargeting means editing **two files**, not rewriting shell scripts. `stack-profile.sh` ships with
-worked overrides for **Laravel (Eloquent/PHPUnit)**, **Django**, and **FastAPI (SQLAlchemy/Alembic)** —
-copy the block for your stack, adjust, done. Any variable left unset keeps the Prisma/Next default.
-You'll also swap the JS-specific reference skills (`schema-agent` for your migration tool, the
-`prisma`/`lint`/`test` helpers) and `ci.yml`. The orchestration and review skills carry over unchanged.
+Ships configured for **React / Next.js · Prisma · TypeScript · Vitest**, but the orchestration is
+language-agnostic. Retargeting edits **two files** — `.claude/context.md` (commands, ORM, tiers) and
+`.claude/hooks/stack-profile.sh` (guard patterns; worked overrides for **Laravel**, **Django**,
+**FastAPI** included). Any variable left unset keeps the Prisma/Next default. Swap the JS-specific
+reference skills and your `ci-adapters/` workflow; the orchestration and review skills carry over
+unchanged.
 
 ---
 
@@ -333,29 +335,28 @@ You'll also swap the JS-specific reference skills (`schema-agent` for your migra
 
 ```
 .claude/
-  context.md          ← fill this in per project (read by all agents)
-  code-map.md         ← generated router index (areas → key files → deps); read by /planner, /locate
-  settings.json       ← hook configuration
-  hooks/              ← shell gates (13 guards + 3 reminders)
-    stack-profile.sh  ← all stack-specific patterns live here (retarget here, not in the hooks)
-  agents/             ← 21 agent definitions (tool scope + model per role; ship-task dispatches via these)
-  skills/             ← 32 skills (behaviour; agents reference these) — setup, discovery, planner,
-                        ship-task, start-task, coder, debugger, test-writer, locate, schema-agent,
-                        code-map, ux-review, performance, qa-tester, security-audit,
-                        dep-audit, refactor, docs, diagram, webapp-testing, pr-reviewer, sprint-start,
-                        commit, story-map, roadmap-status, design-import, report, retro,
-                        usability-test, visual-setup, visual-report, visual-review
-.github/workflows/ci.yml   ← lint + test:coverage + build on every PR
+  context.md          ← per-project config (read by all agents): stack, tiers, CI, PR target, autonomy, observability, release
+  code-map.md         ← generated router index; read by /planner, /locate
+  settings.json       ← hook configuration + auto-mode permissions
+  hooks/              ← 15 guards + 4 reminders/warnings
+    stack-profile.sh  ← all stack-specific patterns (retarget here)
+  agents/             ← 24 agent definitions (tool scope + model tier per role)
+  skills/             ← 35 skills — setup, discovery, design-import, story-map, planner, sprint-start,
+                        start-task, ship-task, locate, code-map, schema-agent, coder, debugger,
+                        test-writer, ux-review, performance, qa-tester, security-audit, dep-audit,
+                        refactor, webapp-testing, docs, diagram, commit, pr-reviewer, release, hotfix,
+                        roadmap-status, report, retro, usability-test, hill-climb,
+                        visual-setup, visual-report, visual-review
+ci-adapters/          ← portable CI: github/ · gitlab/ · container/ (keep one)
 docs/
-  ROADMAP.md          ← DoR / DoD / task template + sprint planning  (Tier-1)
-  LIFECYCLE.md        ← the phase view of the pipeline (this README's companion)
-  TESTING.md          ← testing philosophy — what to test where, and why  (Tier-2, optional)
-  ARCHITECTURE.md     ← system shape, decisions, deep specs  (Tier-2, optional)
-  discovery/          ← per-initiative PRDs (/discovery)
-  personas/           ← full HCD persona profiles (/discovery)
-  design/             ← per-screen design specs (/design-import)
-CLAUDE.md             ← project instructions for Claude Code  (Tier-1)
-PRODUCT.md            ← product vision; indexes discovery/ + personas/  (Tier-2, optional)
-DESIGN.md             ← design language; indexes design/  (Tier-2, optional)
-.gitignore            ← includes .current-task
+  ROADMAP.md          ← DoR / DoD / task template (+ Estimate) + sprint planning   (Tier-1)
+  LIFECYCLE.md        ← the phase view of the pipeline
+  TESTING.md          ← testing philosophy + critical journeys + a11y   (Tier-2)
+  ARCHITECTURE.md     ← system shape, decisions, deep specs             (Tier-2)
+  health-gate.md      ← observability health-gate + rollback spec (default off)
+  autonomy-trigger.md · branch-protection.md · parallel-work.md · pr-template.md
+  discovery/ · personas/ · design/ · roadmap/
+CLAUDE.md             ← project instructions for Claude Code            (Tier-1)
+PRODUCT.md · DESIGN.md ← optional Tier-2 entrypoints
+.gitignore            ← includes .current-task, .scratch/, visual-review/results/
 ```
