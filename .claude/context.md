@@ -225,6 +225,26 @@ reason) rather than hanging.
 
 ---
 
+## Self-improvement (hill-climbing)
+
+The pipeline improving *itself*: an analysis agent reads the **run traces** (`### Run trace` blocks)
+and `/retro` outputs, finds recurring patterns, and **proposes** harness changes (prompts / skills /
+config) as a PR. It **applies nothing and merges nothing** — the human reviews the PR like any other.
+
+**Default `disabled` and there is NO auto-apply mode** — `propose-only` is the ceiling. This is the
+one capability that edits the pipeline itself, so the human stays the gate exactly as everywhere else;
+[`guard-hill-climb.sh`](../.claude/hooks/guard-hill-climb.sh) makes direct edits to the harness by this
+agent **structurally impossible** (it can only write a proposal doc and open a PR).
+
+- **Mode:** disabled            # `disabled` (default) | `propose-only`. There is **no** auto-apply mode.
+- **Cadence:** [CONFIGURE — e.g. end of sprint | manual]
+- **Min trace volume:** [CONFIGURE — e.g. 20 runs]   # don't analyze thin data — below this, `/hill-climb` no-ops
+
+See [`.claude/skills/hill-climb/SKILL.md`](../.claude/skills/hill-climb/SKILL.md). Depends on the
+shipped run traces; while `disabled`, nothing runs and nothing changes.
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.

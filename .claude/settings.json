@@ -48,6 +48,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-visual-update.sh\"",
             "timeout": 5,
             "statusMessage": "Checking visual re-baseline guard…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-hill-climb.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking hill-climb propose-only guard…"
           }
         ]
       },
@@ -77,6 +83,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/warn-worktree-overlap.sh\"",
             "timeout": 5,
             "statusMessage": "Checking cross-worktree overlap…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-hill-climb.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking hill-climb propose-only guard…"
           }
         ]
       },
@@ -106,6 +118,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/warn-worktree-overlap.sh\"",
             "timeout": 5,
             "statusMessage": "Checking cross-worktree overlap…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-hill-climb.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking hill-climb propose-only guard…"
           }
         ]
       }
