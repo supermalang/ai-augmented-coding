@@ -267,6 +267,24 @@ shipped run traces; while `disabled`, nothing runs and nothing changes.
 
 ---
 
+## Release
+
+Closes the lifecycle at the `develop → main` promotion (`/release`): derive the version, update the
+changelog, draft release notes, and tag — **run by a human after they promote**. The promotion gate is
+unchanged, and there is **no auto-publish**.
+
+- **Versioning:** [CONFIGURE — semver (default)]
+- **Version file/command:** [CONFIGURE — e.g. `package.json` | `pyproject.toml` | a `version` file | a bump command]
+- **Release notes source:** conventional commits since the last tag (default) — leverages `guard-commit-message` (`fix:`→patch, `feat:`→minor, `BREAKING CHANGE`/`!`→major)
+- **Publish command:** [CONFIGURE — **default: none** → compute + write changelog/notes + a **local** tag; publish **nothing**]
+
+> **Publishing is separate and human-gated.** While `Publish command` is unset, `/release` stops at a
+> local tag (or a release PR) and pushes/publishes nothing. Pushing the tag and any registry/artifact
+> publish happens only when a human runs the configured publish step. Releasing is consequential — it
+> is not automated by default. See [`.claude/skills/release/SKILL.md`](../.claude/skills/release/SKILL.md).
+
+---
+
 ## Absolute rules
 
 > These are non-negotiable constraints enforced throughout the pipeline.
