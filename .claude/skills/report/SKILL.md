@@ -52,6 +52,9 @@ from the markdown + the brand theme, never hand-edited, never committed.
    in-flight work. Map commits to task IDs via the Conventional-Commit scope where possible.
 3. **Framing** — read `PRODUCT.md` for the vision/goal each shipped task advances, so the report ties
    delivery back to outcomes, not just task counts.
+4. **Latest release (if any)** — `git describe --tags --abbrev=0 --match 'v*'` and the newest
+   `docs/releases/*.md` (written by `/release`): surface the latest shipped version + date, so a
+   status/steering update says what actually *released*, not just what merged. Skip if there are no tags.
 
 Never state a status the roadmap or git history doesn't support. If something is ambiguous (e.g. a
 task marked in-progress with no recent commits), flag it as a risk rather than guessing.
