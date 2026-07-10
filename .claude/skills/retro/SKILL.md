@@ -67,6 +67,10 @@ so each sprint runs a little better than the last.
     outcomes); recurring hotspots become action items.
   > These are only aggregatable if the outcomes were **recorded on the task at delivery** — a
   > transient result can't be trended. If a field is missing, note it and make "record it" an action.
+- **Runtime incidents (only if enabled)** — if `.claude/context.md` → *Observability (runtime)* has
+  `Enabled: true`, add a **one-line** count of live-app incidents this sprint from the configured
+  `Sink` (deployed-app health — distinct from the build-time run traces above). When observability is
+  disabled (the default), **nothing appears** — do not add the line, do not flag it as missing.
 
 ### 1b — Sprint-exit checklist (cadence ritual)
 

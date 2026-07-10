@@ -225,6 +225,28 @@ reason) rather than hanging.
 
 ---
 
+## Observability (runtime)
+
+Health of the **deployed app** — distinct from the build-time **run traces** (WP1), which record what
+the *pipeline* did. This records how the *live product* behaves (errors, key metrics, deploy markers,
+SLOs). **Default OFF and fully inert:** while `Enabled: false`, nothing is emitted, nothing gates, and
+no observability dependency is loaded — the template behaves exactly as if this section were absent.
+A project fills the `[CONFIGURE]` keys and wires its backend (`observability/`) when it turns it on.
+
+- **Enabled:** false            # default OFF — when false, every emit call is a no-op and nothing gates
+- **Sink:** [CONFIGURE — where errors/metrics/deploy markers go; a vendor-agnostic endpoint or command]
+- **Emit:** [CONFIGURE — what to emit: structured errors · a few key metrics · a deploy/version marker]
+- **SLOs:** [CONFIGURE — e.g. error-rate < 1%, p95 latency < 300 ms]   # read only by the health gate
+- **Health gate:** false        # default OFF — post-deploy smoke check + auto-rollback (see docs/health-gate.md)
+
+> **Scope boundary.** The emit interface lives in [`observability/`](../observability/README.md)
+> (adapter pattern — reference adapters, a project keeps one). The **Health gate** is a post-deploy
+> machine safety check at the **deploy boundary a project owns** — it is **not** wired into
+> `/ship-task` or `develop → main` promotion, and it adds no new *human* gate. The three human gates
+> (merge / bless / promote) are unchanged.
+
+---
+
 ## Self-improvement (hill-climbing)
 
 The pipeline improving *itself*: an analysis agent reads the **run traces** (`### Run trace` blocks)
